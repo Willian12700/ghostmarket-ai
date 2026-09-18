@@ -28,17 +28,18 @@ export default async function handler(req, res) {
     const payload = req.body;
     console.log('Webhook received:', payload);
 
-    // Verify Cakto webhook logic here (e.g. signature verification)
-    // For now, we extract the email from the payload payload.customer.email or similar
-    const customerEmail = payload?.customer?.email || payload?.email;
-    const status = payload?.status || payload?.transaction?.status;
+    // Ajuste para o modelo exato da Cakto:
+    // O email está em payload.data.customer.email
+    // O evento está em payload.event (ex: "purchase_approved")
+    const customerEmail = payload?.data?.customer?.email || payload?.customer?.email || payload?.email;
+    const eventType = payload?.event || payload?.status;
 
     if (!customerEmail) {
       return res.status(400).json({ error: 'Email not found in payload' });
     }
 
-    // Only allow approved transactions
-    if (status === 'approved' || status === 'paid') {
+    // A Cakto envia "purchase_approved" para compras aprovadas
+    if (eventType === 'purchase_approved' || eventType === 'approved' || eventType === 'paid') {
       // Create a record in Firestore allowing this user to register
       await db.collection('allowed_users').doc(customerEmail).set({
         email: customerEmail,
