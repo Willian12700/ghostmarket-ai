@@ -39,7 +39,7 @@ export const useDashboardStore = create<DashboardState>()(
       activeProjects: 0,
       capturedLeads: 0,
       salesData: initialSalesData,
-      recentTransactions: [],
+      recentTransactions: [] as Transaction[],
     }),
     {
       name: 'ghostmarket-dashboard',

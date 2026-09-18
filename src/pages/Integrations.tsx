@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Webhook, Copy, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -10,9 +10,6 @@ export const Integrations = () => {
   const { addToast } = useToastStore()
   const [copied, setCopied] = useState(false)
 
-  // O Webhook URL vai pegar o e-mail do usuário logado para identificar de quem é a venda
-  // Nota: em produção, o ideal é gerar um UUID em vez de expor o e-mail na URL, 
-  // mas usaremos o e-mail aqui para fins educacionais e de MVP.
   const webhookUrl = `https://ghostmarket-ai.vercel.app/api/client-webhook?user=${encodeURIComponent(user?.email || 'email')}`
 
   const handleCopy = () => {
@@ -24,8 +21,6 @@ export const Integrations = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      
-      {/* Aviso Importante */}
       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-4 items-start">
         <AlertTriangle className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
         <div>
@@ -37,16 +32,15 @@ export const Integrations = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* URL do Webhook */}
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Webhook className="w-5 h-5 text-primary" />
               Sua URL de Webhook Personalizada
             </CardTitle>
-            <CardDescription>
+            <p className="text-textSecondary text-sm mt-1">
               Esta é a sua URL única. Copie-a e cole na configuração de Webhooks do seu gateway de pagamento.
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3 bg-background border border-border rounded-lg p-2 pl-4">
@@ -61,7 +55,6 @@ export const Integrations = () => {
           </CardContent>
         </Card>
 
-        {/* Passo a Passo Cakto */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Como integrar na Cakto</CardTitle>
@@ -75,13 +68,12 @@ export const Integrations = () => {
               <li>Em eventos, selecione apenas <strong className="text-white">"Venda Aprovada" (purchase_approved)</strong>.</li>
               <li>Salve as configurações. Suas vendas começarão a cair no Dashboard!</li>
             </ol>
-            <Button variant="outline" className="w-full mt-6 gap-2">
+            <Button variant="secondary" className="w-full mt-6 gap-2">
               Ver documentação da Cakto <ArrowRight className="w-4 h-4" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Passo a Passo Kiwify */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Como integrar na Kiwify</CardTitle>
@@ -95,7 +87,7 @@ export const Integrations = () => {
               <li>Na URL, <strong className="text-primary">cole a URL copiada acima</strong>.</li>
               <li>Marque a caixinha de evento <strong className="text-white">"Venda Aprovada"</strong> e salve.</li>
             </ol>
-            <Button variant="outline" className="w-full mt-6 gap-2">
+            <Button variant="secondary" className="w-full mt-6 gap-2">
               Ver documentação da Kiwify <ArrowRight className="w-4 h-4" />
             </Button>
           </CardContent>
