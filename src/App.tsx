@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
 import { Landing } from '@/pages/Landing'
 import { Login } from '@/pages/Login'
@@ -9,8 +10,23 @@ import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
+import { useAuthStore } from '@/store/authStore'
 
 function App() {
+  const { initAuthListener, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    initAuthListener()
+  }, [initAuthListener])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
   return (
     <ErrorBoundary>
       <BrowserRouter>

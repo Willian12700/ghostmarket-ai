@@ -1,28 +1,40 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-
-interface User {
-  name: string
-  email: string
-}
+import { auth } from '@/config/firebase'
+import { signOut, onAuthStateChanged, User } from 'firebase/auth'
 
 interface AuthState {
-  user: User | null
+  user: { name: string; email: string; uid: string } | null
   isAuthenticated: boolean
-  login: (user: User) => void
-  logout: () => void
+  isLoading: boolean
+  setUser: (user: { name: string; email: string; uid: string } | null) => void
+  logout: () => Promise<void>
+  initAuthListener: () => void
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
-      login: (user) => set({ user, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
-    }),
-    {
-      name: 'ghostmarket-auth',
-    }
-  )
-)
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
+  logout: async () => {
+    await signOut(auth)
+    set({ user: null, isAuthenticated: false })
+  },
+  initAuthListener: () => {
+    onAuthStateChanged(auth, (firebaseUser: User | null) => {
+      if (firebaseUser) {
+        set({
+          user: {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User'
+          },
+          isAuthenticated: true,
+          isLoading: false
+        })
+      } else {
+        set({ user: null, isAuthenticated: false, isLoading: false })
+      }
+    })
+  }
+}))

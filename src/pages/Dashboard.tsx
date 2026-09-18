@@ -1,27 +1,79 @@
-import { useState } from 'react'
-import { DollarSign, Briefcase, Users, TrendingUp, Trophy } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { DollarSign, Briefcase, Users, TrendingUp, Trophy, Loader2, Lock } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useDashboardStore } from '@/store/dashboardStore'
 import { useToastStore } from '@/store/toastStore'
+import { useAuthStore } from '@/store/authStore'
+import { db } from '@/config/firebase'
+import { doc, getDoc } from 'firebase/firestore'
 
 export const Dashboard = () => {
   const { totalRevenue, activeProjects, capturedLeads, salesData, leaderboard, simulateSale } = useDashboardStore()
   const { addToast } = useToastStore()
+  const { user } = useAuthStore()
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
   const [isSimulating, setIsSimulating] = useState(false)
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user?.email) return
+      
+      try {
+        const docRef = doc(db, 'allowed_users', user.email)
+        const docSnap = await getDoc(docRef)
+        
+        if (docSnap.exists() && docSnap.data().status === 'approved') {
+          setHasSubscription(true)
+        } else {
+          setHasSubscription(false)
+        }
+      } catch (error) {
+        console.error("Error checking subscription:", error)
+        setHasSubscription(false)
+      }
+    }
+
+    checkSubscription()
+  }, [user])
 
   const handleSimulateSale = () => {
     setIsSimulating(true)
     const amounts = [97, 197, 297, 497]
-    const randomAmount = amounts[Math.floor(Math.random() * amounts.length)]
-    
-    simulateSale(randomAmount)
-    addToast(`Venda recebida! +R$ ${randomAmount},00`, 'success')
+    const amount = amounts[Math.floor(Math.random() * amounts.length)]
     
     setTimeout(() => {
+      simulateSale(amount)
+      addToast(`Nova venda de R$ ${amount},00!`, 'success')
       setIsSimulating(false)
-    }, 1500)
+    }, 600)
+  }
+
+  if (hasSubscription === null) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    )
+  }
+
+  if (hasSubscription === false) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center min-h-[80vh]">
+        <div className="w-20 h-20 bg-error/10 text-error rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(239,68,68,0.2)]">
+          <Lock className="w-10 h-10" />
+        </div>
+        <h2 className="text-3xl font-bold text-white mb-4">Acesso Bloqueado</h2>
+        <p className="text-textSecondary max-w-md mx-auto mb-8 text-lg">
+          Não identificamos uma assinatura ativa vinculada ao e-mail <strong>{user?.email}</strong>. 
+          Isso pode acontecer se o pagamento ainda estiver processando.
+        </p>
+        <a href="/#planos">
+          <Button size="lg">Assinar um Plano</Button>
+        </a>
+      </div>
+    )
   }
 
   const formatCurrency = (value: number) => {

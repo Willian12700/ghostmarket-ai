@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { auth } from '@/config/firebase'
 
 export const Register = () => {
   const [searchParams] = useSearchParams()
@@ -18,7 +19,7 @@ export const Register = () => {
     confirmPassword: ''
   })
   
-  const { login } = useAuthStore()
+  const [loading, setLoading] = useState(false)
   const { addToast } = useToastStore()
   const navigate = useNavigate()
 
@@ -29,7 +30,7 @@ export const Register = () => {
     }
   }, [isSuccess, navigate, addToast])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -41,9 +42,23 @@ export const Register = () => {
       return
     }
     
-    addToast('Conta criada com sucesso!', 'success')
-    login({ name: formData.name, email: formData.email })
-    navigate('/dashboard')
+    setLoading(true)
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
+      await updateProfile(userCredential.user, { displayName: formData.name })
+      
+      addToast('Conta criada com sucesso!', 'success')
+      navigate('/dashboard')
+    } catch (error: any) {
+      console.error(error)
+      if (error.code === 'auth/email-already-in-use') {
+        addToast('Este e-mail já está em uso.', 'error')
+      } else {
+        addToast('Ocorreu um erro ao criar a conta.', 'error')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isSuccess) {
@@ -98,8 +113,15 @@ export const Register = () => {
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
             />
 
-            <Button type="submit" className="w-full mt-6" size="lg">
-              Criar minha conta
+            <Button type="submit" className="w-full mt-6" size="lg" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Criando conta...
+                </>
+              ) : (
+                'Criar minha conta'
+              )}
             </Button>
           </form>
         </div>

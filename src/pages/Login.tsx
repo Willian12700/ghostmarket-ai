@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Ghost } from 'lucide-react'
+import { Ghost, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/config/firebase'
 
 export const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
-  const { login, isAuthenticated } = useAuthStore()
+  const [loading, setLoading] = useState(false)
+  const { isAuthenticated } = useAuthStore()
   const { addToast } = useToastStore()
   const navigate = useNavigate()
 
@@ -21,7 +24,7 @@ export const Login = () => {
     }
   }, [isAuthenticated, navigate])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!formData.email || !formData.password) {
@@ -29,10 +32,16 @@ export const Login = () => {
       return
     }
     
-    // Simulate login
-    login({ name: formData.email.split('@')[0], email: formData.email })
-    addToast('Bem-vindo de volta!', 'success')
-    navigate('/dashboard')
+    setLoading(true)
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password)
+      addToast('Bem-vindo de volta!', 'success')
+      navigate('/dashboard')
+    } catch (error: any) {
+      addToast('E-mail ou senha incorretos.', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -70,8 +79,15 @@ export const Login = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full mt-6" size="lg">
-              Entrar na plataforma
+            <Button type="submit" className="w-full mt-6" size="lg" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                'Entrar na plataforma'
+              )}
             </Button>
           </form>
 
