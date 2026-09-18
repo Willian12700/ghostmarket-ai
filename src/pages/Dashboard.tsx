@@ -1,43 +1,68 @@
 import { useState } from 'react'
-import { DollarSign, Briefcase, Users, TrendingUp, Trophy } from 'lucide-react'
+import { DollarSign, Briefcase, Users, TrendingUp, CreditCard, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useDashboardStore } from '@/store/dashboardStore'
-import { useToastStore } from '@/store/toastStore'
 
 export const Dashboard = () => {
-  const { totalRevenue, activeProjects, capturedLeads, salesData, leaderboard, simulateSale } = useDashboardStore()
-  const { addToast } = useToastStore()
-  const [isSimulating, setIsSimulating] = useState(false)
-
-  const handleSimulateSale = () => {
-    setIsSimulating(true)
-    const amounts = [97, 197, 297, 497]
-    const amount = amounts[Math.floor(Math.random() * amounts.length)]
-    
-    setTimeout(() => {
-      simulateSale(amount)
-      addToast(`Nova venda de R$ ${amount},00!`, 'success')
-      setIsSimulating(false)
-    }, 600)
-  }
+  const { totalRevenue, activeProjects, capturedLeads, salesData, recentTransactions } = useDashboardStore()
+  const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
   }
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'Aprovado': return <CheckCircle2 className="w-4 h-4 text-success" />
+      case 'Pendente': return <Clock className="w-4 h-4 text-warning" />
+      case 'Cancelado': return <XCircle className="w-4 h-4 text-error" />
+      default: return null
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Aprovado': return 'text-success bg-success/10'
+      case 'Pendente': return 'text-warning bg-warning/10'
+      case 'Cancelado': return 'text-error bg-error/10'
+      default: return 'text-textSecondary bg-panel'
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold tracking-tight">Visão Geral</h2>
-        <Button 
-          onClick={handleSimulateSale} 
-          disabled={isSimulating}
-          className="shadow-primary/20 shadow-lg"
-        >
-          {isSimulating ? 'Venda registrada ✓' : 'Simular nova venda'}
-        </Button>
+        
+        {/* Date Filters */}
+        <div className="flex bg-panel border border-border rounded-lg p-1">
+          <button 
+            onClick={() => setDateFilter('hoje')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'hoje' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
+          >
+            Hoje
+          </button>
+          <button 
+            onClick={() => setDateFilter('semana')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'semana' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
+          >
+            Semana
+          </button>
+          <button 
+            onClick={() => setDateFilter('mes')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'mes' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
+          >
+            Mês
+          </button>
+          <button 
+            onClick={() => setDateFilter('ano')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'ano' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
+          >
+            1 Ano
+          </button>
+        </div>
       </div>
 
       {/* Metrics */}
@@ -51,9 +76,8 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-            <p className="text-xs text-success flex items-center mt-1">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              +12.5% em relação ao mês anterior
+            <p className="text-xs text-textSecondary flex items-center mt-1">
+              +0% em relação ao período anterior
             </p>
           </CardContent>
         </Card>
@@ -67,7 +91,7 @@ export const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{activeProjects}</div>
             <p className="text-xs text-textSecondary mt-1">
-              3 entregues esta semana
+              Nenhum projeto finalizado
             </p>
           </CardContent>
         </Card>
@@ -80,9 +104,8 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{capturedLeads}</div>
-            <p className="text-xs text-success flex items-center mt-1">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              +48 esta semana
+            <p className="text-xs text-textSecondary flex items-center mt-1">
+              0 novos leads
             </p>
           </CardContent>
         </Card>
@@ -92,7 +115,7 @@ export const Dashboard = () => {
         {/* Chart */}
         <Card className="md:col-span-4">
           <CardHeader>
-            <CardTitle>Receita dos últimos 7 dias</CardTitle>
+            <CardTitle>Desempenho de Vendas</CardTitle>
           </CardHeader>
           <CardContent className="pl-0">
             <div className="h-[300px] w-full mt-4">
@@ -138,38 +161,43 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Leaderboard */}
+        {/* Recent Transactions */}
         <Card className="md:col-span-3">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-primary" />
-              Ranking de vendas
+              <CreditCard className="w-5 h-5 text-primary" />
+              Últimas transações
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {leaderboard.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      user.position === 1 ? 'bg-yellow-500/20 text-yellow-500' :
-                      user.position === 2 ? 'bg-slate-300/20 text-slate-300' :
-                      user.position === 3 ? 'bg-amber-600/20 text-amber-600' :
-                      'bg-panel text-textSecondary'
-                    }`}>
-                      {user.position}º
+            {recentTransactions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <CreditCard className="w-10 h-10 text-textSecondary/30 mb-3" />
+                <p className="text-textSecondary">Nenhuma transação encontrada neste período.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentTransactions.map((tx) => (
+                  <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-full ${getStatusColor(tx.status)}`}>
+                        {getStatusIcon(tx.status)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-textPrimary">{tx.clientName}</p>
+                        <p className="text-xs text-textSecondary">{tx.date}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-textPrimary">{user.name}</p>
-                      <p className="text-xs text-textSecondary">{user.sales} vendas ({user.projects} proj)</p>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-white">{formatCurrency(tx.amount)}</p>
+                      <p className={`text-xs mt-0.5 ${tx.status === 'Aprovado' ? 'text-success' : tx.status === 'Cancelado' ? 'text-error' : 'text-warning'}`}>
+                        {tx.status}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-success">
-                    {formatCurrency(user.revenue)}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
