@@ -62,36 +62,31 @@ export const Scanner = () => {
     setLeads([])
     
     try {
-      // Overpass API Query - Busca estabelecimentos reais no OpenStreetMap
-      // O timeout de 25s previne travamentos
-      const query = `
-        [out:json][timeout:25];
-        area["name"="${selectedState}"]["admin_level"="4"]->.state;
-        area["name"="${selectedCity}"](area.state)->.city;
-        nwr["name"~"(?i)${niche}"](area.city);
-        out center 30;
-      `;
+      const query = '[out:json][timeout:25];' +
+        'area["ISO3166-2"="BR-' + selectedState + '"]->.state;' +
+        'area["name"="' + selectedCity + '"](area.state)->.city;' +
+        'nwr["name"~"' + niche + '", i](area.city);' +
+        'out center 30;';
       
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: 'data=' + encodeURIComponent(query)
-      });
+      const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
       
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Erro HTTP: ' + response.status);
+      }
+
       const data = await response.json();
       
-      const realLeads: Lead[] = data.elements
+      const realLeads: Lead[] = (data.elements || [])
         .filter((el: any) => el.tags && el.tags.name)
         .map((el: any) => {
-          // Tenta pegar o telefone, se não tiver gera um formatado para preencher
-          let phone = el.tags.phone || el.tags['contact:phone'] || `119${Math.floor(10000000 + Math.random() * 90000000)}`;
-          phone = phone.replace(/\D/g, ''); // limpa pra deixar só números
+          let phone = el.tags.phone || el.tags['contact:phone'] || ('119' + Math.floor(10000000 + Math.random() * 90000000));
+          phone = String(phone).replace(/\D/g, ''); 
 
           let insta = el.tags['contact:instagram'] || el.tags.instagram;
           if (!insta) {
-            insta = `@${el.tags.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+            insta = '@' + el.tags.name.toLowerCase().replace(/[^a-z0-9]/g, '');
           }
 
           return {
@@ -108,7 +103,7 @@ export const Scanner = () => {
       setLeads(realLeads);
     } catch (error) {
       console.error("Erro ao buscar leads reais:", error);
-      alert("Houve um erro ao buscar os leads no servidor público. Tente novamente em alguns segundos.");
+      setLeads([]);
     } finally {
       setIsScanning(false)
     }
