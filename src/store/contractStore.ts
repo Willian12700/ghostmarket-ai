@@ -19,11 +19,7 @@ interface ContractState {
 export const useContractStore = create<ContractState>()(
   persist(
     (set) => ({
-      contracts: [
-        { id: '1', client: 'TechNova Solutions', amount: 4500, date: '2026-09-10', status: 'Ativo' },
-        { id: '2', client: 'Alpha Marketing', amount: 2800, date: '2026-09-12', status: 'Ativo' },
-        { id: '3', client: 'Global Ecommerce', amount: 12000, date: '2026-08-25', status: 'Finalizado' },
-      ],
+      contracts: [],
       addContract: (contract) => set((state) => ({
         contracts: [
           { ...contract, id: Math.random().toString(36).substring(2, 9) },
@@ -38,7 +34,7 @@ export const useContractStore = create<ContractState>()(
       }))
     }),
     {
-      name: 'ghostmarket-contracts',
+      name: 'ghostmarket-contracts-v2',
     }
   )
 )
