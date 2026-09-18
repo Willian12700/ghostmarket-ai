@@ -6,6 +6,7 @@ import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { Dashboard } from '@/pages/Dashboard'
 import { Creator } from '@/pages/Creator'
+import { PromptBuilder } from '@/pages/PromptBuilder'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
@@ -49,6 +50,7 @@ function App() {
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/creator" element={<Creator />} />
+              <Route path="/prompt-builder" element={<PromptBuilder />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />

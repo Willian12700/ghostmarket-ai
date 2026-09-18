@@ -1,6 +1,6 @@
 
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X } from 'lucide-react'
+import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
@@ -21,6 +21,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const links = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
     { to: '/creator', icon: Wand2, label: 'Creator IA' },
+    { to: '/prompt-builder', icon: Code, label: 'Prompt Builder (Sites)' },
     { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
     { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
     { to: '/integrations', icon: Settings, label: 'Integração API' },
