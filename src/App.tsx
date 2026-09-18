@@ -9,6 +9,7 @@ import { Creator } from '@/pages/Creator'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
+import { Integrations } from '@/pages/Integrations'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { useAuthStore } from '@/store/authStore'
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/contracts" element={<Contracts />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/integrations" element={<Integrations />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

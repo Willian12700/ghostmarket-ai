@@ -14,7 +14,7 @@ const pageInfo: Record<string, { title: string; description: string }> = {
   '/creator': { title: 'Creator IA', description: 'Crie especificações completas para transformar ideias em aplicações SaaS.' },
   '/scanner': { title: 'Scanner de Leads', description: 'Encontre oportunidades comerciais por localização e nicho.' },
   '/contracts': { title: 'Gestão de Contratos', description: 'Gerencie seus clientes, contratos e valores em um único painel.' },
-  '/settings': { title: 'Configurações', description: 'Gerencie suas preferências e segurança.' },
+  '/integrations': { title: 'Integração API', description: 'Conecte seu gateway de pagamento para sincronizar suas vendas automaticamente.' },
 }
 
 export const MainLayout = () => {

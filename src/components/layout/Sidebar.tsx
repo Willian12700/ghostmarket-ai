@@ -23,7 +23,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { to: '/creator', icon: Wand2, label: 'Creator IA' },
     { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
     { to: '/contracts', icon: FileText, label: 'Contratos' },
-    { to: '/settings', icon: Settings, label: 'Configurações' },
+    { to: '/integrations', icon: Settings, label: 'Integração API' },
   ]
 
   return (
