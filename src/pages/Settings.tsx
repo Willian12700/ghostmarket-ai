@@ -33,25 +33,59 @@ export const Settings = () => {
     const file = e.target.files?.[0]
     if (!file) return
     
-    // Check if it's an image
     if (!file.type.startsWith('image/')) {
       addToast('Por favor, selecione uma imagem válida.', 'error')
       return
     }
 
     const reader = new FileReader()
-    reader.onload = async (event) => {
-      const base64String = event.target?.result as string
-      try {
-        setIsSavingProfile(true)
-        await updateUserProfile(name, base64String)
-        addToast('Foto de perfil atualizada!', 'success')
-      } catch (error) {
-        console.error(error)
-        addToast('Erro ao atualizar foto.', 'error')
-      } finally {
-        setIsSavingProfile(false)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = async () => {
+        // Create a canvas to compress the image
+        const canvas = document.createElement('canvas')
+        const MAX_WIDTH = 200
+        const MAX_HEIGHT = 200
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width
+            width = MAX_WIDTH
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height
+            height = MAX_HEIGHT
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        // Compress heavily so it fits in Firebase Auth photoURL limit
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5)
+
+        try {
+          setIsSavingProfile(true)
+          // Try to save to Firebase Auth (this will work for local host and Vercel)
+          await updateUserProfile(name, compressedBase64)
+          addToast('Foto de perfil atualizada!', 'success')
+        } catch (error: any) {
+          console.error(error)
+          // Firebase auth has a limit on photoURL length. 
+          // If it still fails, fallback to local storage
+          localStorage.setItem(`profile_pic_${user?.uid}`, compressedBase64)
+          await updateUserProfile(name, compressedBase64) // updates local zustand store even if firebase fails
+          addToast('Foto de perfil salva localmente!', 'success')
+        } finally {
+          setIsSavingProfile(false)
+        }
       }
+      img.src = event.target?.result as string
     }
     reader.readAsDataURL(file)
   }
