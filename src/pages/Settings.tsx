@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { User, Shield, Moon, Globe, Key, Webhook } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { User, Shield, Moon, Globe, Key, Webhook, Camera } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -7,14 +7,94 @@ import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
 
 export const Settings = () => {
-  const { user } = useAuthStore()
+  const { user, updateUserProfile, updateUserPassword } = useAuthStore()
   const { addToast } = useToastStore()
+  
+  // Profile state
+  const [name, setName] = useState(user?.name || '')
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Password state
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isSavingPassword, setIsSavingPassword] = useState(false)
+
+  // API state
   const [isApiModalOpen, setIsApiModalOpen] = useState(false)
   const [apiKey, setApiKey] = useState('')
 
   const handleSaveApi = () => {
     addToast('Configuração salva com sucesso!', 'success')
     setIsApiModalOpen(false)
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+      addToast('Por favor, selecione uma imagem válida.', 'error')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = async (event) => {
+      const base64String = event.target?.result as string
+      try {
+        setIsSavingProfile(true)
+        await updateUserProfile(name, base64String)
+        addToast('Foto de perfil atualizada!', 'success')
+      } catch (error) {
+        console.error(error)
+        addToast('Erro ao atualizar foto.', 'error')
+      } finally {
+        setIsSavingProfile(false)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsSavingProfile(true)
+      await updateUserProfile(name, user?.photoURL || undefined)
+      addToast('Perfil atualizado com sucesso!', 'success')
+    } catch (error) {
+      console.error(error)
+      addToast('Erro ao atualizar perfil.', 'error')
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
+
+  const handleSavePassword = async () => {
+    if (password !== confirmPassword) {
+      addToast('As senhas não coincidem.', 'error')
+      return
+    }
+    if (password.length < 6) {
+      addToast('A senha deve ter no mínimo 6 caracteres.', 'info')
+      return
+    }
+
+    try {
+      setIsSavingPassword(true)
+      await updateUserPassword(password)
+      addToast('Senha atualizada com sucesso!', 'success')
+      setPassword('')
+      setConfirmPassword('')
+    } catch (error: any) {
+      console.error(error)
+      if (error.code === 'auth/requires-recent-login') {
+        addToast('Você precisa fazer login novamente para alterar a senha.', 'error')
+      } else {
+        addToast('Erro ao atualizar senha.', 'error')
+      }
+    } finally {
+      setIsSavingPassword(false)
+    }
   }
 
   return (
@@ -28,18 +108,56 @@ export const Settings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primaryLight flex items-center justify-center text-2xl text-white font-bold">
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handlePhotoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              {user?.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt="Profile" 
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primaryLight flex items-center justify-center text-2xl text-white font-bold border-2 border-transparent">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Camera className="w-5 h-5 text-white" />
+              </div>
             </div>
             <div>
               <p className="font-bold text-lg">{user?.name || 'Usuário'}</p>
               <p className="text-textSecondary">{user?.email || 'email@exemplo.com'}</p>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="text-xs text-primary hover:underline mt-1"
+                disabled={isSavingProfile}
+              >
+                Trocar foto de perfil
+              </button>
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Nome completo" defaultValue={user?.name || ''} disabled />
-            <Input label="E-mail" defaultValue={user?.email || ''} disabled />
+            <Input 
+              label="Nome completo" 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+            />
+            <Input 
+              label="E-mail" 
+              value={user?.email || ''} 
+              disabled 
+            />
           </div>
+          <Button onClick={handleSaveProfile} disabled={isSavingProfile || name === user?.name}>
+            {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -72,15 +190,33 @@ export const Settings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Nova senha" type="password" placeholder="••••••••" />
-            <Input label="Confirmar nova senha" type="password" placeholder="••••••••" />
+            <Input 
+              label="Nova senha" 
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <Input 
+              label="Confirmar nova senha" 
+              type="password" 
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
           </div>
-          <Button variant="secondary">Alterar senha</Button>
+          <Button 
+            variant="secondary" 
+            onClick={handleSavePassword}
+            disabled={isSavingPassword || !password || !confirmPassword}
+          >
+            {isSavingPassword ? 'Atualizando...' : 'Alterar senha'}
+          </Button>
           
           <div className="mt-6 pt-6 border-t border-border">
             <h4 className="text-sm font-medium text-white mb-2">Sessão atual</h4>
             <p className="text-xs text-textSecondary">
-              IP: 192.168.0.1 • Localização: Desconhecida • Último acesso: Agora
+              Protegido pela segurança do Firebase Auth
             </p>
           </div>
         </CardContent>

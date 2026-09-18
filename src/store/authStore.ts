@@ -1,14 +1,23 @@
 import { create } from 'zustand'
 import { auth } from '@/config/firebase'
-import { signOut, onAuthStateChanged, User } from 'firebase/auth'
+import { signOut, onAuthStateChanged, User, updateProfile, updatePassword as updateFirebasePassword } from 'firebase/auth'
+
+interface AuthUser {
+  name: string
+  email: string
+  uid: string
+  photoURL?: string | null
+}
 
 interface AuthState {
-  user: { name: string; email: string; uid: string } | null
+  user: AuthUser | null
   isAuthenticated: boolean
   isLoading: boolean
-  setUser: (user: { name: string; email: string; uid: string } | null) => void
+  setUser: (user: AuthUser | null) => void
   logout: () => Promise<void>
   initAuthListener: () => void
+  updateUserProfile: (name: string, photoURL?: string) => Promise<void>
+  updateUserPassword: (newPassword: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -27,7 +36,8 @@ export const useAuthStore = create<AuthState>((set) => ({
           user: {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User'
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            photoURL: firebaseUser.photoURL
           },
           isAuthenticated: true,
           isLoading: false
@@ -36,5 +46,28 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user: null, isAuthenticated: false, isLoading: false })
       }
     })
+  },
+  updateUserProfile: async (name, photoURL) => {
+    const currentUser = auth.currentUser
+    if (currentUser) {
+      await updateProfile(currentUser, { 
+        displayName: name,
+        ...(photoURL !== undefined && { photoURL })
+      })
+      
+      set((state) => ({
+        user: state.user ? { 
+          ...state.user, 
+          name: name || state.user.name,
+          photoURL: photoURL !== undefined ? photoURL : state.user.photoURL
+        } : null
+      }))
+    }
+  },
+  updateUserPassword: async (newPassword) => {
+    const currentUser = auth.currentUser
+    if (currentUser) {
+      await updateFirebasePassword(currentUser, newPassword)
+    }
   }
 }))
