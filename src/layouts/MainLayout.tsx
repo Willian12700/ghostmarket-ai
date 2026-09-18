@@ -77,7 +77,7 @@ export const MainLayout = () => {
           <Button size="lg" onClick={() => window.location.href = '/'}>
             Ver Planos
           </Button>
-          <Button size="lg" variant="outline" onClick={() => window.location.reload()}>
+          <Button size="lg" variant="secondary" onClick={() => window.location.reload()}>
             Atualizar Página
           </Button>
         </div>
