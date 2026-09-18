@@ -17,7 +17,8 @@ import { APIProvider } from '@vis.gl/react-google-maps'
 
 function App() {
   const { initAuthListener, isLoading } = useAuthStore()
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'DEMO_MAP_ID'
+  // Usando a chave diretamente para não depender de bugs do Windows com arquivos .env
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
 
   useEffect(() => {
     initAuthListener()
@@ -33,7 +34,12 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <APIProvider apiKey={apiKey === 'DEMO_MAP_ID' ? '' : apiKey} version="beta">
+      <APIProvider 
+        apiKey={apiKey === 'DEMO_MAP_ID' ? '' : apiKey} 
+        version="beta"
+        language="pt-BR"
+        region="BR"
+      >
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />

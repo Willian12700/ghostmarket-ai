@@ -77,7 +77,6 @@ export const Scanner = () => {
       const request = {
         textQuery: query,
         fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI'],
-        language: 'pt-BR',
         maxResultCount: 20
       };
       
@@ -120,9 +119,17 @@ export const Scanner = () => {
       });
 
       setLeads(realLeads);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar leads reais no Google Maps:", error);
-      setLeads([]);
+      setLeads([{
+        id: 'error',
+        name: `Erro: ${error.message || String(error)}`,
+        category: 'Erro',
+        city: selectedCity,
+        phone: '',
+        instagram: '',
+        status: 'Novo'
+      }]);
     } finally {
       setIsScanning(false)
     }
