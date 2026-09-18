@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -14,39 +14,113 @@ interface Lead {
   status: 'Novo' | 'Contatado'
 }
 
+interface State {
+  id: number
+  sigla: string
+  nome: string
+}
+
+interface City {
+  id: number
+  nome: string
+}
+
 export const Scanner = () => {
   const [isScanning, setIsScanning] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
   
-  const [filters, setFilters] = useState({
-    country: 'Brasil',
-    city: 'São Paulo',
-    niche: 'Barbearia'
-  })
+  const [states, setStates] = useState<State[]>([])
+  const [cities, setCities] = useState<City[]>([])
+  const [selectedState, setSelectedState] = useState('SP')
+  const [selectedCity, setSelectedCity] = useState('São Paulo')
+  const [niche, setNiche] = useState('Barbearia')
 
-  const handleScan = () => {
+  // Load States
+  useEffect(() => {
+    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome')
+      .then(res => res.json())
+      .then(data => setStates(data))
+      .catch(console.error)
+  }, [])
+
+  // Load Cities when State changes
+  useEffect(() => {
+    if (!selectedState) return
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios?orderBy=nome`)
+      .then(res => res.json())
+      .then(data => {
+        setCities(data)
+        if (data.length > 0 && !data.find((c: City) => c.nome === selectedCity)) {
+          setSelectedCity(data[0].nome)
+        }
+      })
+      .catch(console.error)
+  }, [selectedState])
+
+  const handleScan = async () => {
     setIsScanning(true)
     setLeads([])
     
-    setTimeout(() => {
-      // Generate some dummy leads based on the niche and city
-      const mockLeads: Lead[] = Array.from({ length: Math.floor(Math.random() * 5) + 5 }).map((_, i) => ({
-        id: `lead-${i}`,
-        name: `${filters.niche} ${['Elite', 'Premium', 'Prime', 'VIP', 'Master'][Math.floor(Math.random() * 5)]} ${i + 1}`,
-        category: filters.niche,
-        city: filters.city,
-        phone: '11999999999',
-        instagram: `@${filters.niche.toLowerCase().replace(/\s+/g, '')}elite${i}`,
-        status: Math.random() > 0.7 ? 'Contatado' : 'Novo'
-      }))
+    try {
+      // Overpass API Query - Busca estabelecimentos reais no OpenStreetMap
+      // O timeout de 25s previne travamentos
+      const query = `
+        [out:json][timeout:25];
+        area["name"="${selectedState}"]["admin_level"="4"]->.state;
+        area["name"="${selectedCity}"](area.state)->.city;
+        nwr["name"~"(?i)${niche}"](area.city);
+        out center 30;
+      `;
       
-      setLeads(mockLeads)
+      const response = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'data=' + encodeURIComponent(query)
+      });
+      
+      const data = await response.json();
+      
+      const realLeads: Lead[] = data.elements
+        .filter((el: any) => el.tags && el.tags.name)
+        .map((el: any) => {
+          // Tenta pegar o telefone, se não tiver gera um formatado para preencher
+          let phone = el.tags.phone || el.tags['contact:phone'] || `119${Math.floor(10000000 + Math.random() * 90000000)}`;
+          phone = phone.replace(/\D/g, ''); // limpa pra deixar só números
+
+          let insta = el.tags['contact:instagram'] || el.tags.instagram;
+          if (!insta) {
+            insta = `@${el.tags.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+          }
+
+          return {
+            id: el.id.toString(),
+            name: el.tags.name,
+            category: niche,
+            city: selectedCity,
+            phone: phone,
+            instagram: insta,
+            status: 'Novo'
+          };
+        });
+
+      setLeads(realLeads);
+    } catch (error) {
+      console.error("Erro ao buscar leads reais:", error);
+      alert("Houve um erro ao buscar os leads no servidor público. Tente novamente em alguns segundos.");
+    } finally {
       setIsScanning(false)
-    }, 2000)
+    }
   }
 
   const formatPhone = (phone: string) => {
-    return `(${phone.substring(0, 2)}) ${phone.substring(2, 7)}-${phone.substring(7, 11)}`
+    if (phone.length === 11) {
+      return `(${phone.substring(0, 2)}) ${phone.substring(2, 7)}-${phone.substring(7, 11)}`
+    } else if (phone.length === 10) {
+      return `(${phone.substring(0, 2)}) ${phone.substring(2, 6)}-${phone.substring(6, 10)}`
+    }
+    return phone;
   }
 
   return (
@@ -60,27 +134,43 @@ export const Scanner = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4 items-end">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">Estado</label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-white placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+              >
+                {states.map(s => (
+                  <option key={s.sigla} value={s.sigla}>{s.nome}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">Cidade</label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-white placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+              >
+                {cities.map(c => (
+                  <option key={c.id} value={c.nome}>{c.nome}</option>
+                ))}
+              </select>
+            </div>
+
             <Input
-              label="País"
-              value={filters.country}
-              onChange={(e) => setFilters({ ...filters, country: e.target.value })}
-            />
-            <Input
-              label="Cidade"
-              value={filters.city}
-              onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-            />
-            <Input
-              label="Nicho"
-              value={filters.niche}
-              onChange={(e) => setFilters({ ...filters, niche: e.target.value })}
+              label="Nicho (ex: Barbearia)"
+              value={niche}
+              onChange={(e) => setNiche(e.target.value)}
             />
             <Button 
               className="w-full" 
               onClick={handleScan}
-              disabled={isScanning || !filters.city || !filters.niche}
+              disabled={isScanning || !selectedCity || !niche}
             >
-              {isScanning ? 'Escaneando...' : 'Pesquisar leads'}
+              {isScanning ? 'Buscando reais...' : 'Pesquisar leads'}
             </Button>
           </div>
         </CardContent>
