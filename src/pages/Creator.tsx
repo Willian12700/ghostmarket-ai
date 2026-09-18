@@ -1,236 +1,157 @@
 import { useState } from 'react'
-import { Copy, Wand2, Check } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Wand2, Copy, Check, MessageSquare } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
 
 export const Creator = () => {
   const { addToast } = useToastStore()
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedPrompt, setGeneratedPrompt] = useState('')
-  const [copied, setCopied] = useState(false)
   
   const [formData, setFormData] = useState({
-    projectName: '',
+    clientName: '',
     niche: '',
-    description: '',
-    targetAudience: '',
-    features: {
-      auth: false,
-      dashboard: false,
-      crm: false,
-      payments: false,
-      leads: false,
-      analytics: false,
-      notifications: false,
-      adminPanel: false,
-      aiIntegration: false,
-      api: false,
-    },
-    design: 'Dark SaaS',
-    tech: 'React'
+    product: '',
+    offer: '',
+    tone: 'Persuasivo'
   })
 
-  const handleFeatureToggle = (feature: keyof typeof formData.features) => {
-    setFormData(prev => ({
-      ...prev,
-      features: {
-        ...prev.features,
-        [feature]: !prev.features[feature]
-      }
-    }))
-  }
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedScript, setGeneratedScript] = useState('')
+  const [copied, setCopied] = useState(false)
 
-  const generatePrompt = () => {
+  const generateScript = () => {
     setIsGenerating(true)
+    
     setTimeout(() => {
-      const activeFeatures = Object.entries(formData.features)
-        .filter(([_, isActive]) => isActive)
-        .map(([key]) => key)
-        .join(', ')
+      const { clientName, niche, product, offer, tone } = formData
+      
+      const firstName = clientName ? clientName.split(' ')[0] : 'Empreendedor'
+      const nicheText = niche ? niche.toLowerCase() : 'negócio'
+      
+      let script = ''
 
-      const prompt = `# SYSTEM PROMPT - PROJETO ${formData.projectName.toUpperCase() || 'SAAS'}
+      if (tone === 'Persuasivo') {
+        script = `Fala ${firstName}, tudo bem?\n\nEstava analisando algumas empresas do setor de ${nicheText} aqui na região e o perfil de vocês me chamou muita atenção. Percebi um detalhe na estratégia de vocês que está deixando muito dinheiro na mesa.\n\nNós ajudamos empresas exatamente como a sua através de ${product || 'nossa solução'}, e o resultado costuma ser brutal na atração de novos clientes.\n\n${offer ? `Para você ter uma ideia, ${offer}.` : 'Temos uma estratégia pronta que eu gostaria de te apresentar.'}\n\nVocê teria 5 minutinhos amanhã à tarde para eu te mostrar como isso funcionaria no seu negócio, sem compromisso?`
+      } else if (tone === 'Direto') {
+        script = `Olá ${firstName}, vi que vocês têm um ${nicheText} de muito potencial.\n\nTrabalho com ${product || 'marketing e tecnologia'} e criei um plano de ação rápido que pode dobrar seus resultados nos próximos 30 dias.\n\n${offer ? `A nossa proposta é a seguinte: ${offer}.` : 'Se fizer sentido, podemos marcar uma call super rápida.'}\n\nComo está sua agenda para amanhã?`
+      } else if (tone === 'Amigável') {
+        script = `Opa ${firstName}, tudo joia?\n\nAcompanho o trabalho de vocês e acho fantástico o que estão construindo com o ${nicheText}! 🚀\n\nEu ajudo empresas do seu setor com ${product || 'estratégias de crescimento'} e lembrei de vocês na hora. ${offer ? `Nós estamos com uma oportunidade muito legal: ${offer}.` : 'Gostaria muito de trocar uma ideia rápida para te mostrar como podemos ajudar.'}\n\nFaz sentido batermos um papo rápido na semana que vem? Abraço!`
+      }
 
-Você é um Senior Software Engineer especializado em aplicações SaaS.
-Sua missão é desenvolver a aplicação descrita abaixo.
-
-## 1. OBJETIVO
-${formData.description || '[Descrição não informada]'}
-
-## 2. PÚBLICO-ALVO
-${formData.targetAudience || '[Público não informado]'}
-Nicho: ${formData.niche || '[Não informado]'}
-
-## 3. STACK
-Frontend: ${formData.tech}
-Styling: Tailwind CSS
-Estado: Zustand ou Context API
-Ícones: Lucide React
-
-## 4. DESIGN SYSTEM
-Tema principal: ${formData.design}
-UI deve ser moderna, limpa e responsiva, com foco em usabilidade e conversão.
-Incluir estados de loading, estados vazios e tratamento de erros visuais (Error Boundaries).
-
-## 5. FUNCIONALIDADES SOLICITADAS
-${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.'}
-
-## 6. REGRAS DE IMPLEMENTAÇÃO
-- Criar componentes reutilizáveis.
-- O código deve ser modular e tipado (TypeScript).
-- Prever fluxos de tratamento de erro para APIs.
-- Evitar prop-drilling excessivo.
-- Todas as páginas devem ter responsividade para Mobile, Tablet e Desktop.
-
-## 7. CRITÉRIOS DE CONCLUSÃO
-- A aplicação deve renderizar sem telas pretas.
-- Navegação fluida entre rotas.
-- Formulários devem possuir validação mínima.
-- Design alinhado com o tema ${formData.design}.
-`
-      setGeneratedPrompt(prompt)
+      setGeneratedScript(script)
       setIsGenerating(false)
-      addToast('Prompt gerado com sucesso!', 'success')
-    }, 1500)
+      addToast('Script gerado com sucesso!', 'success')
+    }, 1200)
   }
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedPrompt)
+    navigator.clipboard.writeText(generatedScript)
     setCopied(true)
-    addToast('Prompt copiado!', 'success')
+    addToast('Script copiado!', 'success')
     setTimeout(() => setCopied(false), 2000)
   }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Creator IA - Scripts de Venda</h2>
+        <p className="text-textSecondary">Gere mensagens de WhatsApp de alta conversão para seus leads.</p>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 1 — Projeto</CardTitle>
+              <CardTitle className="text-lg">Dados do Lead</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Input
-                label="Nome do projeto"
-                value={formData.projectName}
-                onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
+                label="Nome do Lead (Opcional)"
+                placeholder="Ex: João, Barbearia X"
+                value={formData.clientName}
+                onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
               />
               <Input
-                label="Nicho"
+                label="Nicho de Mercado"
+                placeholder="Ex: Restaurante, Clínica, Loja de Roupas"
                 value={formData.niche}
                 onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
-              />
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary">Descrição</label>
-                <textarea
-                  className="flex min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-textSecondary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <Input
-                label="Público-alvo"
-                value={formData.targetAudience}
-                onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
               />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 2 — Recursos</CardTitle>
+              <CardTitle className="text-lg">Sua Oferta</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                {Object.keys(formData.features).map((feature) => (
-                  <label key={feature} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-border bg-background text-primary focus:ring-primary"
-                      checked={formData.features[feature as keyof typeof formData.features]}
-                      onChange={() => handleFeatureToggle(feature as keyof typeof formData.features)}
-                    />
-                    <span className="text-sm text-textPrimary capitalize">
-                      {feature.replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                  </label>
-                ))}
+            <CardContent className="space-y-4">
+              <Input
+                label="O que você vende?"
+                placeholder="Ex: Gestão de Tráfego, Automação IA, Site"
+                value={formData.product}
+                onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+              />
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-textSecondary">A Oferta Irresistível</label>
+                <textarea
+                  className="flex min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-textSecondary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                  placeholder="Ex: Vou criar seu site de graça e você só paga a hospedagem"
+                  value={formData.offer}
+                  onChange={(e) => setFormData({ ...formData, offer: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-textSecondary">Tom da Mensagem</label>
+                <select
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  value={formData.tone}
+                  onChange={(e) => setFormData({ ...formData, tone: e.target.value })}
+                >
+                  <option value="Persuasivo">Persuasivo & Gatilhos Mentais</option>
+                  <option value="Direto">Direto ao Ponto</option>
+                  <option value="Amigável">Amigável & Relacional</option>
+                </select>
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 3 — Design</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  value={formData.design}
-                  onChange={(e) => setFormData({ ...formData, design: e.target.value })}
-                >
-                  <option>Dark SaaS</option>
-                  <option>Cyberpunk</option>
-                  <option>Minimalista</option>
-                  <option>Premium</option>
-                  <option>Corporativo</option>
-                </select>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 4 — Tecnologia</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  value={formData.tech}
-                  onChange={(e) => setFormData({ ...formData, tech: e.target.value })}
-                >
-                  <option>React</option>
-                  <option>Next.js</option>
-                  <option>Vite</option>
-                </select>
-              </CardContent>
-            </Card>
-          </div>
-
           <Button 
             className="w-full" 
             size="lg" 
-            onClick={generatePrompt}
-            isLoading={isGenerating}
+            onClick={generateScript}
+            disabled={isGenerating || !formData.niche}
           >
-            <Wand2 className="w-5 h-5 mr-2" />
-            Gerar System Prompt
+            {isGenerating ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <><Wand2 className="w-5 h-5 mr-2" /> Gerar Script Perfeito</>
+            )}
           </Button>
         </div>
 
         <div className="h-full">
           <Card className="h-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Resultado</CardTitle>
-              {generatedPrompt && (
+              <CardTitle className="text-lg">Mensagem Gerada</CardTitle>
+              {generatedScript && (
                 <Button variant="secondary" size="sm" onClick={copyToClipboard}>
                   {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                  {copied ? 'Copiado!' : 'Copiar prompt'}
+                  {copied ? 'Copiado!' : 'Copiar'}
                 </Button>
               )}
             </CardHeader>
             <CardContent className="flex-1">
-              {generatedPrompt ? (
-                <div className="bg-background rounded-lg border border-border p-4 h-full min-h-[400px] overflow-auto">
-                  <pre className="text-sm text-textSecondary whitespace-pre-wrap font-mono">
-                    {generatedPrompt}
+              {generatedScript ? (
+                <div className="bg-panelHover rounded-lg border border-border p-5 h-full min-h-[400px] overflow-auto">
+                  <pre className="text-[15px] leading-relaxed text-textPrimary whitespace-pre-wrap font-sans">
+                    {generatedScript}
                   </pre>
                 </div>
               ) : (
                 <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-textSecondary border-2 border-dashed border-border rounded-lg bg-background/50">
-                  <Wand2 className="w-12 h-12 mb-4 text-borderHover" />
-                  <p>Preencha os dados e clique em gerar.</p>
+                  <MessageSquare className="w-12 h-12 mb-4 text-borderHover" />
+                  <p className="text-center px-4">Preencha o nicho e sua oferta para a IA escrever a mensagem de WhatsApp perfeita.</p>
                 </div>
               )}
             </CardContent>

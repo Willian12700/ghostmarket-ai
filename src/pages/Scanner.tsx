@@ -144,11 +144,40 @@ export const Scanner = () => {
     return phone;
   }
 
+  const exportToCSV = () => {
+    if (leads.length === 0) return;
+    
+    // Header
+    let csvContent = "Nome,Categoria,Cidade,Telefone,Instagram\n";
+    
+    // Rows
+    leads.forEach(lead => {
+      // Remover aspas duplas caso existam no nome para não quebrar o CSV
+      const name = lead.name.replace(/"/g, '""');
+      csvContent += `"${name}","${lead.category}","${lead.city}","${lead.phone}","${lead.instagram}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `leads_${niche}_${selectedCity}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Scanner de Leads</h2>
+        <p className="text-textSecondary">Encontre oportunidades comerciais por localização e nicho.</p>
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Filter className="w-5 h-5 text-primary" />
             Filtros de Busca
           </CardTitle>
@@ -156,43 +185,66 @@ export const Scanner = () => {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4 items-end">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Estado</label>
+              <label className="text-sm font-medium text-textSecondary">Estado</label>
               <select 
-                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-white placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
               >
-                {states.map(s => (
-                  <option key={s.sigla} value={s.sigla}>{s.nome}</option>
+                {states.map(state => (
+                  <option key={state.id} value={state.sigla}>{state.nome}</option>
                 ))}
               </select>
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">Cidade</label>
+              <label className="text-sm font-medium text-textSecondary">Cidade</label>
               <select 
-                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-white placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
+                disabled={cities.length === 0}
               >
-                {cities.map(c => (
-                  <option key={c.id} value={c.nome}>{c.nome}</option>
+                {cities.map(city => (
+                  <option key={city.id} value={city.nome}>{city.nome}</option>
                 ))}
               </select>
             </div>
 
-            <Input
-              label="Nicho (ex: Barbearia)"
-              value={niche}
-              onChange={(e) => setNiche(e.target.value)}
-            />
-            <Button 
-              className="w-full" 
-              onClick={handleScan}
-              disabled={isScanning || !selectedCity || !niche}
-            >
-              {isScanning ? 'Buscando reais...' : 'Pesquisar leads'}
-            </Button>
+            <div className="space-y-2">
+              <Input 
+                label="Nicho (ex: Barbearia)"
+                placeholder="Ex: Restaurante"
+                value={niche}
+                onChange={(e) => setNiche(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                className="flex-1" 
+                onClick={handleScan}
+                disabled={isScanning || !niche || !selectedCity}
+              >
+                {isScanning ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  'Pesquisar leads'
+                )}
+              </Button>
+              
+              {leads.length > 0 && leads[0].id !== 'error' && (
+                <Button 
+                  variant="secondary" 
+                  onClick={exportToCSV}
+                  title="Exportar para Excel (CSV)"
+                  className="px-3"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

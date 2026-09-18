@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export type CRMStatus = 'Lead' | 'Contato' | 'Proposta' | 'Fechado'
+
 export interface Contract {
   id: string
   client: string
   amount: number
   date: string
-  status: 'Ativo' | 'Finalizado'
+  status: CRMStatus
 }
 
 interface ContractState {
@@ -34,7 +36,7 @@ export const useContractStore = create<ContractState>()(
       }))
     }),
     {
-      name: 'ghostmarket-contracts-v2',
+      name: 'ghostmarket-crm-v1',
     }
   )
 )

@@ -22,7 +22,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
     { to: '/creator', icon: Wand2, label: 'Creator IA' },
     { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
-    { to: '/contracts', icon: FileText, label: 'Contratos' },
+    { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
     { to: '/integrations', icon: Settings, label: 'Integração API' },
   ]
 
