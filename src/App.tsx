@@ -13,8 +13,11 @@ import { Integrations } from '@/pages/Integrations'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { useAuthStore } from '@/store/authStore'
 
+import { APIProvider } from '@vis.gl/react-google-maps'
+
 function App() {
   const { initAuthListener, isLoading } = useAuthStore()
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'DEMO_MAP_ID'
 
   useEffect(() => {
     initAuthListener()
@@ -30,24 +33,26 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/creator" element={<Creator />} />
-            <Route path="/scanner" element={<Scanner />} />
-            <Route path="/contracts" element={<Contracts />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/integrations" element={<Integrations />} />
-          </Route>
+      <APIProvider apiKey={apiKey === 'DEMO_MAP_ID' ? '' : apiKey} version="beta">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            <Route element={<MainLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/creator" element={<Creator />} />
+              <Route path="/scanner" element={<Scanner />} />
+              <Route path="/contracts" element={<Contracts />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/integrations" element={<Integrations />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </APIProvider>
     </ErrorBoundary>
   )
 }

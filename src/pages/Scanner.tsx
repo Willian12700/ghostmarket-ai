@@ -3,6 +3,7 @@ import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert } from 'lucide-r
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useMapsLibrary } from '@vis.gl/react-google-maps'
 
 interface Lead {
   id: string
@@ -34,6 +35,8 @@ export const Scanner = () => {
   const [selectedState, setSelectedState] = useState('SP')
   const [selectedCity, setSelectedCity] = useState('São Paulo')
   const [niche, setNiche] = useState('Barbearia')
+  
+  const placesLib = useMapsLibrary('places')
 
   // Load States
   useEffect(() => {
@@ -58,44 +61,59 @@ export const Scanner = () => {
   }, [selectedState])
 
   const handleScan = async () => {
+    if (!placesLib) {
+      alert("A API do Google Maps ainda está carregando ou ocorreu um erro.");
+      return;
+    }
+    
     setIsScanning(true)
     setLeads([])
     
     try {
-      // Nominatim API - Mais rápido e eficiente para buscas em texto do que o Overpass
-      const query = `${niche}, ${selectedCity}, ${selectedState}`;
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=30&extratags=1&addressdetails=1`;
+      const { Place } = placesLib;
       
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Accept-Language': 'pt-BR'
-        }
-      });
+      const query = `${niche} em ${selectedCity}, ${selectedState}, Brasil`;
       
-      if (!response.ok) {
-        throw new Error('Erro HTTP: ' + response.status);
+      const request = {
+        textQuery: query,
+        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI'],
+        language: 'pt-BR',
+        maxResultCount: 20
+      };
+      
+      const { places } = await Place.searchByText(request);
+      
+      if (!places || places.length === 0) {
+        setLeads([]);
+        setIsScanning(false);
+        return;
       }
-
-      const data = await response.json();
       
-      const realLeads: Lead[] = data.map((el: any) => {
-        const extratags = el.extratags || {};
-        
-        let phone = extratags.phone || extratags['contact:phone'] || ('119' + Math.floor(10000000 + Math.random() * 90000000));
+      const realLeads: Lead[] = places.map((place: any) => {
+        // Formatar o telefone do Google
+        let phone = place.nationalPhoneNumber || '';
         phone = String(phone).replace(/\D/g, ''); 
-
-        let insta = extratags['contact:instagram'] || extratags.instagram;
+        
+        // Se a empresa não tiver telefone público no Google, deixamos vazio
+        // Opcional: tentar pegar instagram do websiteURI
+        let insta = '';
+        if (place.websiteURI && place.websiteURI.includes('instagram.com/')) {
+          const match = place.websiteURI.match(/instagram\.com\/([^\/]+)/);
+          if (match && match[1]) {
+            insta = '@' + match[1].split('?')[0];
+          }
+        }
+        
         if (!insta) {
-          insta = '@' + (el.name || niche).toLowerCase().replace(/[^a-z0-9]/g, '');
+          insta = '@' + (place.displayName || niche).toLowerCase().replace(/[^a-z0-9]/g, '');
         }
 
         return {
-          id: el.place_id.toString(),
-          name: el.name || niche,
+          id: place.id,
+          name: place.displayName || niche,
           category: niche,
           city: selectedCity,
-          phone: phone,
+          phone: phone, // Agora é real!
           instagram: insta,
           status: 'Novo'
         };
@@ -103,7 +121,7 @@ export const Scanner = () => {
 
       setLeads(realLeads);
     } catch (error) {
-      console.error("Erro ao buscar leads reais:", error);
+      console.error("Erro ao buscar leads reais no Google Maps:", error);
       setLeads([]);
     } finally {
       setIsScanning(false)
@@ -207,35 +225,48 @@ export const Scanner = () => {
                   </div>
                   <div className="flex items-center text-sm text-textSecondary">
                     <Phone className="w-4 h-4 mr-2" />
-                    {formatPhone(lead.phone)}
+                    {lead.phone ? formatPhone(lead.phone) : 'Não informado'}
                   </div>
                   <div className="flex items-center text-sm text-textSecondary">
                     <Smartphone className="w-4 h-4 mr-2" />
-                    {lead.instagram}
+                    {lead.instagram || 'Não informado'}
                   </div>
                 </div>
 
                 <div className="flex gap-2">
-                  <a 
-                    href={`https://wa.me/55${lead.phone}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex-1"
-                  >
-                    <Button variant="secondary" className="w-full bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
-                      WhatsApp
+                  {lead.phone ? (
+                    <a 
+                      href={`https://wa.me/55${lead.phone}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                    >
+                      <Button variant="secondary" className="w-full bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
+                        WhatsApp
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button variant="secondary" disabled className="flex-1 opacity-50 bg-[#25D366]/5 text-[#25D366] border-[#25D366]/10">
+                      Sem Telefone
                     </Button>
-                  </a>
-                  <a 
-                    href={`https://instagram.com/${lead.instagram.replace('@', '')}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex-1"
-                  >
-                    <Button variant="secondary" className="w-full bg-[#E1306C]/10 text-[#E1306C] hover:bg-[#E1306C]/20 border-[#E1306C]/20">
-                      Instagram
+                  )}
+                  
+                  {lead.instagram ? (
+                    <a 
+                      href={`https://instagram.com/${lead.instagram.replace('@', '')}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                    >
+                      <Button variant="secondary" className="w-full bg-[#E1306C]/10 text-[#E1306C] hover:bg-[#E1306C]/20 border-[#E1306C]/20">
+                        Instagram
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button variant="secondary" disabled className="flex-1 opacity-50 bg-[#E1306C]/5 text-[#E1306C] border-[#E1306C]/10">
+                      Sem Instagram
                     </Button>
-                  </a>
+                  )}
                 </div>
               </CardContent>
             </Card>
