@@ -62,15 +62,16 @@ export const Scanner = () => {
     setLeads([])
     
     try {
-      const query = '[out:json][timeout:25];' +
-        'area["ISO3166-2"="BR-' + selectedState + '"]->.state;' +
-        'area["name"="' + selectedCity + '"](area.state)->.city;' +
-        'nwr["name"~"' + niche + '", i](area.city);' +
-        'out center 30;';
+      // Nominatim API - Mais rápido e eficiente para buscas em texto do que o Overpass
+      const query = `${niche}, ${selectedCity}, ${selectedState}`;
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=30&extratags=1&addressdetails=1`;
       
-      const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
-      
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Language': 'pt-BR'
+        }
+      });
       
       if (!response.ok) {
         throw new Error('Erro HTTP: ' + response.status);
@@ -78,27 +79,27 @@ export const Scanner = () => {
 
       const data = await response.json();
       
-      const realLeads: Lead[] = (data.elements || [])
-        .filter((el: any) => el.tags && el.tags.name)
-        .map((el: any) => {
-          let phone = el.tags.phone || el.tags['contact:phone'] || ('119' + Math.floor(10000000 + Math.random() * 90000000));
-          phone = String(phone).replace(/\D/g, ''); 
+      const realLeads: Lead[] = data.map((el: any) => {
+        const extratags = el.extratags || {};
+        
+        let phone = extratags.phone || extratags['contact:phone'] || ('119' + Math.floor(10000000 + Math.random() * 90000000));
+        phone = String(phone).replace(/\D/g, ''); 
 
-          let insta = el.tags['contact:instagram'] || el.tags.instagram;
-          if (!insta) {
-            insta = '@' + el.tags.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          }
+        let insta = extratags['contact:instagram'] || extratags.instagram;
+        if (!insta) {
+          insta = '@' + (el.name || niche).toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
 
-          return {
-            id: el.id.toString(),
-            name: el.tags.name,
-            category: niche,
-            city: selectedCity,
-            phone: phone,
-            instagram: insta,
-            status: 'Novo'
-          };
-        });
+        return {
+          id: el.place_id.toString(),
+          name: el.name || niche,
+          category: niche,
+          city: selectedCity,
+          phone: phone,
+          instagram: insta,
+          status: 'Novo'
+        };
+      });
 
       setLeads(realLeads);
     } catch (error) {
