@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
     // A Cakto envia "purchase_approved" para compras aprovadas
     if (eventType === 'purchase_approved' || eventType === 'approved' || eventType === 'paid') {
-      // Create a record in Firestore allowing this user to register
+      // 1. Libera o acesso para o cliente (lead) usar o SaaS
       await db.collection('allowed_users').doc(customerEmail).set({
         email: customerEmail,
         status: 'approved',
@@ -48,7 +48,22 @@ export default async function handler(req, res) {
         used: false,
       });
 
-      return res.status(200).json({ success: true, message: 'User allowed' });
+      // 2. Salva a venda para aparecer no SEU gráfico de Admin
+      const amount = payload?.data?.transaction?.amount || payload?.data?.amount || 0;
+      const clientName = payload?.data?.customer?.name || payload?.customer?.name || "Novo Cliente (SaaS)";
+      
+      await db.collection('transactions').add({
+        userId: 'willrandrier@gmail.com', // ID do dono do SaaS
+        clientName: clientName,
+        clientEmail: customerEmail,
+        amount: Number(amount),
+        status: 'Aprovado',
+        date: new Date().toLocaleDateString('pt-BR'),
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        source: 'Assinatura SaaS'
+      });
+
+      return res.status(200).json({ success: true, message: 'User allowed and transaction saved' });
     }
 
     return res.status(200).json({ success: true, message: 'Ignored non-approved status' });

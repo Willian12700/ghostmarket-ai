@@ -1,13 +1,55 @@
-import { useState } from 'react'
-import { DollarSign, Briefcase, Users, TrendingUp, CreditCard, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { DollarSign, Briefcase, Users, CreditCard, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { useDashboardStore } from '@/store/dashboardStore'
+import { useDashboardStore, Transaction } from '@/store/dashboardStore'
+import { useAuthStore } from '@/store/authStore'
+import { db } from '@/config/firebase'
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 
 export const Dashboard = () => {
   const { totalRevenue, activeProjects, capturedLeads, salesData, recentTransactions } = useDashboardStore()
+  const { user } = useAuthStore()
   const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
+
+  useEffect(() => {
+    if (!user?.email) return
+
+    // Busca transações em tempo real do Firebase onde o dono é o usuário atual
+    const q = query(
+      collection(db, 'transactions'),
+      where('userId', '==', user.email),
+      orderBy('timestamp', 'desc')
+    )
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const transactions: Transaction[] = []
+      let newTotalRevenue = 0
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data()
+        transactions.push({
+          id: doc.id,
+          clientName: data.clientName || 'Cliente',
+          amount: data.amount || 0,
+          status: data.status || 'Pendente',
+          date: data.date || new Date().toLocaleDateString('pt-BR')
+        })
+        
+        if (data.status === 'Aprovado') {
+          newTotalRevenue += (data.amount || 0)
+        }
+      })
+
+      // Atualiza o Zustand Store com os dados reais vindos do banco
+      useDashboardStore.setState({ 
+        recentTransactions: transactions,
+        totalRevenue: newTotalRevenue
+      })
+    })
+
+    return () => unsubscribe()
+  }, [user])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)

@@ -34,7 +34,7 @@ const initialSalesData = [
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
-    (set) => ({
+    () => ({
       totalRevenue: 0,
       activeProjects: 0,
       capturedLeads: 0,
