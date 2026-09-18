@@ -47,6 +47,8 @@ export const PromptBuilder = () => {
         .map(([key]) => key)
         .join(', ')
 
+      const isHtmlMode = formData.tech === 'HTML + CSS + JS'
+      
       const prompt = `# SYSTEM PROMPT - PROJETO ${formData.projectName.toUpperCase() || 'SAAS'}
 
 Você é um Senior Software Engineer especializado em aplicações SaaS.
@@ -61,9 +63,9 @@ Nicho: ${formData.niche || '[Não informado]'}
 
 ## 3. STACK
 Frontend: ${formData.tech}
-Styling: Tailwind CSS
-Estado: Zustand ou Context API
-Ícones: Lucide React
+Styling: ${isHtmlMode ? 'CSS Puro' : 'Tailwind CSS'}
+Estado: ${isHtmlMode ? 'Nenhum / Vanilla JS' : 'Zustand ou Context API'}
+Ícones: ${isHtmlMode ? 'FontAwesome ou SVG' : 'Lucide React'}
 
 ## 4. DESIGN SYSTEM
 Tema principal: ${formData.design}
@@ -145,19 +147,23 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
-                {Object.keys(formData.features).map((feature) => (
-                  <label key={feature} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-border bg-background text-primary focus:ring-primary"
-                      checked={formData.features[feature as keyof typeof formData.features]}
-                      onChange={() => handleFeatureToggle(feature as keyof typeof formData.features)}
-                    />
-                    <span className="text-sm text-textPrimary capitalize">
-                      {feature.replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                  </label>
-                ))}
+                {Object.keys(formData.features).map((feature) => {
+                  const isHtmlMode = formData.tech === 'HTML + CSS + JS'
+                  return (
+                    <label key={feature} className={`flex items-center space-x-2 ${isHtmlMode ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                      <input
+                        type="checkbox"
+                        className="rounded border-border bg-background text-primary focus:ring-primary disabled:opacity-50"
+                        checked={isHtmlMode ? false : formData.features[feature as keyof typeof formData.features]}
+                        disabled={isHtmlMode}
+                        onChange={() => handleFeatureToggle(feature as keyof typeof formData.features)}
+                      />
+                      <span className={`text-sm capitalize ${isHtmlMode ? 'text-textSecondary/50 line-through' : 'text-textPrimary'}`}>
+                        {feature.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </label>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -195,6 +201,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
                   <option>React</option>
                   <option>Next.js</option>
                   <option>Vite</option>
+                  <option>HTML + CSS + JS</option>
                 </select>
               </CardContent>
             </Card>
