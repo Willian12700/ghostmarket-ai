@@ -43,6 +43,7 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       name: 'ghostmarket-dashboard',
+      version: 1, // Invalidate old cache
     }
   )
 )
