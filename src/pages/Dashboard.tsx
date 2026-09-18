@@ -1,55 +1,47 @@
-import { useState, useEffect } from 'react'
-import { DollarSign, Briefcase, Users, CreditCard, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { DollarSign, Briefcase, Users, CreditCard, CheckCircle2, Clock } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { useDashboardStore, Transaction } from '@/store/dashboardStore'
-import { useAuthStore } from '@/store/authStore'
-import { db } from '@/config/firebase'
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { useContractStore } from '@/store/contractStore'
 
 export const Dashboard = () => {
-  const { totalRevenue, activeProjects, capturedLeads, salesData, recentTransactions } = useDashboardStore()
-  const { user } = useAuthStore()
+  const { contracts } = useContractStore()
   const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
 
-  useEffect(() => {
-    if (!user?.email) return
+  // Calcula estatísticas reais do CRM (Funil Kanban)
+  const totalRevenue = useMemo(() => {
+    return contracts
+      .filter(c => c.status === 'Fechado')
+      .reduce((acc, curr) => acc + curr.amount, 0)
+  }, [contracts])
 
-    // Busca transações em tempo real do Firebase onde o dono é o usuário atual
-    const q = query(
-      collection(db, 'transactions'),
-      where('userId', '==', user.email),
-      orderBy('timestamp', 'desc')
-    )
+  const activeProjects = useMemo(() => {
+    return contracts.filter(c => c.status === 'Proposta' || c.status === 'Contato').length
+  }, [contracts])
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const transactions: Transaction[] = []
-      let newTotalRevenue = 0
+  const capturedLeads = contracts.length
 
-      querySnapshot.forEach((doc) => {
-        const data = doc.data()
-        transactions.push({
-          id: doc.id,
-          clientName: data.clientName || 'Cliente',
-          amount: data.amount || 0,
-          status: data.status || 'Pendente',
-          date: data.date || new Date().toLocaleDateString('pt-BR')
-        })
-        
-        if (data.status === 'Aprovado') {
-          newTotalRevenue += (data.amount || 0)
-        }
-      })
+  // Transforma os contratos do CRM na lista de últimas transações
+  const recentTransactions = useMemo(() => {
+    return [...contracts].reverse().slice(0, 5).map(c => ({
+      id: c.id,
+      clientName: c.client,
+      amount: c.amount,
+      status: c.status === 'Fechado' ? 'Fechado' : 'Em Negociação',
+      date: c.date
+    }))
+  }, [contracts])
 
-      // Atualiza o Zustand Store com os dados reais vindos do banco
-      useDashboardStore.setState({ 
-        recentTransactions: transactions,
-        totalRevenue: newTotalRevenue
-      })
-    })
-
-    return () => unsubscribe()
-  }, [user])
+  // Mock de gráfico (para manter o visual bonito, já que não temos datas reais nos leads do kanban)
+  const salesData = [
+    { day: 'Seg', revenue: totalRevenue * 0.1 },
+    { day: 'Ter', revenue: totalRevenue * 0.2 },
+    { day: 'Qua', revenue: totalRevenue * 0.15 },
+    { day: 'Qui', revenue: totalRevenue * 0.4 },
+    { day: 'Sex', revenue: totalRevenue * 0.6 },
+    { day: 'Sáb', revenue: totalRevenue * 0.8 },
+    { day: 'Dom', revenue: totalRevenue }
+  ]
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -57,19 +49,15 @@ export const Dashboard = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Aprovado': return <CheckCircle2 className="w-4 h-4 text-success" />
-      case 'Pendente': return <Clock className="w-4 h-4 text-warning" />
-      case 'Cancelado': return <XCircle className="w-4 h-4 text-error" />
-      default: return null
+      case 'Fechado': return <CheckCircle2 className="w-4 h-4 text-success" />
+      default: return <Clock className="w-4 h-4 text-warning" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Aprovado': return 'text-success bg-success/10'
-      case 'Pendente': return 'text-warning bg-warning/10'
-      case 'Cancelado': return 'text-error bg-error/10'
-      default: return 'text-textSecondary bg-panel'
+      case 'Fechado': return 'text-success bg-success/10'
+      default: return 'text-warning bg-warning/10'
     }
   }
 
@@ -232,7 +220,7 @@ export const Dashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-white">{formatCurrency(tx.amount)}</p>
-                      <p className={`text-xs mt-0.5 ${tx.status === 'Aprovado' ? 'text-success' : tx.status === 'Cancelado' ? 'text-error' : 'text-warning'}`}>
+                      <p className={`text-xs mt-0.5 ${tx.status === 'Fechado' ? 'text-success' : 'text-warning'}`}>
                         {tx.status}
                       </p>
                     </div>
