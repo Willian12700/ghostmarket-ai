@@ -29,6 +29,16 @@ export default async function handler(req, res) {
     const payload = req.body;
     console.log('Webhook received:', payload);
 
+    // Log the raw payload for debugging (especially for affiliate data)
+    try {
+      await db.collection('webhook_logs').add({
+        payload: payload,
+        receivedAt: FieldValue.serverTimestamp()
+      });
+    } catch (logErr) {
+      console.error("Error logging webhook:", logErr);
+    }
+
     // Ajuste para o modelo exato da Cakto:
     // O email está em payload.data.customer.email
     // O evento está em payload.event (ex: "purchase_approved")
