@@ -4,7 +4,7 @@ import { Ghost, Play, CheckCircle2, ChevronDown, MonitorPlay, Zap, Palette, BarC
 import { Button } from '@/components/ui/Button'
 import { AnimatedMockup } from '@/components/ui/AnimatedMockup'
 import { CHECKOUT_URLS } from '@/config/cakto'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, Variants } from 'framer-motion'
 
 export const Landing = () => {
   const location = useLocation()
@@ -29,17 +29,18 @@ export const Landing = () => {
     }
   }
 
-  const fadeInUp = {
+  // Animation variants
+  const fadeInUp: Variants = {
     hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: 'easeOut' } }
   }
 
-  const staggerContainer = {
+  const staggerContainer: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.15
       }
     }
   }

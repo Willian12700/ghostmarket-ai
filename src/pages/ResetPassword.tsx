@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { Ghost, Loader2, ArrowRight, Lock, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
 import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth'
 import { auth } from '@/config/firebase'
-import { motion } from 'framer-motion'
+import { motion, Variants } from 'framer-motion'
 
 export const ResetPassword = () => {
   const [searchParams] = useSearchParams()
@@ -20,7 +20,6 @@ export const ResetPassword = () => {
   const [success, setSuccess] = useState(false)
   
   const { addToast } = useToastStore()
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (!oobCode) {
@@ -68,12 +67,12 @@ export const ResetPassword = () => {
   }
 
   // Animation variants
-  const fadeInUp = {
+  const fadeInUp: Variants = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } }
   }
 
-  const staggerForm = {
+  const staggerForm: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   }
