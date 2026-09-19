@@ -49,6 +49,15 @@ export default async function handler(req, res) {
         used: false,
       });
 
+      // Envia uma notificação de boas-vindas para o cliente
+      await db.collection('notifications').add({
+        userId: customerEmail,
+        title: 'Bem-vindo ao GhostMarket AI!',
+        text: 'Sua conta foi ativada com sucesso. Comece explorando a aba Creator IA.',
+        unread: true,
+        createdAt: FieldValue.serverTimestamp()
+      });
+
       // 2. Salva a venda para aparecer no SEU gráfico de Admin
       const amount = payload?.data?.transaction?.amount || payload?.data?.amount || 0;
       const clientName = payload?.data?.customer?.name || payload?.customer?.name || "Novo Cliente (SaaS)";
@@ -64,7 +73,7 @@ export default async function handler(req, res) {
         source: 'Assinatura SaaS'
       });
 
-      return res.status(200).json({ success: true, message: 'User allowed and transaction saved' });
+      return res.status(200).json({ success: true, message: 'User allowed, notification sent, and transaction saved' });
     }
 
     return res.status(200).json({ success: true, message: 'Ignored non-approved status' });

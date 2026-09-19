@@ -37,7 +37,8 @@ export const MainLayout = () => {
         
         if (docSnap.exists() && docSnap.data().status === 'approved') {
           setHasSubscription(true)
-          if (docSnap.data().used === false) {
+          // Se used for false ou undefined (contas antigas ou criadas manualmente sem o campo), exibe o modal
+          if (docSnap.data().used !== true) {
             setShowOnboarding(true)
           }
         } else {

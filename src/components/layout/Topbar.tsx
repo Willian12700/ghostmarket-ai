@@ -1,6 +1,10 @@
-
-import { Menu, Bell } from 'lucide-react'
-import { useState } from 'react'
+import { Menu, Bell, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { collection, query, where, onSnapshot, writeBatch, doc } from 'firebase/firestore'
+import { db } from '@/config/firebase'
+import { useAuthStore } from '@/store/authStore'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 interface TopbarProps {
   title: string
@@ -9,12 +13,54 @@ interface TopbarProps {
 }
 
 export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
+  const { user } = useAuthStore()
   const [showNotifications, setShowNotifications] = useState(false)
-  const notifications = [
-    { id: 1, title: 'Nova Venda!', text: 'Alguém comprou seu SaaS.', time: 'agora mesmo', unread: true },
-    { id: 2, title: 'Copiloto Atualizado', text: 'A IA está mais rápida.', time: 'há 2 horas', unread: true },
-    { id: 3, title: 'Bem-vindo', text: 'Sua assinatura está ativa.', time: 'há 1 dia', unread: false },
-  ]
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user?.email) {
+      setLoading(false)
+      return
+    }
+
+    // Usando onSnapshot para real-time. Sem orderBy para evitar precisar de index composto na Firebase. 
+    // Ordenamos no front-end.
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.email)
+    )
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      // Ordena por data (mais recentes primeiro)
+      notifs.sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis() || 0
+        const timeB = b.createdAt?.toMillis() || 0
+        return timeB - timeA
+      })
+      setNotifications(notifs)
+      setLoading(false)
+    }, (error) => {
+      console.error("Erro ao buscar notificações:", error)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [user])
+
+  const unreadCount = notifications.filter(n => n.unread).length
+
+  const markAllAsRead = async () => {
+    if (unreadCount === 0) return
+    const batch = writeBatch(db)
+    notifications.forEach(n => {
+      if (n.unread) {
+        batch.update(doc(db, 'notifications', n.id), { unread: false })
+      }
+    })
+    await batch.commit()
+  }
 
   return (
     <header className="h-20 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-20">
@@ -44,7 +90,9 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
             className="relative p-2 text-textSecondary hover:text-textPrimary hover:bg-white/5 rounded-full transition-colors"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-2 w-2 h-2 bg-error rounded-full animate-pulse border border-background"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-2 w-2 h-2 bg-error rounded-full animate-pulse border border-background"></span>
+            )}
           </button>
 
           {showNotifications && (
@@ -53,21 +101,37 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
               <div className="absolute right-0 mt-2 w-80 bg-surface border border-border rounded-xl shadow-2xl z-40 overflow-hidden flex flex-col">
                 <div className="p-3 border-b border-border bg-background/50 flex justify-between items-center">
                   <h3 className="font-bold text-sm text-textPrimary">Notificações</h3>
-                  <span className="text-xs text-primary cursor-pointer hover:underline">Marcar como lidas</span>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-xs text-primary cursor-pointer hover:underline">
+                      Marcar como lidas
+                    </button>
+                  )}
                 </div>
+                
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.map(n => (
-                    <div key={n.id} className={`p-4 border-b border-border/50 hover:bg-white/5 cursor-pointer transition-colors ${n.unread ? 'bg-primary/5' : ''}`}>
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className={`text-sm font-semibold ${n.unread ? 'text-primary' : 'text-textPrimary'}`}>{n.title}</h4>
-                        <span className="text-[10px] text-textSecondary">{n.time}</span>
-                      </div>
-                      <p className="text-xs text-textSecondary">{n.text}</p>
+                  {loading ? (
+                    <div className="flex justify-center p-6"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-6 text-center text-textSecondary text-sm">
+                      Nenhuma notificação no momento.
                     </div>
-                  ))}
-                </div>
-                <div className="p-2 text-center border-t border-border bg-background/50">
-                  <span className="text-xs text-textSecondary hover:text-textPrimary cursor-pointer">Ver todas</span>
+                  ) : (
+                    notifications.map(n => {
+                      const timeStr = n.createdAt 
+                        ? formatDistanceToNow(n.createdAt.toDate(), { addSuffix: true, locale: ptBR })
+                        : 'agora mesmo'
+                        
+                      return (
+                        <div key={n.id} className={`p-4 border-b border-border/50 hover:bg-white/5 cursor-pointer transition-colors ${n.unread ? 'bg-primary/5' : ''}`}>
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className={`text-sm font-semibold ${n.unread ? 'text-primary' : 'text-textPrimary'}`}>{n.title}</h4>
+                            <span className="text-[10px] text-textSecondary">{timeStr}</span>
+                          </div>
+                          <p className="text-xs text-textSecondary">{n.text}</p>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
               </div>
             </>
