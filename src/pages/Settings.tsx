@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { User, Shield, Globe, Key, Moon, Camera, Webhook, Palette, LayoutTemplate } from 'lucide-react'
+import { User, Shield, Globe, Key, Moon, Camera, Webhook, Palette, LayoutTemplate, Crown } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useToastStore } from '@/store/toastStore'
+import { db } from '@/config/firebase'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 
 export const Settings = () => {
   const { user, updateUserProfile, updateUserPassword } = useAuthStore()
@@ -13,6 +15,30 @@ export const Settings = () => {
   const { addToast } = useToastStore()
   
   const [name, setName] = useState(user?.name || '')
+  
+  // Admin Release State
+  const [adminEmailInput, setAdminEmailInput] = useState('')
+  const [isAdminSaving, setIsAdminSaving] = useState(false)
+
+  const handleAdminRelease = async () => {
+    if (!adminEmailInput.trim()) return
+    setIsAdminSaving(true)
+    try {
+      await setDoc(doc(db, 'allowed_users', adminEmailInput.trim()), {
+        email: adminEmailInput.trim(),
+        status: 'approved',
+        used: false,
+        createdAt: serverTimestamp()
+      })
+      addToast('Acesso liberado com sucesso!', 'success')
+      setAdminEmailInput('')
+    } catch(err) {
+      addToast('Erro ao liberar acesso.', 'error')
+    } finally {
+      setIsAdminSaving(false)
+    }
+  }
+
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   
   const [password, setPassword] = useState('')
@@ -39,7 +65,7 @@ export const Settings = () => {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        addToast('A logo deve ter no mǭximo 2MB', 'error')
+        addToast('A logo deve ter no mÇ­ximo 2MB', 'error')
         return
       }
 
@@ -63,16 +89,16 @@ export const Settings = () => {
         agencyName, 
         primaryColor 
       })
-      addToast('Personalizaǜo salva com sucesso!', 'success')
+      addToast('PersonalizaÇœo salva com sucesso!', 'success')
     } catch (error) {
-      addToast('Erro ao salvar personalizaǜo', 'error')
+      addToast('Erro ao salvar personalizaÇœo', 'error')
     } finally {
       setIsSavingTheme(false)
     }
   }
 
   const handleSaveApi = () => {
-    addToast('Configuração salva com sucesso!', 'success')
+    addToast('ConfiguraÃ§Ã£o salva com sucesso!', 'success')
     setIsApiModalOpen(false)
   }
 
@@ -81,7 +107,7 @@ export const Settings = () => {
     if (!file) return
     
     if (!file.type.startsWith('image/')) {
-      addToast('Por favor, selecione uma imagem válida.', 'error')
+      addToast('Por favor, selecione uma imagem vÃ¡lida.', 'error')
       return
     }
 
@@ -152,11 +178,11 @@ export const Settings = () => {
 
   const handleSavePassword = async () => {
     if (password !== confirmPassword) {
-      addToast('As senhas não coincidem.', 'error')
+      addToast('As senhas nÃ£o coincidem.', 'error')
       return
     }
     if (password.length < 6) {
-      addToast('A senha deve ter no mínimo 6 caracteres.', 'info')
+      addToast('A senha deve ter no mÃ­nimo 6 caracteres.', 'info')
       return
     }
 
@@ -169,7 +195,7 @@ export const Settings = () => {
     } catch (error: any) {
       console.error(error)
       if (error.code === 'auth/requires-recent-login') {
-        addToast('Você precisa fazer login novamente para alterar a senha.', 'error')
+        addToast('VocÃª precisa fazer login novamente para alterar a senha.', 'error')
       } else {
         addToast('Erro ao atualizar senha.', 'error')
       }
@@ -180,6 +206,31 @@ export const Settings = () => {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {user?.email === 'willrandrier@gmail.com' && (
+        <Card className="border-success/30 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-success">
+              <Crown className="w-5 h-5" />
+              Painel do Administrador (Liberacao Manual)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-textSecondary mb-4">Libere o acesso instantaneo ao SaaS para qualquer e-mail sem precisar pagar na Cakto.</p>
+            <div className="flex gap-3">
+              <Input 
+                placeholder="E-mail do cliente (ex: cliente@gmail.com)"
+                value={adminEmailInput}
+                onChange={(e) => setAdminEmailInput(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleAdminRelease} disabled={isAdminSaving || !adminEmailInput.trim()} className="bg-success hover:bg-success/90 text-white">
+                {isAdminSaving ? 'Liberando...' : 'Liberar Acesso Gratis'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -213,7 +264,7 @@ export const Settings = () => {
               </div>
             </div>
             <div>
-              <p className="font-bold text-lg">{user?.name || 'Usuário'}</p>
+              <p className="font-bold text-lg">{user?.name || 'UsuÃ¡rio'}</p>
               <p className="text-textSecondary">{user?.email || 'email@exemplo.com'}</p>
               <button 
                 onClick={() => fileInputRef.current?.click()}
@@ -237,7 +288,7 @@ export const Settings = () => {
             />
           </div>
           <Button onClick={handleSaveProfile} disabled={isSavingProfile || name === user?.name}>
-            {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
+            {isSavingProfile ? 'Salvando...' : 'Salvar AlteraÃ§Ãµes'}
           </Button>
         </CardContent>
       </Card>
@@ -247,7 +298,7 @@ export const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LayoutTemplate className="w-5 h-5 text-primary" />
-            Personalizaǜo da AgǦncia (White-Label)
+            PersonalizaÇœo da AgÇ¦ncia (White-Label)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -263,7 +314,7 @@ export const Settings = () => {
               {theme.logoUrl ? (
                 <img 
                   src={theme.logoUrl} 
-                  alt="Logo da AgǦncia" 
+                  alt="Logo da AgÇ¦ncia" 
                   className="w-20 h-20 rounded-lg object-contain border-2 border-primary/20 bg-panel p-2"
                 />
               ) : (
@@ -275,7 +326,7 @@ export const Settings = () => {
             </div>
             <div className="flex-1">
               <p className="font-medium text-white mb-1">Logo do Painel</p>
-              <p className="text-sm text-textSecondary mb-2">Recomendado: 256x256px, PNG. Mǭximo 2MB.</p>
+              <p className="text-sm text-textSecondary mb-2">Recomendado: 256x256px, PNG. MÇ­ximo 2MB.</p>
               <Button size="sm" variant="secondary" onClick={() => logoInputRef.current?.click()}>
                 Enviar nova logo
               </Button>
@@ -284,8 +335,8 @@ export const Settings = () => {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Input 
-              label="Nome da AgǦncia" 
-              placeholder="Ex: AgǦncia Rocket" 
+              label="Nome da AgÇ¦ncia" 
+              placeholder="Ex: AgÇ¦ncia Rocket" 
               value={agencyName}
               onChange={(e) => setAgencyName(e.target.value)}
             />
@@ -309,7 +360,7 @@ export const Settings = () => {
 
           <div className="pt-2">
             <Button onClick={handleSaveTheme} disabled={isSavingTheme || (agencyName === theme.agencyName && primaryColor === theme.primaryColor)}>
-              {isSavingTheme ? 'Salvando...' : 'Salvar Personalizaǜo'}
+              {isSavingTheme ? 'Salvando...' : 'Salvar PersonalizaÇœo'}
             </Button>
           </div>
         </CardContent>
@@ -319,14 +370,14 @@ export const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Moon className="w-5 h-5 text-primary" />
-            Aparência
+            AparÃªncia
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-background">
             <div>
               <p className="font-medium text-white">Modo escuro</p>
-              <p className="text-sm text-textSecondary">Ativo por padrão na GhostMarket AI</p>
+              <p className="text-sm text-textSecondary">Ativo por padrÃ£o na GhostMarket AI</p>
             </div>
             <div className="w-11 h-6 bg-primary rounded-full relative cursor-not-allowed">
               <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
@@ -339,7 +390,7 @@ export const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            Segurança
+            SeguranÃ§a
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -347,14 +398,14 @@ export const Settings = () => {
             <Input 
               label="Nova senha" 
               type="password" 
-              placeholder="••••••••" 
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
             <Input 
               label="Confirmar nova senha" 
               type="password" 
-              placeholder="••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
@@ -368,9 +419,9 @@ export const Settings = () => {
           </Button>
           
           <div className="mt-6 pt-6 border-t border-border">
-            <h4 className="text-sm font-medium text-white mb-2">Sessão atual</h4>
+            <h4 className="text-sm font-medium text-white mb-2">SessÃ£o atual</h4>
             <p className="text-xs text-textSecondary">
-              Protegido pela segurança do Firebase Auth
+              Protegido pela seguranÃ§a do Firebase Auth
             </p>
           </div>
         </CardContent>
@@ -380,7 +431,7 @@ export const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-primary" />
-            Integrações
+            IntegraÃ§Ãµes
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -391,7 +442,7 @@ export const Settings = () => {
               </div>
               <div>
                 <p className="font-medium text-white">Google Places API</p>
-                <p className="text-xs text-error">Não conectado</p>
+                <p className="text-xs text-error">NÃ£o conectado</p>
               </div>
             </div>
             <Button variant="secondary" size="sm" onClick={() => setIsApiModalOpen(true)}>
@@ -419,8 +470,8 @@ export const Settings = () => {
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-panel border border-border rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
             <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-bold">Integrações</h3>
-              <button onClick={() => setIsApiModalOpen(false)} className="text-textSecondary hover:text-white">✕</button>
+              <h3 className="text-lg font-bold">IntegraÃ§Ãµes</h3>
+              <button onClick={() => setIsApiModalOpen(false)} className="text-textSecondary hover:text-white">âœ•</button>
             </div>
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-2 mb-4">
@@ -429,7 +480,7 @@ export const Settings = () => {
               </div>
               
               <div className="bg-error/10 text-error px-3 py-2 rounded-md text-sm mb-4 border border-error/20 inline-block">
-                Não conectado
+                NÃ£o conectado
               </div>
 
               <Input
@@ -440,7 +491,7 @@ export const Settings = () => {
                 onChange={(e) => setApiKey(e.target.value)}
               />
               <p className="text-xs text-textSecondary">
-                Esta chave será usada pelo Scanner para encontrar leads reais.
+                Esta chave serÃ¡ usada pelo Scanner para encontrar leads reais.
               </p>
 
               <div className="pt-4 flex justify-end gap-3 border-t border-border mt-6">
