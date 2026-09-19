@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Ghost, Play, CheckCircle2, ChevronDown, MonitorPlay, Zap, Palette, BarChart3, Briefcase, DollarSign, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { AnimatedMockup } from '@/components/ui/AnimatedMockup'
 import { CHECKOUT_URLS } from '@/config/cakto'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -136,54 +137,7 @@ export const Landing = () => {
           </motion.div>
 
           {/* Hero Mockup Animado */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative lg:ml-auto w-full max-w-lg perspective-1000"
-          >
-            <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
-            <div className="bg-background rounded-lg border border-border overflow-hidden flex h-[400px] md:h-[600px] shadow-2xl shadow-primary/20 transform hover:scale-[1.02] transition-transform duration-500">
-              {/* Mockup Sidebar */}
-              <div className="w-16 md:w-48 bg-panel border-r border-border hidden sm:flex flex-col p-4 opacity-50">
-                <div className="h-6 w-full max-w-[6rem] bg-border rounded mb-8" />
-                <div className="space-y-4">
-                  {[1,2,3,4,5].map(i => <div key={i} className="h-4 w-3/4 bg-border rounded" />)}
-                </div>
-              </div>
-              {/* Mockup Content */}
-              <div className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col">
-                <div className="h-8 w-32 md:w-48 bg-border rounded mb-6 opacity-50" />
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 mb-6">
-                  {['R$ 12.480,00', '8', '347'].map((val, i) => (
-                    <div key={i} className="bg-panel border border-border rounded-xl p-3 md:p-4">
-                      <div className="h-3 md:h-4 w-16 md:w-24 bg-border rounded mb-2 md:mb-3 opacity-50" />
-                      <div className="text-lg md:text-2xl font-bold text-white">{val}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-                  <div className="md:col-span-2 bg-panel border border-border rounded-xl p-4 flex flex-col relative overflow-hidden">
-                    <div className="h-4 w-24 md:w-32 bg-border rounded mb-4 opacity-50" />
-                    <div className="flex-1 rounded bg-gradient-to-t from-primary/20 to-transparent flex items-end">
-                      <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="w-full h-16 md:h-24 text-primary opacity-50">
-                        <path d="M0 20 L0 10 Q 10 5, 20 15 T 40 10 T 60 15 T 80 5 T 100 10 L100 20 Z" fill="currentColor"/>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="bg-panel border border-border rounded-xl p-4 space-y-4 hidden md:block">
-                    <div className="h-4 w-32 bg-border rounded mb-2 opacity-50" />
-                    {[1,2,3].map(i => (
-                      <div key={i} className="h-10 bg-background border border-border rounded flex items-center px-3 justify-between">
-                        <div className="h-2 w-16 bg-border rounded" />
-                        <div className="h-2 w-12 bg-success/50 rounded" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          <AnimatedMockup />
         </div>
       </section>
 
