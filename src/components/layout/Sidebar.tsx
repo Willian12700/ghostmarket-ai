@@ -1,6 +1,6 @@
-
-import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -14,23 +14,70 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore()
   const { theme } = useThemeStore()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // State to manage open/closed accordion groups
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Prompt, Sites e Leads'])
+
+  const toggleGroup = (groupLabel: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupLabel) 
+        ? prev.filter(g => g !== groupLabel) 
+        : [...prev, groupLabel]
+    )
+  }
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
 
-  const links = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
-    { to: '/creator', icon: Wand2, label: 'Creator IA' },
-    { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
-    { to: '/prompt-builder', icon: Code, label: 'Prompt Builder (Sites)' },
-    { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
-    { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
-    { to: '/settings', icon: User, label: 'Meu Perfil' },
-    { to: '/integrations', icon: Settings, label: 'Integrações' },
-    { to: '/affiliates', icon: Ghost, label: 'Programa de Afiliados' },
+  const menuGroups = [
+    {
+      label: 'Painel',
+      items: [
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Painel' }
+      ]
+    },
+    {
+      label: 'Prompt, Sites e Leads',
+      items: [
+        { to: '/creator', icon: Wand2, label: 'Creator IA' },
+        { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
+        { to: '/prompt-builder', icon: Code, label: 'Prompt Builder (Sites)' },
+        { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
+      ]
+    },
+    {
+      label: 'Organização',
+      items: [
+        { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
+      ]
+    },
+    {
+      label: 'Sistemas e Integrações',
+      items: [
+        { to: '/integrations', icon: Settings, label: 'Integrações' },
+        { to: '/affiliates', icon: Ghost, label: 'Programa de Afiliados' },
+      ]
+    },
+    {
+      label: 'Conta',
+      items: [
+        { to: '/settings', icon: User, label: 'Meu Perfil' },
+      ]
+    }
   ]
+
+  // Automatically expand group if a child is active
+  useEffect(() => {
+    menuGroups.forEach(group => {
+      const hasActiveChild = group.items.some(item => location.pathname === item.to)
+      if (hasActiveChild && !expandedGroups.includes(group.label)) {
+        setExpandedGroups(prev => [...prev, group.label])
+      }
+    })
+  }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -47,7 +94,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         "fixed top-0 left-0 z-50 h-screen w-64 bg-panel border-r border-border flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="h-20 flex items-center justify-between px-6 border-b border-border">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
             {theme.logoUrl ? (
               <img src={theme.logoUrl} alt={theme.agencyName} className="w-8 h-8 rounded object-cover" />
@@ -63,28 +110,80 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium",
-                  isActive 
-                    ? "bg-primary/10 text-primary" 
-                    : "text-textSecondary hover:bg-panelHover hover:text-textPrimary"
-                )
-              }
-            >
-              <link.icon className="w-5 h-5" />
-              {link.label}
-            </NavLink>
-          ))}
+        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          {menuGroups.map((group) => {
+            const isExpanded = expandedGroups.includes(group.label)
+            
+            // Se o grupo só tiver 1 item (como Painel, Organização, Conta), a gente só exibe o item direto sem Accordion
+            if (group.items.length === 1) {
+              const link = group.items[0]
+              return (
+                <div key={link.to} className="space-y-1">
+                  <NavLink
+                    to={link.to}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium",
+                        isActive 
+                          ? "bg-primary/10 text-primary" 
+                          : "text-textSecondary hover:bg-panelHover hover:text-textPrimary"
+                      )
+                    }
+                  >
+                    <link.icon className="w-5 h-5" />
+                    {link.label}
+                  </NavLink>
+                </div>
+              )
+            }
+
+            // Se for um grupo com vários itens, usamos o Accordion (gaveta)
+            return (
+              <div key={group.label} className="space-y-1">
+                <button
+                  onClick={() => toggleGroup(group.label)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-bold text-textSecondary hover:text-textPrimary transition-colors"
+                >
+                  <span className="uppercase tracking-wider text-[11px]">{group.label}</span>
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 opacity-70" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 opacity-70" />
+                  )}
+                </button>
+                
+                <div 
+                  className={cn(
+                    "space-y-1 overflow-hidden transition-all duration-200 ease-in-out pl-2",
+                    isExpanded ? "max-h-64 opacity-100 mt-1" : "max-h-0 opacity-0"
+                  )}
+                >
+                  {group.items.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium",
+                          isActive 
+                            ? "bg-primary/10 text-primary border-l-2 border-primary" 
+                            : "text-textSecondary hover:bg-panelHover hover:text-textPrimary border-l-2 border-transparent"
+                        )
+                      }
+                    >
+                      <link.icon className="w-4 h-4" />
+                      {link.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border flex-shrink-0">
           <div className="flex items-center gap-3 mb-4 px-2">
             {user?.photoURL ? (
               <img 
