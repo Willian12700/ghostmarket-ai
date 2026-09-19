@@ -14,6 +14,9 @@ import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
 import { Affiliates } from '@/pages/Affiliates'
 import { Integrations } from '@/pages/Integrations'
+import { PersonaGenerator } from '@/pages/tiktok/PersonaGenerator'
+import { ViralScripts } from '@/pages/tiktok/ViralScripts'
+import { AdCopy } from '@/pages/tiktok/AdCopy'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { useAuthStore } from '@/store/authStore'
 
@@ -61,6 +64,11 @@ function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/affiliates" element={<Affiliates />} />
+              
+              {/* TikTok Shop Routes */}
+              <Route path="/tiktok/persona" element={<PersonaGenerator />} />
+              <Route path="/tiktok/scripts" element={<ViralScripts />} />
+              <Route path="/tiktok/ads" element={<AdCopy />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

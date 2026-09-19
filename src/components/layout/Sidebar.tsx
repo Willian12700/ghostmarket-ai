@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -49,15 +49,23 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       ]
     },
     {
+      label: 'TikTok Shop',
+      items: [
+        { to: '/tiktok/persona', icon: Users, label: 'Gerador de Persona' },
+        { to: '/tiktok/scripts', icon: Video, label: 'Roteiros Virais' },
+        { to: '/tiktok/ads', icon: TrendingUp, label: 'Copy para AnÃºncios' }
+      ]
+    },
+    {
       label: 'Organização',
       items: [
         { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
       ]
     },
     {
-      label: 'Sistemas e Integrações',
+      label: 'Sistemas e IntegraÃƒÂ§ÃƒÂµes',
       items: [
-        { to: '/integrations', icon: Settings, label: 'Integrações' },
+        { to: '/integrations', icon: Settings, label: 'IntegraÃƒÂ§ÃƒÂµes' },
         { to: '/affiliates', icon: Ghost, label: 'Programa de Afiliados' },
       ]
     },
@@ -114,7 +122,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           {menuGroups.map((group) => {
             const isExpanded = expandedGroups.includes(group.label)
             
-            // Se o grupo só tiver 1 item (como Painel, Organização, Conta), a gente só exibe o item direto sem Accordion
+            // Se o grupo sÃƒÂ³ tiver 1 item (como Painel, OrganizaÃƒÂ§ÃƒÂ£o, Conta), a gente sÃƒÂ³ exibe o item direto sem Accordion
             if (group.items.length === 1) {
               const link = group.items[0]
               return (
@@ -138,7 +146,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               )
             }
 
-            // Se for um grupo com vários itens, usamos o Accordion (gaveta)
+            // Se for um grupo com vÃƒÂ¡rios itens, usamos o Accordion (gaveta)
             return (
               <div key={group.label} className="space-y-1">
                 <button
@@ -197,7 +205,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               </div>
             )}
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium text-white truncate">{user?.name || 'Usuário'}</p>
+              <p className="text-sm font-medium text-white truncate">{user?.name || 'UsuÃƒÂ¡rio'}</p>
               <p className="text-xs text-textSecondary truncate">{user?.email || 'email@exemplo.com'}</p>
             </div>
           </div>
