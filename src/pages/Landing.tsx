@@ -288,12 +288,12 @@ export const Landing = () => {
               </a>
             </motion.div>
 
-            {/* Anual */}
+            {/* Vitalício */}
             <motion.div variants={fadeInUp} className="bg-panel border border-border rounded-2xl p-8 shadow-xl flex flex-col h-full hover:border-primary/50 transition-colors">
-              <h3 className="text-xl font-bold text-white mb-2">PLANO ANUAL</h3>
-              <div className="text-4xl font-bold text-white mb-6">R$ 1.367<span className="text-lg text-textSecondary font-normal">/ano</span></div>
+              <h3 className="text-xl font-bold text-white mb-2">PLANO VITALÍCIO</h3>
+              <div className="text-4xl font-bold text-white mb-6">R$ 649,90<span className="text-lg text-textSecondary font-normal">/único</span></div>
               <ul className="space-y-4 mb-8 flex-1">
-                {['Acesso por 12 meses', 'Suporte prioritário', 'Recursos premium', 'Bônus exclusivos', 'Acesso completo'].map((feature, i) => (
+                {['Acesso vitalício', 'Atualizações gratuitas', 'Suporte VIP prioritário', 'Sem mensalidades', 'Acesso completo para sempre'].map((feature, i) => (
                   <li key={i} className="flex items-start text-textSecondary">
                     <CheckCircle2 className="w-5 h-5 text-primary mr-3 flex-shrink-0 mt-0.5" />
                     {feature}
@@ -301,7 +301,7 @@ export const Landing = () => {
                 ))}
               </ul>
               <a href={CHECKOUT_URLS.anual} className="w-full">
-                <Button variant="secondary" className="w-full" size="lg">Assinar Anual</Button>
+                <Button variant="secondary" className="w-full" size="lg">Assinar Vitalício</Button>
               </a>
             </motion.div>
           </motion.div>
