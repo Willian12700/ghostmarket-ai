@@ -90,7 +90,7 @@ Regras:
     
     return res.status(500).json({ 
       error: 'Erro interno',
-      message: \`Ops! Falha na IA: \${errorMessage.includes('API key not valid') ? 'A chave da API informada na Vercel (GEMINI_API_KEY) é inválida.' : 'A inteligência artificial está temporariamente indisponível.'}\`
+      message: `Ops! Falha na IA: ${errorMessage.includes('API key not valid') ? 'A chave da API informada na Vercel (GEMINI_API_KEY) é inválida.' : 'A inteligência artificial está temporariamente indisponível.'}`
     })
   }
 }
