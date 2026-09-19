@@ -1,5 +1,5 @@
-﻿import { useState } from 'react'
-import { Wand2, Copy, Check, Code, Video } from 'lucide-react'
+import { useState } from 'react'
+import { Wand2, Copy, Check, Code, Video, Bot } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -9,10 +9,13 @@ export const PromptBuilder = () => {
   const { addToast } = useToastStore()
   
   const [formData, setFormData] = useState({
+    aiPlatform: 'Antigravity',
     projectName: '',
     description: '',
-    targetAudience: '',
-    niche: '',
+    targetAudience: 'B2B (Empresas)',
+    customAudience: '',
+    niche: 'SaaS / Tecnologia',
+    customNiche: '',
     tech: 'React',
     design: 'Dark SaaS',
     features: {
@@ -49,49 +52,46 @@ export const PromptBuilder = () => {
 
       const isHtmlMode = formData.tech === 'HTML + CSS + JS'
       
-      const prompt = `# SYSTEM PROMPT - PROJETO ${formData.projectName.toUpperCase() || 'SAAS'}
+      const finalNiche = formData.niche === 'Outro' ? formData.customNiche : formData.niche
+      const finalAudience = formData.targetAudience === 'Outro' ? formData.customAudience : formData.targetAudience
 
-VocÃª Ã© um Senior Software Engineer especializado em aplicaÃ§Ãµes SaaS.
-Sua missÃ£o Ã© desenvolver a aplicaÃ§Ã£o descrita abaixo.
+      const prompt = `# SYSTEM INSTRUCTION - ARQUITETURA E DESENVOLVIMENTO
+Você atuará como um Senior Full-Stack Software Engineer.
+IA Escolhida: ${formData.aiPlatform}
 
-## 1. OBJETIVO
-${formData.description || '[DescriÃ§Ã£o nÃ£o informada]'}
+## 1. VISÃO GERAL DO PROJETO
+- **Nome**: ${formData.projectName.toUpperCase() || 'SISTEMA/SAAS'}
+- **Nicho**: ${finalNiche || 'Não informado'}
+- **Público-alvo**: ${finalAudience || 'Não informado'}
+- **Objetivo Principal**: ${formData.description || 'Desenvolver um SaaS/Site de alta performance e conversão.'}
 
-## 2. PÃšBLICO-ALVO
-${formData.targetAudience || '[PÃºblico nÃ£o informado]'}
-Nicho: ${formData.niche || '[NÃ£o informado]'}
+## 2. STACK TECNOLÓGICA
+- **Linguagem/Framework**: ${formData.tech}
+- **Estilização**: ${isHtmlMode ? 'CSS Puro' : 'Tailwind CSS'}
+- **Ícones**: ${isHtmlMode ? 'FontAwesome' : 'lucide-react'}
+${!isHtmlMode ? '- **Gerenciamento de Estado**: Zustand ou Context API' : ''}
 
-## 3. STACK
-Frontend: ${formData.tech}
-Styling: ${isHtmlMode ? 'CSS Puro' : 'Tailwind CSS'}
-Estado: ${isHtmlMode ? 'Nenhum / Vanilla JS' : 'Zustand ou Context API'}
-Ãcones: ${isHtmlMode ? 'FontAwesome ou SVG' : 'Lucide React'}
+## 3. DESIGN E UI/UX
+- **Tema Visual**: ${formData.design}
+- **Experiência do Usuário (UX)**: A interface deve ser extremamente moderna, responsiva, com foco absoluto em usabilidade. Utilize componentes bem espaçados, efeitos de hover sutis e feedback visual para o usuário.
 
-## 4. DESIGN SYSTEM
-Tema principal: ${formData.design}
-UI deve ser moderna, limpa e responsiva, com foco em usabilidade e conversÃ£o.
-Incluir estados de loading, estados vazios e tratamento de erros visuais (Error Boundaries).
+## 4. FUNCIONALIDADES A IMPLEMENTAR
+O sistema deve conter os seguintes módulos/features essenciais:
+${activeFeatures || 'Apenas estrutura básica da Landing Page.'}
 
-## 5. FUNCIONALIDADES SOLICITADAS
-${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionada.'}
+## 5. REGRAS DE CÓDIGO (CRÍTICO)
+1. Escreva o código completo, sem placeholders como "// código aqui".
+2. Separe componentes de forma modular.
+3. Se houver integração com APIs, crie serviços isolados.
+4. O código deve estar pronto para rodar sem erros (Production-ready).
+5. Retorne a resposta utilizando a estrutura de artefatos ou blocos de código formatados corretamente.
 
-## 6. REGRAS DE IMPLEMENTAÃ‡ÃƒO
-- Criar componentes reutilizÃ¡veis.
-- O cÃ³digo deve ser modular e tipado (TypeScript).
-- Prever fluxos de tratamento de erro para APIs.
-- Evitar prop-drilling excessivo.
-- Todas as pÃ¡ginas devem ter responsividade para Mobile, Tablet e Desktop.
+AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
 
-## 7. CRITÃ‰RIOS DE CONCLUSÃƒO
-- A aplicaÃ§Ã£o deve renderizar sem telas pretas.
-- NavegaÃ§Ã£o fluida entre rotas.
-- FormulÃ¡rios devem possuir validaÃ§Ã£o mÃ­nima.
-- Design alinhado com o tema ${formData.design}.
-`
       setGeneratedPrompt(prompt)
       setIsGenerating(false)
       addToast('Prompt gerado com sucesso!', 'success')
-    }, 1500)
+    }, 1000)
   }
 
   const copyToClipboard = () => {
@@ -113,11 +113,11 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionad
         <div className="absolute top-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
         
         <div className="w-full md:w-1/2 flex-shrink-0 z-10">
-          <div className="aspect-VÍDEO bg-black rounded-xl overflow-hidden border border-primary/30 relative group shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+          <div className="aspect-video bg-black rounded-xl overflow-hidden border border-primary/30 relative group shadow-[0_0_15px_rgba(139,92,246,0.2)]">
             <iframe 
               width="100%" 
               height="100%" 
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ" /* âš ï¸ COLOQUE O LINK DO SEU VÍDEO AQUI âš ï¸ */
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ" /* ⚠️ COLOQUE O LINK DO SEU VÍDEO AQUI ⚠️ */
               title="Tutorial Prompt Builder"
               frameBorder="0" 
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -132,7 +132,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionad
           </div>
           <h3 className="text-2xl font-bold text-white">Como criar seu Site/SaaS do Zero</h3>
           <p className="text-textSecondary text-sm leading-relaxed">
-            Assista este VÍDEO antes de começar! Aprenda a configurar o seu System Prompt perfeitamente para extrair o máximo da Inteligência Artificial. Com os comandos certos, a IA vai gerar o código perfeito de primeira.
+            Assista este vídeo antes de começar! Aprenda a configurar o seu System Prompt perfeitamente para extrair o máximo da Inteligência Artificial. Com os comandos certos, a IA vai gerar o código perfeito de primeira.
           </p>
         </div>
       </div>
@@ -141,38 +141,100 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionad
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 1 â€” Projeto</CardTitle>
+              <CardTitle>Etapa 1 — Projeto Base</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-textSecondary flex items-center gap-2"><Bot className="w-4 h-4"/> Qual IA você vai usar?</label>
+                <select
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  value={formData.aiPlatform}
+                  onChange={(e) => setFormData({ ...formData, aiPlatform: e.target.value })}
+                >
+                  <option>Antigravity</option>
+                  <option>Claude 3.5 Sonnet</option>
+                  <option>ChatGPT (OpenAI)</option>
+                  <option>Google AI Studio</option>
+                  <option>Gemini</option>
+                  <option>Lovable</option>
+                </select>
+              </div>
+
               <Input
                 label="Nome do projeto"
+                placeholder="Ex: GhostMarket AI"
                 value={formData.projectName}
                 onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
               />
-              <Input
-                label="Nicho"
-                value={formData.niche}
-                onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
-              />
+
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary">DescriÃ§Ã£o</label>
+                <label className="text-sm font-medium text-textSecondary">Nicho de Mercado</label>
+                <select
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  value={formData.niche}
+                  onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
+                >
+                  <option>SaaS / Tecnologia</option>
+                  <option>E-commerce / Lojas Virtuais</option>
+                  <option>Saúde e Bem-estar (Médicos/Estética)</option>
+                  <option>Finanças / Investimentos</option>
+                  <option>Imobiliária / Corretores</option>
+                  <option>Educação / Cursos Online (EAD)</option>
+                  <option>Restaurante / Delivery</option>
+                  <option>Agência de Marketing / Serviços</option>
+                  <option>Advocacia / Jurídico</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+              {formData.niche === 'Outro' && (
+                <Input
+                  label="Digite seu Nicho"
+                  placeholder="Ex: Petshop de Luxo"
+                  value={formData.customNiche}
+                  onChange={(e) => setFormData({ ...formData, customNiche: e.target.value })}
+                />
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-textSecondary">Público-alvo Principal</label>
+                <select
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  value={formData.targetAudience}
+                  onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+                >
+                  <option>B2B (Outras Empresas e Negócios)</option>
+                  <option>B2C (Consumidor Final)</option>
+                  <option>Jovens (18-24 anos)</option>
+                  <option>Adultos e Profissionais (25-45 anos)</option>
+                  <option>Idosos (60+ anos)</option>
+                  <option>Profissionais Autônomos</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+              {formData.targetAudience === 'Outro' && (
+                <Input
+                  label="Descreva o Público-alvo"
+                  placeholder="Ex: Mães de primeira viagem"
+                  value={formData.customAudience}
+                  onChange={(e) => setFormData({ ...formData, customAudience: e.target.value })}
+                />
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-textSecondary">Descrição do Projeto</label>
                 <textarea
                   className="flex min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-textSecondary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                  placeholder="Explique o que o sistema/site faz em 2 ou 3 frases..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              <Input
-                label="PÃºblico-alvo"
-                value={formData.targetAudience}
-                onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-              />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 2 â€” Recursos</CardTitle>
+              <CardTitle>Etapa 2 — Recursos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
@@ -200,7 +262,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionad
           <div className="grid grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 3 â€” Design</CardTitle>
+                <CardTitle className="text-base">Etapa 3 — Design</CardTitle>
               </CardHeader>
               <CardContent>
                 <select
@@ -210,16 +272,16 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionad
                 >
                   <option>Dark SaaS</option>
                   <option>Cyberpunk</option>
-                  <option>Minimalista</option>
-                  <option>Premium</option>
-                  <option>Corporativo</option>
+                  <option>Minimalista Claro</option>
+                  <option>Premium (Dourado/Preto)</option>
+                  <option>Corporativo Clássico</option>
                 </select>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 4 â€” Tecnologia</CardTitle>
+                <CardTitle className="text-base">Etapa 4 — Stack</CardTitle>
               </CardHeader>
               <CardContent>
                 <select
@@ -245,7 +307,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionad
             {isGenerating ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <><Wand2 className="w-5 h-5 mr-2" /> Gerar System Prompt</>
+              <><Wand2 className="w-5 h-5 mr-2" /> Gerar System Prompt Inteligente</>
             )}
           </Button>
         </div>
@@ -253,7 +315,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionad
         <div className="h-full">
           <Card className="h-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Resultado</CardTitle>
+              <CardTitle>Resultado do Prompt</CardTitle>
               {generatedPrompt && (
                 <Button variant="secondary" size="sm" onClick={copyToClipboard}>
                   {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
