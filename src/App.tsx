@@ -25,7 +25,7 @@ import { APIProvider } from '@vis.gl/react-google-maps'
 
 function App() {
   const { initAuthListener, isLoading } = useAuthStore()
-  // Usando a chave diretamente para nÃ£o depender de bugs do Windows com arquivos .env
+  // Usando a chave diretamente para não depender de bugs do Windows com arquivos .env
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
 
   useEffect(() => {

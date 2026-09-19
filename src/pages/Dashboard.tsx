@@ -240,7 +240,7 @@ export const Dashboard = () => {
         <div className="md:col-span-4 bg-[#0b0416] border border-primary/20 rounded-2xl p-6 relative overflow-hidden">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">EVOLUÇÃO</p>
+              <p className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">EVOLUÇÁO</p>
               <h3 className="text-sm font-medium text-white">Faturamento x Vendas</h3>
             </div>
             <div className="flex items-center gap-4 text-xs font-medium">

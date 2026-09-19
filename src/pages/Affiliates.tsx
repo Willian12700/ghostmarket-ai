@@ -24,7 +24,7 @@ export const Affiliates = () => {
         </div>
       </div>
 
-      {/* PLANOS DE AFILIAÇÃO */}
+      {/* PLANOS DE AFILIAÇÁO */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* MENSAL */}
         <div className="bg-[#0b0416] border border-primary/10 hover:border-primary/40 transition-all rounded-2xl p-8 relative overflow-hidden group">

@@ -43,8 +43,8 @@ Sua missão é criar o roteiro mais engajador e de altíssima conversão possív
 
 ## ESTRUTURA OBRIGATÓRIA DO ROTEIRO
 1. **HOOK (0-3s)**: Um gancho visceral e impossível de ignorar. Deve quebrar o padrão visual e prender o espectador imediatamente.
-2. **RETENÇÃO (3-10s)**: Construção do desejo ou agravamento da dor. Use storytelling rápido.
-3. **APRESENTAÇÃO (10-20s)**: O produto como o "santo graal" que resolve o problema (mostre o produto em uso, se possível).
+2. **RETENÇÁO (3-10s)**: Construção do desejo ou agravamento da dor. Use storytelling rápido.
+3. **APRESENTAÇÁO (10-20s)**: O produto como o "santo graal" que resolve o problema (mostre o produto em uso, se possível).
 4. **CALL TO ACTION (Últimos 5s)**: Instrução clara e irresistível mandando clicar no carrinho amarelo (TikTok Shop) antes que esgote.
 
 **IMPORTANTE**: Divida o roteiro em formato de tabela com duas colunas: [O QUE MOSTRAR NA TELA (Visual)] | [O QUE FALAR (Áudio)]. Escreva falas curtas, coloquiais e respiráveis.

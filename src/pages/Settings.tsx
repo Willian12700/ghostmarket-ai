@@ -64,9 +64,9 @@ export const Settings = () => {
     setIsSavingTheme(true)
     try {
       await updateTheme(user.uid, { agencyName, primaryColor, appTheme })
-      addToast('AparÃªncia atualizada com sucesso', 'success')
+      addToast('Aparência atualizada com sucesso', 'success')
     } catch (error) {
-      addToast('Erro ao atualizar aparÃªncia', 'error')
+      addToast('Erro ao atualizar aparência', 'error')
     } finally {
       setIsSavingTheme(false)
     }
@@ -74,7 +74,7 @@ export const Settings = () => {
 
   const handleSavePassword = async () => {
     if (password !== confirmPassword) {
-      addToast('As senhas nÃ£o coincidem', 'error')
+      addToast('As senhas não coincidem', 'error')
       return
     }
 
@@ -94,7 +94,7 @@ export const Settings = () => {
     } catch (error: any) {
       console.error(error)
       if (error.code === 'auth/requires-recent-login') {
-        addToast('VocÃª precisa fazer login novamente para alterar a senha', 'error')
+        addToast('Você precisa fazer login novamente para alterar a senha', 'error')
       } else {
         addToast('Erro ao atualizar senha', 'error')
       }
@@ -104,13 +104,13 @@ export const Settings = () => {
   }
 
   const handleSaveApi = () => {
-    addToast('ConfiguraÃ§Ã£o salva (SimulaÃ§Ã£o)', 'success')
+    addToast('Configuração salva (Simulação)', 'success')
     setIsApiModalOpen(false)
   }
 
   const handleGrantFreeAccess = async () => {
     if (!freeAccessEmail.trim()) {
-      addToast('Digite um email vÃ¡lido', 'error')
+      addToast('Digite um email válido', 'error')
       return
     }
 
@@ -124,7 +124,7 @@ export const Settings = () => {
         grantedAt: new Date().toISOString()
       })
       
-      addToast(`Acesso VitalÃ­cio liberado para ${freeAccessEmail}!`, 'success')
+      addToast(`Acesso Vitalício liberado para ${freeAccessEmail}!`, 'success')
       setFreeAccessEmail('')
     } catch (error) {
       console.error(error)
@@ -139,9 +139,9 @@ export const Settings = () => {
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
           <SettingsIcon className="w-6 h-6 text-primary" />
-          ConfiguraÃ§Ãµes
+          Configurações
         </h2>
-        <p className="text-textSecondary">Gerencie as preferÃªncias da sua conta e aparÃªncia do painel.</p>
+        <p className="text-textSecondary">Gerencie as preferências da sua conta e aparência do painel.</p>
       </div>
 
       {user?.email === 'willrandrier@gmail.com' && (
@@ -150,18 +150,18 @@ export const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Unlock className="w-5 h-5" />
-                Painel do Administrador - LiberaÃ§Ã£o de Acesso
+                Painel do Administrador - Liberação de Acesso
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <p className="text-sm text-textSecondary">
-                  Libere acesso vitalÃ­cio gratuito para qualquer usuÃ¡rio. Basta informar o e-mail que ele utilizarÃ¡ (ou utilizou) para criar a conta.
+                  Libere acesso vitalício gratuito para qualquer usuário. Basta informar o e-mail que ele utilizará (ou utilizou) para criar a conta.
                 </p>
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
                     <Input 
-                      label="E-mail do UsuÃ¡rio" 
+                      label="E-mail do Usuário" 
                       placeholder="email@exemplo.com"
                       value={freeAccessEmail}
                       onChange={(e) => setFreeAccessEmail(e.target.value)}
@@ -189,13 +189,13 @@ export const Settings = () => {
             <CardContent>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-textSecondary">Tema Base (VisÃ­vel para todos)</label>
+                  <label className="text-sm font-medium text-textSecondary">Tema Base (Visível para todos)</label>
                   <select
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     value={appTheme}
                     onChange={(e) => setAppTheme(e.target.value as any)}
                   >
-                    <option value="default">PadrÃ£o (Roxo / Essence GhostMarket)</option>
+                    <option value="default">Padrão (Roxo / Essence GhostMarket)</option>
                     <option value="dark">Escuro (Cinza / Cyberpunk)</option>
                     <option value="light">Claro (Branco)</option>
                   </select>
@@ -246,7 +246,7 @@ export const Settings = () => {
             </div>
             <div className="flex-1">
               <p className="font-medium text-white mb-1">Logo do Painel</p>
-              <p className="text-sm text-textSecondary mb-2">Recomendado: 256x256px, PNG. MÃ¡ximo 2MB.</p>
+              <p className="text-sm text-textSecondary mb-2">Recomendado: 256x256px, PNG. Máximo 2MB.</p>
               <Button size="sm" variant="secondary" onClick={() => logoInputRef.current?.click()} disabled={isUploadingLogo}>
                 {isUploadingLogo ? 'Enviando...' : 'Enviar nova logo'}
               </Button>
@@ -255,8 +255,8 @@ export const Settings = () => {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Input 
-              label="Nome da AgÃªncia" 
-              placeholder="Ex: AgÃªncia Rocket" 
+              label="Nome da Agência" 
+              placeholder="Ex: Agência Rocket" 
               value={agencyName}
               onChange={(e) => setAgencyName(e.target.value)}
             />
@@ -280,7 +280,7 @@ export const Settings = () => {
 
           <div className="pt-2">
             <Button onClick={handleSaveTheme} disabled={isSavingTheme || (agencyName === theme.agencyName && primaryColor === theme.primaryColor && appTheme === theme.appTheme)}>
-              {isSavingTheme ? 'Salvando...' : 'Salvar PersonalizaÃ§Ã£o'}
+              {isSavingTheme ? 'Salvando...' : 'Salvar Personalização'}
             </Button>
           </div>
         </CardContent>
@@ -290,7 +290,7 @@ export const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            SeguranÃ§a
+            Segurança
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -319,9 +319,9 @@ export const Settings = () => {
           </Button>
           
           <div className="mt-6 pt-6 border-t border-border">
-            <h4 className="text-sm font-medium text-white mb-2">SessÃ£o atual</h4>
+            <h4 className="text-sm font-medium text-white mb-2">Sessão atual</h4>
             <p className="text-xs text-textSecondary">
-              Protegido pela seguranÃ§a do Firebase Auth
+              Protegido pela segurança do Firebase Auth
             </p>
           </div>
         </CardContent>
@@ -331,7 +331,7 @@ export const Settings = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-primary" />
-            IntegraÃ§Ãµes
+            Integrações
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -342,7 +342,7 @@ export const Settings = () => {
               </div>
               <div>
                 <p className="font-medium text-white">Google Places API</p>
-                <p className="text-xs text-error">NÃ£o conectado</p>
+                <p className="text-xs text-error">Não conectado</p>
               </div>
             </div>
             <Button variant="secondary" size="sm" onClick={() => setIsApiModalOpen(true)}>
@@ -370,7 +370,7 @@ export const Settings = () => {
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-panel border border-border rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
             <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-bold">IntegraÃ§Ãµes</h3>
+              <h3 className="text-lg font-bold">Integrações</h3>
               <button onClick={() => setIsApiModalOpen(false)} className="text-textSecondary hover:text-white">âœ•</button>
             </div>
             <div className="p-6 space-y-4">
@@ -380,7 +380,7 @@ export const Settings = () => {
               </div>
               
               <div className="bg-error/10 text-error px-3 py-2 rounded-md text-sm mb-4 border border-error/20 inline-block">
-                NÃ£o conectado
+                Não conectado
               </div>
 
               <Input
@@ -391,7 +391,7 @@ export const Settings = () => {
                 onChange={(e) => setApiKey(e.target.value)}
               />
               <p className="text-xs text-textSecondary">
-                Esta chave serÃ¡ usada pelo Scanner para encontrar leads reais.
+                Esta chave será usada pelo Scanner para encontrar leads reais.
               </p>
 
               <div className="pt-4 flex justify-end gap-3 border-t border-border mt-6">

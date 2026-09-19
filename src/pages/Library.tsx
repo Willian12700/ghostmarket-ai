@@ -25,7 +25,7 @@ export const Library = () => {
         const q = query(
           collection(db, 'ai_history'),
           where('userId', '==', user.email)
-          // Sem orderBy para nǜo precisar de comp index. Vamos ordenar no front.
+          // Sem orderBy para não precisar de comp index. Vamos ordenar no front.
         )
         const snap = await getDocs(q)
         const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))

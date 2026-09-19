@@ -78,19 +78,19 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-4 animate-pulse">
                   <Sparkles className="w-8 h-8" />
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-2">Bem-vindo Ã  MÃ¡quina! ðŸš€</h2>
+                <h2 className="text-3xl font-bold text-white mb-2">Bem-vindo Á  Máquina! ðŸš€</h2>
                 <p className="text-textSecondary text-base mb-6">
-                  Sua assinatura estÃ¡ ativa. Assista este vÃ­deo rÃ¡pido do Will para descobrir como recuperar seu investimento hoje mesmo.
+                  Sua assinatura está ativa. Assista este vídeo rápido do Will para descobrir como recuperar seu investimento hoje mesmo.
                 </p>
 
                 {/* YOUTUBE VIDEO */}
                 <div className="w-full aspect-video rounded-xl overflow-hidden border-2 border-border mb-6 shadow-xl relative group bg-black">
-                  {/* Substitua o embed pelo vÃ­deo oficial do Will depois */}
+                  {/* Substitua o embed pelo vídeo oficial do Will depois */}
                   <iframe 
                     width="100%" 
                     height="100%" 
                     src="https://www.youtube.com/embed/DhDSGnVCYtM?rel=0&autoplay=0" 
-                    title="VÃ­deo de Boas Vindas" 
+                    title="Vídeo de Boas Vindas" 
                     frameBorder="0" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                     allowFullScreen
@@ -99,7 +99,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 </div>
 
                 <Button size="lg" className="w-full group font-bold text-lg h-14 shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)]" onClick={() => setStep(2)}>
-                  JÃ¡ assisti, quero lucrar <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  Já assisti, quero lucrar <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </>
             )}
@@ -111,7 +111,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                 </div>
                 <h2 className="text-3xl font-bold text-white mb-2">Tudo pronto!</h2>
                 <p className="text-textSecondary text-base mb-6">
-                  O painel estÃ¡ 100% liberado para vocÃª. Aqui estÃ£o os atalhos para o sucesso rÃ¡pido:
+                  O painel está 100% liberado para você. Aqui estão os atalhos para o sucesso rápido:
                 </p>
                 
                 <div className="space-y-3 text-left w-full mb-8">
@@ -120,7 +120,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                       <span className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center text-primary text-xs">1</span>
                       Scanner de Leads
                     </h4>
-                    <p className="text-sm text-textSecondary mt-1 ml-8">Encontre clientes de alto padrÃ£o, gere a copy fria com a IA e mande pro WhatsApp.</p>
+                    <p className="text-sm text-textSecondary mt-1 ml-8">Encontre clientes de alto padrão, gere a copy fria com a IA e mande pro WhatsApp.</p>
                   </div>
                   
                   <div className="p-4 rounded-xl bg-background border border-border hover:border-primary/50 transition-colors cursor-default">
@@ -128,7 +128,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                       <span className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center text-primary text-xs">2</span>
                       TikTok Shop Viral
                     </h4>
-                    <p className="text-sm text-textSecondary mt-1 ml-8">Crie personas absurdas e copie nossos roteiros virais pra vender como Ã¡gua.</p>
+                    <p className="text-sm text-textSecondary mt-1 ml-8">Crie personas absurdas e copie nossos roteiros virais pra vender como água.</p>
                   </div>
 
                   <div className="p-4 rounded-xl bg-background border border-border hover:border-primary/50 transition-colors cursor-default">
@@ -136,7 +136,7 @@ export const OnboardingModal = ({ isOpen, onClose }: OnboardingModalProps) => {
                       <span className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center text-primary text-xs">3</span>
                       Construtor de Prompts
                     </h4>
-                    <p className="text-sm text-textSecondary mt-1 ml-8">Desenvolva sites e sistemas pra vender para os clientes que vocÃª captou no Radar.</p>
+                    <p className="text-sm text-textSecondary mt-1 ml-8">Desenvolva sites e sistemas pra vender para os clientes que você captou no Radar.</p>
                   </div>
                 </div>
                 

@@ -38,12 +38,12 @@ export const PersonaHistory = () => {
   }, [user])
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja apagar este histÃ³rico?')) {
+    if (confirm('Tem certeza que deseja apagar este histórico?')) {
       try {
         await deleteDoc(doc(db, 'persona_history', id))
-        addToast('HistÃ³rico apagado com sucesso', 'success')
+        addToast('Histórico apagado com sucesso', 'success')
       } catch (error) {
-        addToast('Erro ao apagar histÃ³rico', 'error')
+        addToast('Erro ao apagar histórico', 'error')
       }
     }
   }
@@ -59,9 +59,9 @@ export const PersonaHistory = () => {
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <BookMarked className="w-6 h-6 text-primary" /> HistÃ³rico de Personas
+          <BookMarked className="w-6 h-6 text-primary" /> Histórico de Personas
         </h2>
-        <p className="text-textSecondary">Suas personas geradas ficam salvas aqui para vocÃª nunca perder seus prompts.</p>
+        <p className="text-textSecondary">Suas personas geradas ficam salvas aqui para você nunca perder seus prompts.</p>
       </div>
 
       {loading ? (
@@ -71,7 +71,7 @@ export const PersonaHistory = () => {
       ) : history.length === 0 ? (
         <div className="text-center py-20 bg-panel border border-border rounded-xl">
           <Users className="w-12 h-12 text-textSecondary mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-white mb-2">Nenhum histÃ³rico encontrado</h3>
+          <h3 className="text-lg font-medium text-white mb-2">Nenhum histórico encontrado</h3>
           <p className="text-textSecondary">Gere sua primeira persona para ela aparecer aqui.</p>
         </div>
       ) : (
@@ -86,12 +86,12 @@ export const PersonaHistory = () => {
 
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-6">
-                  {/* ESPECIFICAÃ‡Ã•ES */}
+                  {/* ESPECIFICAÁ‡Á•ES */}
                   <div className="w-full md:w-1/3 space-y-4 border-r border-border pr-6">
                     <div>
                       <h3 className="text-lg font-bold text-white mb-1">{item.productName || 'Produto sem nome'}</h3>
                       <p className="text-xs text-textSecondary flex items-center gap-1">
-                        {item.createdAt?.toDate ? format(item.createdAt.toDate(), "dd 'de' MMMM 'Ã s' HH:mm", { locale: ptBR }) : 'Recentemente'}
+                        {item.createdAt?.toDate ? format(item.createdAt.toDate(), "dd 'de' MMMM 'Á s' HH:mm", { locale: ptBR }) : 'Recentemente'}
                       </p>
                     </div>
 
@@ -106,7 +106,7 @@ export const PersonaHistory = () => {
                         <span className="text-textSecondary">Nicho:</span> <span className="text-white font-medium">{item.niche}</span>
                       </div>
                       <div className="text-sm">
-                        <span className="text-textSecondary">GÃªnero:</span> <span className="text-white font-medium">{item.gender}</span>
+                        <span className="text-textSecondary">Gênero:</span> <span className="text-white font-medium">{item.gender}</span>
                       </div>
                       <div className="text-sm">
                         <span className="text-textSecondary">Idade:</span> <span className="text-white font-medium">{item.ageGroup}</span>

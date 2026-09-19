@@ -38,7 +38,7 @@ export const Scanner = () => {
   const [states, setStates] = useState<State[]>([])
   const [cities, setCities] = useState<City[]>([])
   const [selectedState, setSelectedState] = useState('SP')
-  const [selectedCity, setSelectedCity] = useState('SÃ£o Paulo')
+  const [selectedCity, setSelectedCity] = useState('São Paulo')
   const [niche, setNiche] = useState('Barbearia')
   
   const placesLib = useMapsLibrary('places')
@@ -71,7 +71,7 @@ export const Scanner = () => {
 
   const handleScan = async () => {
     if (!placesLib) {
-      alert("A API do Google Maps ainda estÃ¡ carregando ou ocorreu um erro.");
+      alert("A API do Google Maps ainda está carregando ou ocorreu um erro.");
       return;
     }
     
@@ -170,7 +170,7 @@ export const Scanner = () => {
 
   const handleSendToCRM = async (lead: Lead) => {
     if (!user?.email) {
-      addToast('Erro: UsuÃ¡rio nÃ£o logado.', 'error');
+      addToast('Erro: Usuário não logado.', 'error');
       return;
     }
     
@@ -202,7 +202,7 @@ export const Scanner = () => {
   }
 
   const generateWhatsAppMessage = (lead: Lead) => {
-    return encodeURIComponent(`OlÃ¡, encontrei o perfil da *${lead.name}* e percebi um potencial gigantesco! Posso enviar um material rÃ¡pido de como podemos escalar as vendas de vocÃªs?`);
+    return encodeURIComponent(`Olá, encontrei o perfil da *${lead.name}* e percebi um potencial gigantesco! Posso enviar um material rápido de como podemos escalar as vendas de vocês?`);
   }
 
   return (
@@ -211,7 +211,7 @@ export const Scanner = () => {
         <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
           <Search className="w-6 h-6 text-primary" /> Scanner de Leads
         </h2>
-        <p className="text-textSecondary">Encontre oportunidades comerciais por localizaÃ§Ã£o e nicho e prospecte instantaneamente.</p>
+        <p className="text-textSecondary">Encontre oportunidades comerciais por localização e nicho e prospecte instantaneamente.</p>
       </div>
 
       <Card>
@@ -295,7 +295,7 @@ export const Scanner = () => {
             <Search className="absolute inset-0 m-auto w-6 h-6 text-primary animate-pulse" />
           </div>
           <p className="text-lg font-medium text-white animate-pulse">Varrendo o Google Places...</p>
-          <p className="text-sm mt-2 text-primary">Encontrando as melhores oportunidades pra vocÃª.</p>
+          <p className="text-sm mt-2 text-primary">Encontrando as melhores oportunidades pra você.</p>
         </div>
       ) : leads.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -323,17 +323,17 @@ export const Scanner = () => {
                   </div>
                   <div className="flex items-center text-sm text-textSecondary">
                     <Phone className="w-4 h-4 mr-2 text-primary/70" />
-                    {lead.phone ? formatPhone(lead.phone) : 'NÃ£o informado'}
+                    {lead.phone ? formatPhone(lead.phone) : 'Não informado'}
                   </div>
                   <div className="flex items-center text-sm text-textSecondary">
                     <Smartphone className="w-4 h-4 mr-2 text-primary/70" />
-                    {lead.instagram || 'NÃ£o informado'}
+                    {lead.instagram || 'Não informado'}
                   </div>
                 </div>
 
                 {lead.id !== 'error' && (
                   <div className="flex flex-col gap-2 mt-auto">
-                    {/* WhatsApp BotÃ£o Principal */}
+                    {/* WhatsApp Botão Principal */}
                     {lead.phone ? (
                       <a 
                         href={`https://wa.me/55${lead.phone}?text=${generateWhatsAppMessage(lead)}`} 
@@ -353,7 +353,7 @@ export const Scanner = () => {
                       </Button>
                     )}
                     
-                    {/* BotÃµes SecundÃ¡rios */}
+                    {/* Botões Secundários */}
                     <div className="flex gap-2">
                       <Button 
                         variant="secondary" 
