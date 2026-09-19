@@ -7,6 +7,7 @@ import { OnboardingModal } from '@/components/ui/OnboardingModal'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { ToastContainer } from '@/components/ui/ToastContainer'
+import { SalesNotifier } from '@/components/ui/SalesNotifier'
 import { db } from '@/config/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import { Loader2, Lock } from 'lucide-react'
@@ -121,6 +122,7 @@ export const MainLayout = () => {
       <CopilotChat />
       <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ToastContainer />
+      <SalesNotifier />
     </div>
   )
 }
