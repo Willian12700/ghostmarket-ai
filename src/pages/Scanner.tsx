@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert } from 'lucide-react'
+import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert, Check, Plus, MessageSquare } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useMapsLibrary } from '@vis.gl/react-google-maps'
+import { useContractStore } from '@/store/contractStore'
+import { useAuthStore } from '@/store/authStore'
+import { useToastStore } from '@/store/toastStore'
+import confetti from 'canvas-confetti'
 
 interface Lead {
   id: string
@@ -29,14 +33,19 @@ interface City {
 export const Scanner = () => {
   const [isScanning, setIsScanning] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
+  const [savedLeads, setSavedLeads] = useState<Record<string, boolean>>({})
   
   const [states, setStates] = useState<State[]>([])
   const [cities, setCities] = useState<City[]>([])
   const [selectedState, setSelectedState] = useState('SP')
-  const [selectedCity, setSelectedCity] = useState('São Paulo')
+  const [selectedCity, setSelectedCity] = useState('SÃ£o Paulo')
   const [niche, setNiche] = useState('Barbearia')
   
   const placesLib = useMapsLibrary('places')
+  
+  const { addContract } = useContractStore()
+  const { user } = useAuthStore()
+  const { addToast } = useToastStore()
 
   // Load States
   useEffect(() => {
@@ -62,7 +71,7 @@ export const Scanner = () => {
 
   const handleScan = async () => {
     if (!placesLib) {
-      alert("A API do Google Maps ainda está carregando ou ocorreu um erro.");
+      alert("A API do Google Maps ainda estÃ¡ carregando ou ocorreu um erro.");
       return;
     }
     
@@ -89,12 +98,9 @@ export const Scanner = () => {
       }
       
       const realLeads: Lead[] = places.map((place: any) => {
-        // Formatar o telefone do Google
         let phone = place.nationalPhoneNumber || '';
         phone = String(phone).replace(/\D/g, ''); 
         
-        // Se a empresa não tiver telefone público no Google, deixamos vazio
-        // Opcional: tentar pegar instagram do websiteURI
         let insta = '';
         if (place.websiteURI && place.websiteURI.includes('instagram.com/')) {
           const match = place.websiteURI.match(/instagram\.com\/([^\/]+)/);
@@ -104,7 +110,7 @@ export const Scanner = () => {
         }
         
         if (!insta) {
-          insta = '@' + (place.displayName || niche).toLowerCase().replace(/[^a-z0-9]/g, '');
+          insta = '@' + (place.displayName || niche).toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
         }
 
         return {
@@ -112,7 +118,7 @@ export const Scanner = () => {
           name: place.displayName || niche,
           category: niche,
           city: selectedCity,
-          phone: phone, // Agora é real!
+          phone: phone,
           instagram: insta,
           status: 'Novo'
         };
@@ -147,32 +153,65 @@ export const Scanner = () => {
   const exportToCSV = () => {
     if (leads.length === 0) return;
     
-    // Header
-    let csvContent = "Nome,Categoria,Cidade,Telefone,Instagram\n";
+    const headers = ['Nome,Categoria,Cidade,Telefone,Instagram,Status'];
+    const rows = leads.map(l => 
+      `"${l.name}","${l.category}","${l.city}","${l.phone}","${l.instagram}","${l.status}"`
+    );
     
-    // Rows
-    leads.forEach(lead => {
-      // Remover aspas duplas caso existam no nome para não quebrar o CSV
-      const name = lead.name.replace(/"/g, '""');
-      csvContent += `"${name}","${lead.category}","${lead.city}","${lead.phone}","${lead.instagram}"\n`;
-    });
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `leads_${niche}_${selectedCity}.csv`);
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `leads_${selectedCity}_${niche}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
 
+  const handleSendToCRM = async (lead: Lead) => {
+    if (!user?.email) {
+      addToast('Erro: UsuÃ¡rio nÃ£o logado.', 'error');
+      return;
+    }
+    
+    try {
+      await addContract(user.uid, {
+        client: lead.name,
+        amount: 0, // Pode ser atualizado depois
+        date: new Date().toISOString().split('T')[0],
+        status: 'Lead',
+        phone: lead.phone,
+        instagram: lead.instagram,
+        city: lead.city
+      });
+      
+      setSavedLeads(prev => ({ ...prev, [lead.id]: true }));
+      addToast(`${lead.name} salvo no CRM!`, 'success');
+      
+      // Estoura um micro confete pra dar dopamina
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.8 },
+        colors: ['#8B5CF6', '#A855F7', '#D946EF']
+      });
+
+    } catch (error) {
+      addToast('Erro ao salvar no CRM.', 'error');
+    }
+  }
+
+  const generateWhatsAppMessage = (lead: Lead) => {
+    return encodeURIComponent(`OlÃ¡, encontrei o perfil da *${lead.name}* e percebi um potencial gigantesco! Posso enviar um material rÃ¡pido de como podemos escalar as vendas de vocÃªs?`);
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Scanner de Leads</h2>
-        <p className="text-textSecondary">Encontre oportunidades comerciais por localização e nicho.</p>
+        <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <Search className="w-6 h-6 text-primary" /> Scanner de Leads
+        </h2>
+        <p className="text-textSecondary">Encontre oportunidades comerciais por localizaÃ§Ã£o e nicho e prospecte instantaneamente.</p>
       </div>
 
       <Card>
@@ -223,7 +262,7 @@ export const Scanner = () => {
 
             <div className="flex gap-2">
               <Button 
-                className="flex-1" 
+                className="flex-1 shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)]" 
                 onClick={handleScan}
                 disabled={isScanning || !niche || !selectedCity}
               >
@@ -255,78 +294,99 @@ export const Scanner = () => {
             <div className="absolute inset-0 rounded-full border-t-2 border-primary animate-spin"></div>
             <Search className="absolute inset-0 m-auto w-6 h-6 text-primary animate-pulse" />
           </div>
-          <p className="text-lg font-medium animate-pulse">Escaneando oportunidades...</p>
-          <p className="text-sm mt-2">Isso pode levar alguns segundos.</p>
+          <p className="text-lg font-medium text-white animate-pulse">Varrendo o Google Places...</p>
+          <p className="text-sm mt-2 text-primary">Encontrando as melhores oportunidades pra vocÃª.</p>
         </div>
       ) : leads.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {leads.map((lead) => (
-            <Card key={lead.id} className="hover:border-primary/50 transition-colors">
-              <CardContent className="p-5">
+            <Card key={lead.id} className="hover:border-primary/50 transition-colors flex flex-col">
+              <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-bold text-white truncate pr-2">{lead.name}</h3>
+                    <h3 className="font-bold text-white truncate pr-2" title={lead.name}>{lead.name}</h3>
                     <p className="text-xs text-primary font-medium mt-1">{lead.category}</p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full border ${
-                    lead.status === 'Novo' 
+                    savedLeads[lead.id]
                       ? 'bg-success/10 text-success border-success/20' 
                       : 'bg-panelHover text-textSecondary border-border'
                   }`}>
-                    {lead.status}
+                    {savedLeads[lead.id] ? 'Salvo' : lead.status}
                   </span>
                 </div>
                 
-                <div className="space-y-2 mb-6">
+                <div className="space-y-2 mb-6 flex-1">
                   <div className="flex items-center text-sm text-textSecondary">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {lead.city}
+                    <MapPin className="w-4 h-4 mr-2 text-primary/70" />
+                    <span className="truncate">{lead.city}</span>
                   </div>
                   <div className="flex items-center text-sm text-textSecondary">
-                    <Phone className="w-4 h-4 mr-2" />
-                    {lead.phone ? formatPhone(lead.phone) : 'Não informado'}
+                    <Phone className="w-4 h-4 mr-2 text-primary/70" />
+                    {lead.phone ? formatPhone(lead.phone) : 'NÃ£o informado'}
                   </div>
                   <div className="flex items-center text-sm text-textSecondary">
-                    <Smartphone className="w-4 h-4 mr-2" />
-                    {lead.instagram || 'Não informado'}
+                    <Smartphone className="w-4 h-4 mr-2 text-primary/70" />
+                    {lead.instagram || 'NÃ£o informado'}
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  {lead.phone ? (
-                    <a 
-                      href={`https://wa.me/55${lead.phone}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex-1"
-                    >
-                      <Button variant="secondary" className="w-full bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
-                        WhatsApp
+                {lead.id !== 'error' && (
+                  <div className="flex flex-col gap-2 mt-auto">
+                    {/* WhatsApp BotÃ£o Principal */}
+                    {lead.phone ? (
+                      <a 
+                        href={`https://wa.me/55${lead.phone}?text=${generateWhatsAppMessage(lead)}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="w-full"
+                      >
+                        <Button className="w-full bg-[#25D366] hover:bg-[#1EBE5D] text-black font-bold">
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Chamar no WhatsApp
+                        </Button>
+                      </a>
+                    ) : (
+                      <Button disabled className="w-full bg-[#25D366]/20 text-[#25D366] font-bold border-none">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Sem Telefone
                       </Button>
-                    </a>
-                  ) : (
-                    <Button variant="secondary" disabled className="flex-1 opacity-50 bg-[#25D366]/5 text-[#25D366] border-[#25D366]/10">
-                      Sem Telefone
-                    </Button>
-                  )}
-                  
-                  {lead.instagram ? (
-                    <a 
-                      href={`https://instagram.com/${lead.instagram.replace('@', '')}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex-1"
-                    >
-                      <Button variant="secondary" className="w-full bg-[#E1306C]/10 text-[#E1306C] hover:bg-[#E1306C]/20 border-[#E1306C]/20">
-                        Instagram
+                    )}
+                    
+                    {/* BotÃµes SecundÃ¡rios */}
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="secondary" 
+                        className={`flex-1 ${savedLeads[lead.id] ? 'text-success bg-success/10 border-success/20' : ''}`}
+                        onClick={() => handleSendToCRM(lead)}
+                        disabled={savedLeads[lead.id]}
+                      >
+                        {savedLeads[lead.id] ? (
+                          <><Check className="w-4 h-4 mr-1" /> CRM</>
+                        ) : (
+                          <><Plus className="w-4 h-4 mr-1" /> CRM</>
+                        )}
                       </Button>
-                    </a>
-                  ) : (
-                    <Button variant="secondary" disabled className="flex-1 opacity-50 bg-[#E1306C]/5 text-[#E1306C] border-[#E1306C]/10">
-                      Sem Instagram
-                    </Button>
-                  )}
-                </div>
+
+                      {lead.instagram ? (
+                        <a 
+                          href={`https://instagram.com/${lead.instagram.replace('@', '')}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex-1"
+                        >
+                          <Button variant="secondary" className="w-full text-[#E1306C] hover:bg-[#E1306C]/10 border-[#E1306C]/20">
+                            Instagram
+                          </Button>
+                        </a>
+                      ) : (
+                        <Button variant="secondary" disabled className="flex-1 opacity-50 text-[#E1306C]">
+                          Insta (X)
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

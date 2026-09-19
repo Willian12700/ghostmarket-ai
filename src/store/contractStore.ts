@@ -11,6 +11,9 @@ export interface Contract {
   date: string
   status: CRMStatus
   userId: string
+  phone?: string
+  instagram?: string
+  city?: string
 }
 
 interface ContractState {
