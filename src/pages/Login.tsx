@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { signInWithEmailAndPassword } from 'firebase/auth'
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '@/config/firebase'
 import { motion } from 'framer-motion'
 
@@ -15,6 +15,7 @@ export const Login = () => {
     password: ''
   })
   const [loading, setLoading] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const { isAuthenticated } = useAuthStore()
   const { addToast } = useToastStore()
   const navigate = useNavigate()
@@ -42,6 +43,23 @@ export const Login = () => {
       addToast('E-mail ou senha incorretos.', 'error')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResetPassword = async () => {
+    if (!formData.email) {
+      addToast('Por favor, digite seu e-mail no campo acima para resetar a senha.', 'error')
+      return
+    }
+    
+    setResetting(true)
+    try {
+      await sendPasswordResetEmail(auth, formData.email)
+      addToast('E-mail de recuperação enviado! Verifique sua caixa de entrada.', 'success')
+    } catch (error: any) {
+      addToast('Erro ao enviar e-mail. Verifique se o endereço está correto.', 'error')
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -107,8 +125,13 @@ export const Login = () => {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="bg-panel focus:ring-secondary/50 transition-all duration-300"
                 />
-                <button type="button" className="absolute right-0 top-0 text-xs text-secondary hover:text-accent transition-colors font-medium">
-                  Esqueceu a senha?
+                <button 
+                  type="button" 
+                  onClick={handleResetPassword}
+                  disabled={resetting}
+                  className="absolute right-0 top-0 text-xs text-secondary hover:text-accent transition-colors font-medium disabled:opacity-50"
+                >
+                  {resetting ? 'Enviando...' : 'Esqueceu a senha?'}
                 </button>
               </div>
             </motion.div>
