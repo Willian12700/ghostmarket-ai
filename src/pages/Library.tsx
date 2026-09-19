@@ -16,7 +16,10 @@ export const Library = () => {
 
   useEffect(() => {
     const fetchHistory = async () => {
-      if (!user?.email) return
+      if (!user?.email) {
+        setLoading(false)
+        return
+      }
       setLoading(true)
       try {
         const q = query(
