@@ -48,9 +48,9 @@ export const Landing = () => {
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 relative z-50">
-            <Ghost className="w-6 h-6 text-primary" />
-            <span className="font-bold text-xl tracking-tight text-white">GhostMarket_<span className="text-primary">AI</span></span>
+          <Link to="/" className="flex items-center gap-2 relative z-50 group">
+            <Ghost className="w-6 h-6 text-secondary group-hover:text-accent transition-colors" />
+            <span className="font-bold text-xl tracking-tight text-white">GhostMarket_<span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">AI</span></span>
           </Link>
           
           {/* Desktop Nav */}
@@ -105,8 +105,9 @@ export const Landing = () => {
       {/* Hero Section */}
       <section className="pt-32 pb-24 px-6 relative overflow-hidden">
         {/* Background Effects */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primaryLight/10 rounded-full blur-[128px] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent/10 rounded-full blur-[150px] pointer-events-none" />
         
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
           <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="text-center lg:text-left">
@@ -118,7 +119,7 @@ export const Landing = () => {
               Vagas Abertas - SaaS Creator AI
             </motion.div>
             <motion.h1 variants={fadeInUp} className="text-5xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-[1.1]">
-              A inteligência artificial para criar e vender <span className="text-primary">SaaS</span>.
+              A inteligência artificial para criar e vender <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-secondary">SaaS</span>.
             </motion.h1>
             <motion.p variants={fadeInUp} className="text-xl text-textSecondary mb-10 max-w-2xl mx-auto lg:mx-0">
               Transforme ideias em produtos digitais, prospecte clientes em massa e gerencie contratos. Tudo em um único ecossistema focado em resultado.
@@ -314,8 +315,8 @@ export const Landing = () => {
             </motion.div>
 
             {/* Trimestral */}
-            <motion.div variants={fadeInUp} className="bg-background border-2 border-primary rounded-2xl p-8 shadow-[0_0_40px_rgba(124,58,237,0.15)] relative flex flex-col h-full transform md:-translate-y-4 hover:scale-[1.02] transition-transform duration-300">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider shadow-lg">
+            <motion.div variants={fadeInUp} className="bg-background border-[3px] border-transparent bg-clip-padding relative rounded-2xl p-8 shadow-[0_0_50px_rgba(217,70,239,0.15)] flex flex-col h-full transform md:-translate-y-4 hover:scale-[1.02] transition-transform duration-300 before:absolute before:-inset-[3px] before:-z-10 before:rounded-2xl before:bg-gradient-to-r before:from-primary before:via-accent before:to-secondary">
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold px-4 py-2 rounded-full tracking-wider shadow-lg">
                 MAIS POPULAR
               </div>
               <h3 className="text-xl font-bold text-white mb-2">PLANO TRIMESTRAL</h3>
@@ -399,7 +400,7 @@ export const Landing = () => {
 
       {/* CTA Final */}
       <section className="py-32 px-6 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-64 bg-primary/20 rounded-[100%] blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-64 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-[100%] blur-[120px] pointer-events-none" />
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -421,9 +422,9 @@ export const Landing = () => {
       <footer className="bg-panel border-t border-border py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-center md:text-left">
-            <Link to="/" className="flex items-center justify-center md:justify-start gap-2 mb-4">
-              <Ghost className="w-6 h-6 text-primary" />
-              <span className="font-bold text-xl tracking-tight text-white">GhostMarket_<span className="text-primary">AI</span></span>
+            <Link to="/" className="flex items-center justify-center md:justify-start gap-2 mb-4 group">
+              <Ghost className="w-6 h-6 text-secondary group-hover:text-accent transition-colors" />
+              <span className="font-bold text-xl tracking-tight text-white">GhostMarket_<span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">AI</span></span>
             </Link>
             <p className="text-textSecondary text-sm max-w-xs">
               Uma plataforma para transformar ideias digitais em produtos, sistemas e SaaS.
