@@ -40,7 +40,7 @@ Regras:
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest",
       systemInstruction: systemPrompt
     })
 
@@ -90,7 +90,7 @@ Regras:
     
     return res.status(500).json({ 
       error: 'Erro interno',
-      message: `[DEBUG IA]: ${errorMessage}`
+      message: `Ops, tivemos uma instabilidade. Erro: ${errorMessage.includes('not found') ? 'Modelo não encontrado' : errorMessage}`
     })
   }
 }
