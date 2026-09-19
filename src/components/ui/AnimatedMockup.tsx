@@ -24,7 +24,7 @@ function Counter({ from = 0, to, duration = 2, prefix = '', suffix = '' }: { fro
   }, [inView, count, to, duration])
 
   return (
-    <span ref={nodeRef}>
+    <span ref={nodeRef} className="whitespace-nowrap">
       {prefix}
       <motion.span>{rounded}</motion.span>
       {suffix}
@@ -42,10 +42,10 @@ export function AnimatedMockup() {
       initial={{ opacity: 0, scale: 0.9, rotateY: -15, rotateX: 5 }}
       animate={{ opacity: 1, scale: 1, rotateY: 0, rotateX: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="relative lg:ml-auto w-full max-w-lg perspective-1000"
+      className="relative lg:ml-auto w-full max-w-2xl perspective-1000"
     >
       <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
-      <div className="bg-background rounded-lg border border-border overflow-hidden flex h-[400px] md:h-[500px] shadow-2xl shadow-primary/20 transform hover:scale-[1.02] transition-transform duration-500">
+      <div className="bg-background rounded-xl border border-border overflow-hidden flex h-[400px] md:h-[480px] shadow-[0_0_50px_rgba(139,92,246,0.15)] transform hover:scale-[1.02] transition-transform duration-500">
         
         {/* Mockup Sidebar */}
         <div className="w-16 md:w-48 bg-panel border-r border-border hidden sm:flex flex-col p-4">
@@ -72,22 +72,22 @@ export function AnimatedMockup() {
             className="h-8 w-32 md:w-48 bg-border rounded mb-6 animate-pulse" 
           />
           
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 mb-6">
-            <div className="bg-panel border border-border rounded-xl p-3 md:p-4">
-              <div className="text-xs text-textSecondary mb-2">Receita Total</div>
-              <div className="text-lg md:text-2xl font-bold text-white">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
+            <div className="bg-panel border border-border rounded-xl p-4 md:p-5 flex flex-col justify-center">
+              <div className="text-xs md:text-sm text-textSecondary mb-1.5 font-medium">Receita Total</div>
+              <div className="text-xl md:text-3xl font-bold text-white tracking-tight">
                 <Counter to={12480} prefix="R$ " suffix=",00" duration={2.5} />
               </div>
             </div>
-            <div className="bg-panel border border-border rounded-xl p-3 md:p-4">
-              <div className="text-xs text-textSecondary mb-2">Assinaturas</div>
-              <div className="text-lg md:text-2xl font-bold text-white">
+            <div className="bg-panel border border-border rounded-xl p-4 md:p-5 flex flex-col justify-center">
+              <div className="text-xs md:text-sm text-textSecondary mb-1.5 font-medium">Assinaturas</div>
+              <div className="text-xl md:text-3xl font-bold text-white tracking-tight">
                 <Counter to={347} duration={2} />
               </div>
             </div>
-            <div className="bg-panel border border-border rounded-xl p-3 md:p-4 hidden md:block">
-              <div className="text-xs text-textSecondary mb-2">Conversão</div>
-              <div className="text-lg md:text-2xl font-bold text-white">
+            <div className="bg-panel border border-border rounded-xl p-4 md:p-5 hidden md:flex flex-col justify-center">
+              <div className="text-xs md:text-sm text-textSecondary mb-1.5 font-medium">Conversão</div>
+              <div className="text-xl md:text-3xl font-bold text-white tracking-tight">
                 <Counter to={8} suffix="%" duration={1.5} />
               </div>
             </div>
