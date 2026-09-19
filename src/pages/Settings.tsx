@@ -1,324 +1,244 @@
-import { useState, useRef, useEffect } from 'react'
-import { User, Shield, Globe, Key, Moon, Camera, Webhook, Palette, LayoutTemplate, Crown } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
+﻿import { useState, useRef, useEffect } from 'react'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Settings as SettingsIcon, Palette, Image as ImageIcon, Link as Shield, Moon, Globe, Key, Webhook, Unlock } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useToastStore } from '@/store/toastStore'
-import { db } from '@/config/firebase'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { updatePassword, getAuth } from 'firebase/auth'
+import { db, storage } from '@/config/firebase'
+import { doc, setDoc } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export const Settings = () => {
-  const { user, updateUserProfile, updateUserPassword } = useAuthStore()
+  const { user } = useAuthStore()
   const { theme, updateTheme } = useThemeStore()
   const { addToast } = useToastStore()
   
-  const [name, setName] = useState(user?.name || '')
-  
-  // Admin Release State
-  const [adminEmailInput, setAdminEmailInput] = useState('')
-  const [isAdminSaving, setIsAdminSaving] = useState(false)
-
-  const handleAdminRelease = async () => {
-    if (!adminEmailInput.trim()) return
-    setIsAdminSaving(true)
-    try {
-      await setDoc(doc(db, 'allowed_users', adminEmailInput.trim()), {
-        email: adminEmailInput.trim(),
-        status: 'approved',
-        used: false,
-        createdAt: serverTimestamp()
-      })
-      addToast('Acesso liberado com sucesso!', 'success')
-      setAdminEmailInput('')
-    } catch(err) {
-      addToast('Erro ao liberar acesso.', 'error')
-    } finally {
-      setIsAdminSaving(false)
-    }
-  }
-
-  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [agencyName, setAgencyName] = useState(theme.agencyName)
+  const [primaryColor, setPrimaryColor] = useState(theme.primaryColor)
+  const [appTheme, setAppTheme] = useState(theme.appTheme || 'default')
   
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSavingPassword, setIsSavingPassword] = useState(false)
+  const [isSavingTheme, setIsSavingTheme] = useState(false)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const [apiKey, setApiKey] = useState('')
   const [isApiModalOpen, setIsApiModalOpen] = useState(false)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // White-Label state
-  const [agencyName, setAgencyName] = useState(theme.agencyName)
-  const [primaryColor, setPrimaryColor] = useState(theme.primaryColor)
-  const [isSavingTheme, setIsSavingTheme] = useState(false)
-  const logoInputRef = useRef<HTMLInputElement>(null)
+  const [freeAccessEmail, setFreeAccessEmail] = useState('')
+  const [isGrantingAccess, setIsGrantingAccess] = useState(false)
 
   useEffect(() => {
     setAgencyName(theme.agencyName)
     setPrimaryColor(theme.primaryColor)
+    setAppTheme(theme.appTheme || 'default')
   }, [theme])
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        addToast('A logo deve ter no mÇ­ximo 2MB', 'error')
-        return
-      }
+    if (!file || !user?.uid) return
 
-      const reader = new FileReader()
-      reader.onloadend = async () => {
-        const base64String = reader.result as string
-        if (user?.email) {
-          await updateTheme(user.email, { logoUrl: base64String })
-          addToast('Logo atualizada com sucesso!', 'success')
-        }
-      }
-      reader.readAsDataURL(file)
+    setIsUploadingLogo(true)
+    try {
+      const storageRef = ref(storage, `logos/${user.uid}_${Date.now()}`)
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      
+      await updateTheme(user.uid, { logoUrl: url })
+      addToast('Logo atualizada com sucesso', 'success')
+    } catch (error) {
+      addToast('Erro ao fazer upload da logo', 'error')
+      console.error(error)
+    } finally {
+      setIsUploadingLogo(false)
     }
   }
 
   const handleSaveTheme = async () => {
-    if (!user?.email) return
+    if (!user?.uid) return
     setIsSavingTheme(true)
     try {
-      await updateTheme(user.email, { 
-        agencyName, 
-        primaryColor 
-      })
-      addToast('PersonalizaÇœo salva com sucesso!', 'success')
+      await updateTheme(user.uid, { agencyName, primaryColor, appTheme })
+      addToast('AparÃªncia atualizada com sucesso', 'success')
     } catch (error) {
-      addToast('Erro ao salvar personalizaÇœo', 'error')
+      addToast('Erro ao atualizar aparÃªncia', 'error')
     } finally {
       setIsSavingTheme(false)
     }
   }
 
-  const handleSaveApi = () => {
-    addToast('ConfiguraÃ§Ã£o salva com sucesso!', 'success')
-    setIsApiModalOpen(false)
-  }
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    if (!file.type.startsWith('image/')) {
-      addToast('Por favor, selecione uma imagem vÃ¡lida.', 'error')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const img = new Image()
-      img.onload = async () => {
-        // Create a canvas to compress the image
-        const canvas = document.createElement('canvas')
-        const MAX_WIDTH = 200
-        const MAX_HEIGHT = 200
-        let width = img.width
-        let height = img.height
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width
-            width = MAX_WIDTH
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height
-            height = MAX_HEIGHT
-          }
-        }
-
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx?.drawImage(img, 0, 0, width, height)
-
-        // Compress heavily so it fits in Firebase Auth photoURL limit
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5)
-
-        try {
-          setIsSavingProfile(true)
-          // Try to save to Firebase Auth (this will work for local host and Vercel)
-          await updateUserProfile(name, compressedBase64)
-          addToast('Foto de perfil atualizada!', 'success')
-        } catch (error: any) {
-          console.error(error)
-          // Firebase auth has a limit on photoURL length. 
-          // If it still fails, fallback to local storage
-          localStorage.setItem(`profile_pic_${user?.uid}`, compressedBase64)
-          await updateUserProfile(name, compressedBase64) // updates local zustand store even if firebase fails
-          addToast('Foto de perfil salva localmente!', 'success')
-        } finally {
-          setIsSavingProfile(false)
-        }
-      }
-      img.src = event.target?.result as string
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const handleSaveProfile = async () => {
-    try {
-      setIsSavingProfile(true)
-      await updateUserProfile(name, user?.photoURL || undefined)
-      addToast('Perfil atualizado com sucesso!', 'success')
-    } catch (error) {
-      console.error(error)
-      addToast('Erro ao atualizar perfil.', 'error')
-    } finally {
-      setIsSavingProfile(false)
-    }
-  }
-
   const handleSavePassword = async () => {
     if (password !== confirmPassword) {
-      addToast('As senhas nÃ£o coincidem.', 'error')
-      return
-    }
-    if (password.length < 6) {
-      addToast('A senha deve ter no mÃ­nimo 6 caracteres.', 'info')
+      addToast('As senhas nÃ£o coincidem', 'error')
       return
     }
 
+    if (password.length < 6) {
+      addToast('A senha deve ter pelo menos 6 caracteres', 'error')
+      return
+    }
+
+    setIsSavingPassword(true)
     try {
-      setIsSavingPassword(true)
-      await updateUserPassword(password)
-      addToast('Senha atualizada com sucesso!', 'success')
-      setPassword('')
-      setConfirmPassword('')
+      if (user) {
+        const fbUser = getAuth().currentUser; if(fbUser) await updatePassword(fbUser, password)
+        addToast('Senha atualizada com sucesso', 'success')
+        setPassword('')
+        setConfirmPassword('')
+      }
     } catch (error: any) {
       console.error(error)
       if (error.code === 'auth/requires-recent-login') {
-        addToast('VocÃª precisa fazer login novamente para alterar a senha.', 'error')
+        addToast('VocÃª precisa fazer login novamente para alterar a senha', 'error')
       } else {
-        addToast('Erro ao atualizar senha.', 'error')
+        addToast('Erro ao atualizar senha', 'error')
       }
     } finally {
       setIsSavingPassword(false)
     }
   }
 
+  const handleSaveApi = () => {
+    addToast('ConfiguraÃ§Ã£o salva (SimulaÃ§Ã£o)', 'success')
+    setIsApiModalOpen(false)
+  }
+
+  const handleGrantFreeAccess = async () => {
+    if (!freeAccessEmail.trim()) {
+      addToast('Digite um email vÃ¡lido', 'error')
+      return
+    }
+
+    setIsGrantingAccess(true)
+    try {
+      await setDoc(doc(db, 'allowed_users', freeAccessEmail.toLowerCase().trim()), {
+        email: freeAccessEmail.toLowerCase().trim(),
+        status: 'approved',
+        plan: 'vitalicio',
+        grantedByAdmin: true,
+        grantedAt: new Date().toISOString()
+      })
+      
+      addToast(`Acesso VitalÃ­cio liberado para ${freeAccessEmail}!`, 'success')
+      setFreeAccessEmail('')
+    } catch (error) {
+      console.error(error)
+      addToast('Erro ao liberar acesso.', 'error')
+    } finally {
+      setIsGrantingAccess(false)
+    }
+  }
+
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl pb-10">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <SettingsIcon className="w-6 h-6 text-primary" />
+          ConfiguraÃ§Ãµes
+        </h2>
+        <p className="text-textSecondary">Gerencie as preferÃªncias da sua conta e aparÃªncia do painel.</p>
+      </div>
+
       {user?.email === 'willrandrier@gmail.com' && (
-        <Card className="border-success/30 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-success">
-              <Crown className="w-5 h-5" />
-              Painel do Administrador (Liberacao Manual)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-textSecondary mb-4">Libere o acesso instantaneo ao SaaS para qualquer e-mail sem precisar pagar na Cakto.</p>
-            <div className="flex gap-3">
-              <Input 
-                placeholder="E-mail do cliente (ex: cliente@gmail.com)"
-                value={adminEmailInput}
-                onChange={(e) => setAdminEmailInput(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleAdminRelease} disabled={isAdminSaving || !adminEmailInput.trim()} className="bg-success hover:bg-success/90 text-white">
-                {isAdminSaving ? 'Liberando...' : 'Liberar Acesso Gratis'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <>
+          <Card className="border-primary/50 shadow-[0_0_15px_rgba(139,92,246,0.15)] bg-gradient-to-br from-panel to-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Unlock className="w-5 h-5" />
+                Painel do Administrador - LiberaÃ§Ã£o de Acesso
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-textSecondary">
+                  Libere acesso vitalÃ­cio gratuito para qualquer usuÃ¡rio. Basta informar o e-mail que ele utilizarÃ¡ (ou utilizou) para criar a conta.
+                </p>
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <Input 
+                      label="E-mail do UsuÃ¡rio" 
+                      placeholder="email@exemplo.com"
+                      value={freeAccessEmail}
+                      onChange={(e) => setFreeAccessEmail(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleGrantFreeAccess}
+                    disabled={isGrantingAccess || !freeAccessEmail}
+                    className="w-48"
+                  >
+                    {isGrantingAccess ? 'Liberando...' : 'Liberar Acesso Free'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Moon className="w-5 h-5 text-primary" />
+                Tema do Sistema
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-textSecondary">Tema Base (VisÃ­vel para todos)</label>
+                  <select
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    value={appTheme}
+                    onChange={(e) => setAppTheme(e.target.value as any)}
+                  >
+                    <option value="default">PadrÃ£o (Roxo / Essence GhostMarket)</option>
+                    <option value="dark">Escuro (Cinza / Cyberpunk)</option>
+                    <option value="light">Claro (Branco)</option>
+                  </select>
+                </div>
+                <Button onClick={handleSaveTheme} disabled={isSavingTheme}>
+                  {isSavingTheme ? 'Salvando...' : 'Aplicar Tema'}
+                </Button>
+                <p className="text-xs text-textSecondary">A troca de tema afeta as cores gerais do painel para refletir a sua escolha.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5 text-primary" />
-            Perfil
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handlePhotoUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              {user?.photoURL ? (
-                <img 
-                  src={user.photoURL} 
-                  alt="Profile" 
-                  className="w-16 h-16 rounded-full object-cover border-2 border-primary"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primaryLight flex items-center justify-center text-2xl text-white font-bold border-2 border-transparent">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                <Camera className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <div>
-              <p className="font-bold text-lg">{user?.name || 'UsuÃ¡rio'}</p>
-              <p className="text-textSecondary">{user?.email || 'email@exemplo.com'}</p>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="text-xs text-primary hover:underline mt-1"
-                disabled={isSavingProfile}
-              >
-                Trocar foto de perfil
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Input 
-              label="Nome completo" 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-            />
-            <Input 
-              label="E-mail" 
-              value={user?.email || ''} 
-              disabled 
-            />
-          </div>
-          <Button onClick={handleSaveProfile} disabled={isSavingProfile || name === user?.name}>
-            {isSavingProfile ? 'Salvando...' : 'Salvar AlteraÃ§Ãµes'}
-          </Button>
-        </CardContent>
-      </Card>
-
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LayoutTemplate className="w-5 h-5 text-primary" />
-            PersonalizaÇœo da AgÇ¦ncia (White-Label)
+            <Palette className="w-5 h-5 text-primary" />
+            White Label
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-6">
-            <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
+            <div className="relative group">
               <input 
                 type="file" 
-                ref={logoInputRef} 
-                onChange={handleLogoUpload}
+                ref={logoInputRef}
+                className="hidden" 
                 accept="image/*"
-                className="hidden"
+                onChange={handleLogoUpload}
               />
               {theme.logoUrl ? (
-                <img 
-                  src={theme.logoUrl} 
-                  alt="Logo da AgÇ¦ncia" 
-                  className="w-20 h-20 rounded-lg object-contain border-2 border-primary/20 bg-panel p-2"
-                />
+                <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-border group-hover:border-primary transition-colors cursor-pointer" onClick={() => logoInputRef.current?.click()}>
+                  <img src={theme.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <ImageIcon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
               ) : (
-                <div className="w-20 h-20 rounded-lg bg-panel border-2 border-dashed border-border flex flex-col items-center justify-center text-textSecondary group-hover:border-primary/50 group-hover:text-primary transition-colors">
+                <div 
+                  className="w-24 h-24 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-textSecondary cursor-pointer hover:border-primary hover:text-primary transition-colors"
+                  onClick={() => logoInputRef.current?.click()}
+                >
                   <Palette className="w-6 h-6 mb-1" />
                   <span className="text-xs">Logo</span>
                 </div>
@@ -326,17 +246,17 @@ export const Settings = () => {
             </div>
             <div className="flex-1">
               <p className="font-medium text-white mb-1">Logo do Painel</p>
-              <p className="text-sm text-textSecondary mb-2">Recomendado: 256x256px, PNG. MÇ­ximo 2MB.</p>
-              <Button size="sm" variant="secondary" onClick={() => logoInputRef.current?.click()}>
-                Enviar nova logo
+              <p className="text-sm text-textSecondary mb-2">Recomendado: 256x256px, PNG. MÃ¡ximo 2MB.</p>
+              <Button size="sm" variant="secondary" onClick={() => logoInputRef.current?.click()} disabled={isUploadingLogo}>
+                {isUploadingLogo ? 'Enviando...' : 'Enviar nova logo'}
               </Button>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <Input 
-              label="Nome da AgÇ¦ncia" 
-              placeholder="Ex: AgÇ¦ncia Rocket" 
+              label="Nome da AgÃªncia" 
+              placeholder="Ex: AgÃªncia Rocket" 
               value={agencyName}
               onChange={(e) => setAgencyName(e.target.value)}
             />
@@ -359,29 +279,9 @@ export const Settings = () => {
           </div>
 
           <div className="pt-2">
-            <Button onClick={handleSaveTheme} disabled={isSavingTheme || (agencyName === theme.agencyName && primaryColor === theme.primaryColor)}>
-              {isSavingTheme ? 'Salvando...' : 'Salvar PersonalizaÇœo'}
+            <Button onClick={handleSaveTheme} disabled={isSavingTheme || (agencyName === theme.agencyName && primaryColor === theme.primaryColor && appTheme === theme.appTheme)}>
+              {isSavingTheme ? 'Salvando...' : 'Salvar PersonalizaÃ§Ã£o'}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Moon className="w-5 h-5 text-primary" />
-            AparÃªncia
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-background">
-            <div>
-              <p className="font-medium text-white">Modo escuro</p>
-              <p className="text-sm text-textSecondary">Ativo por padrÃ£o na GhostMarket AI</p>
-            </div>
-            <div className="w-11 h-6 bg-primary rounded-full relative cursor-not-allowed">
-              <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
-            </div>
           </div>
         </CardContent>
       </Card>
