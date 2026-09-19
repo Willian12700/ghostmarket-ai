@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
+import { CopilotChat } from '@/components/ui/CopilotChat'
+import { OnboardingModal } from '@/components/ui/OnboardingModal'
 import { useAuthStore } from '@/store/authStore'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { db } from '@/config/firebase'
@@ -12,6 +14,7 @@ import { Button } from '@/components/ui/Button'
 const pageInfo: Record<string, { title: string; description: string }> = {
   '/dashboard': { title: 'Painel de Controle', description: 'Acompanhe suas vendas, projetos e leads em um único lugar.' },
   '/creator': { title: 'Creator IA', description: 'Crie especificações completas para transformar ideias em aplicações SaaS.' },
+  '/library': { title: 'Biblioteca IA', description: 'Todo o seu histórico de criações salvas.' },
   '/scanner': { title: 'Scanner de Leads', description: 'Encontre oportunidades comerciais por localização e nicho.' },
   '/contracts': { title: 'Gestão de Contratos', description: 'Gerencie seus clientes, contratos e valores em um único painel.' },
   '/integrations': { title: 'Integração API', description: 'Conecte seu gateway de pagamento para sincronizar suas vendas automaticamente.' },
@@ -22,6 +25,7 @@ export const MainLayout = () => {
   const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     const checkSubscription = async () => {
@@ -33,6 +37,9 @@ export const MainLayout = () => {
         
         if (docSnap.exists() && docSnap.data().status === 'approved') {
           setHasSubscription(true)
+          if (docSnap.data().used === false) {
+            setShowOnboarding(true)
+          }
         } else {
           setHasSubscription(false)
         }
@@ -100,6 +107,8 @@ export const MainLayout = () => {
           <Outlet />
         </main>
       </div>
+      <CopilotChat />
+      <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ToastContainer />
     </div>
   )

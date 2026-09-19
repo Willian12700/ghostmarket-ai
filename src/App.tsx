@@ -7,6 +7,7 @@ import { Register } from '@/pages/Register'
 import { ResetPassword } from '@/pages/ResetPassword'
 import { Dashboard } from '@/pages/Dashboard'
 import { Creator } from '@/pages/Creator'
+import { Library } from '@/pages/Library'
 import { PromptBuilder } from '@/pages/PromptBuilder'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
@@ -52,6 +53,7 @@ function App() {
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/creator" element={<Creator />} />
+              <Route path="/library" element={<Library />} />
               <Route path="/prompt-builder" element={<PromptBuilder />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/contracts" element={<Contracts />} />

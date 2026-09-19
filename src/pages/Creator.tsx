@@ -4,8 +4,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
+import { useAuthStore } from '@/store/authStore'
+import { db } from '@/config/firebase'
 
 export const Creator = () => {
+  const { user } = useAuthStore()
   const { addToast } = useToastStore()
   
   const [activeTab, setActiveTab] = useState<'abertura' | 'followup'>('abertura')
@@ -26,7 +29,7 @@ export const Creator = () => {
   const generateScript = () => {
     setIsGenerating(true)
     
-    setTimeout(() => {
+    setTimeout(async () => {
       const { clientName, niche, product, offer, tone, followUpReason } = formData
       
       const firstName = clientName ? clientName.split(' ')[0] : 'Empreendedor'
@@ -56,6 +59,22 @@ export const Creator = () => {
       setGeneratedScript(script)
       setIsGenerating(false)
       addToast('Script gerado com sucesso!', 'success')
+
+      // Salva no histrico
+      try {
+        if (user?.email) {
+          const { addDoc, collection, serverTimestamp } = await import('firebase/firestore')
+          await addDoc(collection(db, 'ai_history'), {
+            userId: user.email,
+            type: activeTab === 'abertura' ? 'Abertura' : 'Follow-Up',
+            niche: formData.niche || 'Geral',
+            script: script,
+            timestamp: serverTimestamp()
+          })
+        }
+      } catch (err) {
+        console.error("Erro ao salvar histrico:", err)
+      }
     }, 1200)
   }
 
