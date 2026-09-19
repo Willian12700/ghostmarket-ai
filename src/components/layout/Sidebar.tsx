@@ -1,6 +1,6 @@
 
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, X, Code, User, BookMarked, Sparkles } from 'lucide-react'
+import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -29,6 +29,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
     { to: '/settings', icon: User, label: 'Meu Perfil' },
     { to: '/integrations', icon: Settings, label: 'Integrações' },
+    { to: '/affiliates', icon: Ghost, label: 'Programa de Afiliados' },
   ]
 
   return (

@@ -250,7 +250,7 @@ export const Landing = () => {
 
           <motion.div 
             initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}
-            className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-center"
+            className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-center"
           >
             {/* Mensal */}
             <motion.div variants={fadeInUp} className="bg-panel border border-border rounded-2xl p-8 shadow-xl flex flex-col h-full hover:border-primary/50 transition-colors">
@@ -265,44 +265,28 @@ export const Landing = () => {
                 ))}
               </ul>
               <a href={CHECKOUT_URLS.mensal} className="w-full">
-                <Button variant="secondary" className="w-full" size="lg">Assinar Mensal</Button>
-              </a>
-            </motion.div>
-
-            {/* Trimestral */}
-            <motion.div variants={fadeInUp} className="bg-background border-[3px] border-transparent bg-clip-padding relative rounded-2xl p-8 shadow-[0_0_50px_rgba(217,70,239,0.15)] flex flex-col h-full transform md:-translate-y-4 hover:scale-[1.02] transition-transform duration-300 before:absolute before:-inset-[3px] before:-z-10 before:rounded-2xl before:bg-gradient-to-r before:from-primary before:via-accent before:to-secondary">
-              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold px-4 py-2 rounded-full tracking-wider shadow-lg">
-                MAIS POPULAR
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">PLANO TRIMESTRAL</h3>
-              <div className="text-4xl font-bold text-white mb-6">R$ 299 <span className="text-lg text-textSecondary font-normal">/ 3 meses</span></div>
-              <ul className="space-y-4 mb-8 flex-1">
-                {['Acesso completo', 'Gerador avançado', 'Prospecção inteligente', 'Scanner', 'Dashboard', 'CRM', 'Recursos premium'].map((feature, i) => (
-                  <li key={i} className="flex items-start text-white font-medium">
-                    <CheckCircle2 className="w-5 h-5 text-primary mr-3 flex-shrink-0 mt-0.5" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <a href={CHECKOUT_URLS.trimestral} className="w-full">
-                <Button className="w-full" size="lg">Assinar Trimestral</Button>
+                <Button variant="secondary" className="w-full h-12 text-lg font-bold" size="lg">Começar Agora</Button>
               </a>
             </motion.div>
 
             {/* Vitalício */}
-            <motion.div variants={fadeInUp} className="bg-panel border border-border rounded-2xl p-8 shadow-xl flex flex-col h-full hover:border-primary/50 transition-colors">
+            <motion.div variants={fadeInUp} className="bg-primary/5 border border-primary/50 rounded-2xl p-8 shadow-2xl flex flex-col h-full relative transform md:-translate-y-4">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold tracking-wide shadow-lg">
+                MAIS VENDIDO
+              </div>
               <h3 className="text-xl font-bold text-white mb-2">PLANO VITALÍCIO</h3>
-              <div className="text-4xl font-bold text-white mb-6">R$ 649,90<span className="text-lg text-textSecondary font-normal">/único</span></div>
+              <div className="text-4xl font-bold text-white mb-2">12x R$ 30,00</div>
+              <p className="text-sm text-textSecondary mb-6">Ou R$ 360 à vista</p>
               <ul className="space-y-4 mb-8 flex-1">
                 {['Acesso vitalício', 'Atualizações gratuitas', 'Suporte VIP prioritário', 'Sem mensalidades', 'Acesso completo para sempre'].map((feature, i) => (
-                  <li key={i} className="flex items-start text-textSecondary">
-                    <CheckCircle2 className="w-5 h-5 text-primary mr-3 flex-shrink-0 mt-0.5" />
+                  <li key={i} className="flex items-center text-white">
+                    <CheckCircle2 className="w-5 h-5 text-primary mr-3 shrink-0" />
                     {feature}
                   </li>
                 ))}
               </ul>
               <a href={CHECKOUT_URLS.anual} className="w-full">
-                <Button variant="secondary" className="w-full" size="lg">Assinar Vitalício</Button>
+                <Button className="w-full h-12 text-lg font-bold shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)]" size="lg">Garantir Acesso Vitalício</Button>
               </a>
             </motion.div>
           </motion.div>

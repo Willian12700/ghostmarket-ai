@@ -12,6 +12,7 @@ import { PromptBuilder } from '@/pages/PromptBuilder'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
+import { Affiliates } from '@/pages/Affiliates'
 import { Integrations } from '@/pages/Integrations'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { useAuthStore } from '@/store/authStore'
@@ -59,6 +60,7 @@ function App() {
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/integrations" element={<Integrations />} />
+              <Route path="/affiliates" element={<Affiliates />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
