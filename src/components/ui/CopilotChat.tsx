@@ -31,24 +31,55 @@ export const CopilotChat = () => {
     scrollToBottom()
   }, [messages, isTyping])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return
 
     const userMessage: Message = { id: Date.now().toString(), text: input, sender: 'user' }
+    
+    // Filtramos as mensagens anteriores para enviar no histórico (tiramos a do sistema inicial para não poluir se quiser)
+    const currentHistory = [...messages]
+    
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setIsTyping(true)
 
-    // Simulando chamada de IA (aqui podemos conectar com a API da OpenAI/Gemini no futuro)
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/copilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          history: currentHistory.map(m => ({ sender: m.sender, text: m.text })),
+          message: input 
+        })
+      })
+
+      const data = await response.json()
+
       setIsTyping(false)
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'Ótima pergunta! Para alavancar suas vendas, recomendo que você utilize nossa aba "Creator IA" para gerar copies persuasivas e o "Scanner de Leads" para encontrar novos clientes na sua região.',
-        sender: 'ai'
+
+      if (!response.ok) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: data.message || 'Ops, deu um erro ao chamar a IA.',
+          sender: 'ai'
+        }])
+        return
       }
-      setMessages(prev => [...prev, aiResponse])
-    }, 1500)
+
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: data.text,
+        sender: 'ai'
+      }])
+      
+    } catch (error) {
+      setIsTyping(false)
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: 'Erro de conexão com o Copiloto. Tente novamente.',
+        sender: 'ai'
+      }])
+    }
   }
 
   return (
