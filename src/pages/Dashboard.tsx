@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
-import { DollarSign, Briefcase, Users, CreditCard, CheckCircle2, Clock } from 'lucide-react'
+import { DollarSign, RefreshCw, Plus, ShoppingCart, TrendingUp, Activity } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+
 import { useContractStore } from '@/store/contractStore'
 import { useAuthStore } from '@/store/authStore'
 import { db } from '@/config/firebase'
@@ -138,189 +138,197 @@ export const Dashboard = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Fechado': return <CheckCircle2 className="w-4 h-4 text-success" />
-      default: return <Clock className="w-4 h-4 text-warning" />
-    }
-  }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Fechado': return 'text-success bg-success/10'
-      default: return 'text-warning bg-warning/10'
-    }
-  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold tracking-tight">Visão Geral</h2>
+      
+      {/* HEADER PRINCIPAL (CENTRAL DE PERFORMANCE) */}
+      <div className="bg-[#0b0416] rounded-2xl p-8 border border-primary/20 shadow-[0_0_30px_rgba(139,92,246,0.05)] relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
         
-        {/* Date Filters */}
-        <div className="flex bg-panel border border-border rounded-lg p-1">
-          <button 
-            onClick={() => setDateFilter('hoje')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'hoje' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
-          >
-            Hoje
-          </button>
-          <button 
-            onClick={() => setDateFilter('semana')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'semana' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
-          >
-            Semana
-          </button>
-          <button 
-            onClick={() => setDateFilter('mes')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'mes' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
-          >
-            Mês
-          </button>
-          <button 
-            onClick={() => setDateFilter('ano')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${dateFilter === 'ano' ? 'bg-primary text-white' : 'text-textSecondary hover:text-white'}`}
-          >
-            1 Ano
-          </button>
+        <div className="z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-4 tracking-wider">
+            <Activity className="w-3 h-3" />
+            CENTRAL DE PERFORMANCE
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">Olá, {user?.name?.split(' ')[0] || 'Usuário'}.</h1>
+          <p className="text-textSecondary mb-6">Sua performance de vendas atualizada em tempo real.</p>
+          
+          {/* Filtros em Pílulas (Pills) */}
+          <div className="flex bg-[#130922] border border-primary/20 rounded-full p-1 w-fit">
+            <button 
+              onClick={() => setDateFilter('hoje')}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'hoje' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+            >
+              Hoje
+            </button>
+            <button 
+              onClick={() => setDateFilter('semana')}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'semana' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+            >
+              7 dias
+            </button>
+            <button 
+              onClick={() => setDateFilter('mes')}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'mes' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+            >
+              30 dias
+            </button>
+            <button 
+              onClick={() => setDateFilter('ano')}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'ano' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+            >
+              12 meses
+            </button>
+          </div>
+        </div>
+
+        <div className="z-10 md:text-right">
+          <p className="text-xs font-bold text-textSecondary uppercase tracking-widest mb-2">FATURAMENTO TOTAL</p>
+          <div className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
+            {formatCurrency(totalRevenue)}
+          </div>
+          
+          <div className="flex items-center md:justify-end gap-3">
+            <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg font-medium transition-colors text-sm shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+              <Plus className="w-4 h-4" /> Registrar venda
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-2 bg-[#1a0f2e] hover:bg-[#23153d] border border-primary/30 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+            >
+              <RefreshCw className="w-4 h-4 text-textSecondary" /> Atualizar
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Metrics */}
+      {/* METRICS ROW */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-textSecondary">
-              Receita total
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-            <p className="text-xs text-textSecondary flex items-center mt-1">
-              +0% em relação ao período anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-textSecondary">
-              Projetos ativos
-            </CardTitle>
-            <Briefcase className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeProjects}</div>
-            <p className="text-xs text-textSecondary mt-1">
-              Nenhum projeto finalizado
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-textSecondary">
-              Leads capturados
-            </CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{capturedLeads}</div>
-            <p className="text-xs text-textSecondary flex items-center mt-1">
-              0 novos leads
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-[#0b0416] border border-primary/10 rounded-2xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-[11px] font-bold text-textSecondary uppercase tracking-widest">PROJETOS ATIVOS</h3>
+            <ShoppingCart className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+          </div>
+          <div className="text-3xl font-extrabold text-white">{activeProjects}</div>
+        </div>
+
+        <div className="bg-[#0b0416] border border-primary/10 rounded-2xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-[11px] font-bold text-textSecondary uppercase tracking-widest">LEADS CAPTURADOS</h3>
+            <TrendingUp className="w-4 h-4 text-success/60 group-hover:text-success transition-colors" />
+          </div>
+          <div className="text-3xl font-extrabold text-white">{capturedLeads}</div>
+        </div>
+
+        <div className="bg-[#0b0416] border border-primary/10 rounded-2xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-[11px] font-bold text-textSecondary uppercase tracking-widest">TICKET MÉDIO</h3>
+            <DollarSign className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+          </div>
+          <div className="text-3xl font-extrabold text-white">
+            {formatCurrency(totalRevenue > 0 && activeProjects > 0 ? totalRevenue / activeProjects : 0)}
+          </div>
+        </div>
       </div>
 
+      {/* BOTTOM SECTION */}
       <div className="grid gap-6 md:grid-cols-7">
-        {/* Chart */}
-        <Card className="md:col-span-4">
-          <CardHeader>
-            <CardTitle>Desempenho de Vendas</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-0">
-            <div className="h-[300px] w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#7C3AED" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272A" />
-                  <XAxis 
-                    dataKey="day" 
-                    stroke="#9CA3AF" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false}
-                  />
-                  <YAxis 
-                    stroke="#9CA3AF" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false}
-                    tickFormatter={(value) => `R$ ${value}`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#111111', borderColor: '#27272A', borderRadius: '8px' }}
-                    itemStyle={{ color: '#F3F4F6' }}
-                    formatter={(value: any) => [formatCurrency(value as number), 'Receita']}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#7C3AED" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorRevenue)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+        
+        {/* CHART BLOCK */}
+        <div className="md:col-span-4 bg-[#0b0416] border border-primary/20 rounded-2xl p-6 relative overflow-hidden">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">EVOLUÇÃO</p>
+              <h3 className="text-sm font-medium text-white">Faturamento x Vendas</h3>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-4 text-xs font-medium">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(139,92,246,0.8)]"></span> Faturamento</span>
+            </div>
+          </div>
+          
+          <div className="h-[260px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={salesData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenueGlow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#7C3AED" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
+                <XAxis 
+                  dataKey="day" 
+                  stroke="#6b7280" 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false}
+                />
+                <YAxis 
+                  stroke="#6b7280" 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false}
+                  tickFormatter={(value) => `R$ ${value}`}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#000000', borderColor: '#7C3AED', borderRadius: '12px', boxShadow: '0 0 20px rgba(139,92,246,0.3)' }}
+                  itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                  labelStyle={{ color: '#9CA3AF' }}
+                  formatter={(value: any) => [formatCurrency(value as number), 'Receita']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#a78bfa" 
+                  strokeWidth={3}
+                  activeDot={{ r: 6, fill: "#fff", stroke: "#a78bfa", strokeWidth: 3 }}
+                  fillOpacity={1} 
+                  fill="url(#colorRevenueGlow)" 
+                  style={{ filter: 'drop-shadow(0px 0px 8px rgba(139,92,246,0.5))' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-        {/* Recent Transactions */}
-        <Card className="md:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-primary" />
-              Últimas transações
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* RECENT TRANSACTIONS BLOCK */}
+        <div className="md:col-span-3 bg-[#0b0416] border border-primary/20 rounded-2xl p-6 relative overflow-hidden">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">TEMPO REAL</p>
+              <h3 className="text-sm font-medium text-white">Vendas recentes</h3>
+            </div>
+            <div className="bg-success/20 text-success text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-success/30">
+              <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></span>
+              Live
+            </div>
+          </div>
+
+          <div className="space-y-3 overflow-y-auto pr-2 max-h-[260px] custom-scrollbar">
             {recentTransactions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <CreditCard className="w-10 h-10 text-textSecondary/30 mb-3" />
-                <p className="text-textSecondary">Nenhuma transação encontrada neste período.</p>
+                <p className="text-textSecondary text-sm">Nenhuma transação recente.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${getStatusColor(tx.status)}`}>
-                        {getStatusIcon(tx.status)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-textPrimary">{tx.clientName}</p>
-                        <p className="text-xs text-textSecondary">{tx.date}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-white">{formatCurrency(tx.amount)}</p>
-                      <p className={`text-xs mt-0.5 ${tx.status === 'Fechado' ? 'text-success' : 'text-warning'}`}>
-                        {tx.status}
-                      </p>
-                    </div>
+              recentTransactions.map((tx) => (
+                <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#11081e] border border-primary/10 hover:border-primary/30 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-[#0a1e14] border border-[#164a2e] flex items-center justify-center shrink-0">
+                    <DollarSign className="w-5 h-5 text-success" />
                   </div>
-                ))}
-              </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-xs font-medium text-white truncate">{tx.clientName}</p>
+                    <p className="text-[10px] text-textSecondary mt-0.5">{tx.date}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-success">+{formatCurrency(tx.amount)}</p>
+                  </div>
+                </div>
+              ))
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   )
