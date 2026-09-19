@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Wand2, Copy, Check, Code, Video, Bot, Zap } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -141,7 +141,7 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÃ‡ÃƒO PASSO A PASSO.`
             <iframe 
               width="100%" 
               height="100%" 
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ" /* âš ï¸ COLOQUE O LINK DO SEU VÃDEO AQUI âš ï¸ */
+              src="https://www.youtube.com/embed/DhDSGnVCYtM"
               title="Tutorial Prompt Builder"
               frameBorder="0" 
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
