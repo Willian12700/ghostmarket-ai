@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { DollarSign,  Plus, ShoppingCart, TrendingUp, Calendar, Zap,  ArrowUpRight, Activity } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { motion } from 'framer-motion'
@@ -158,9 +158,9 @@ export const Dashboard = () => {
             <Zap className="w-3 h-3 fill-primary" /> Modo Elite Ativado
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-            OlÃ¡, {user?.name?.split(' ')[0] || 'UsuÃ¡rio'}.
+            Olá, {user?.name?.split(' ')[0] || 'Usuário'}.
           </h1>
-          <p className="text-textSecondary mt-2 text-lg">VisÃ£o geral do seu impÃ©rio digital.</p>
+          <p className="text-textSecondary mt-2 text-lg">Visão geral do seu império digital.</p>
         </div>
 
         <div className="flex items-center gap-3">
