@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
 import { Landing } from '@/pages/Landing'
@@ -15,6 +15,7 @@ import { Settings } from '@/pages/Settings'
 import { Affiliates } from '@/pages/Affiliates'
 import { Integrations } from '@/pages/Integrations'
 import { PersonaGenerator } from '@/pages/tiktok/PersonaGenerator'
+import { PersonaHistory } from '@/pages/tiktok/PersonaHistory'
 import { ViralScripts } from '@/pages/tiktok/ViralScripts'
 import { AdCopy } from '@/pages/tiktok/AdCopy'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
@@ -24,7 +25,7 @@ import { APIProvider } from '@vis.gl/react-google-maps'
 
 function App() {
   const { initAuthListener, isLoading } = useAuthStore()
-  // Usando a chave diretamente para não depender de bugs do Windows com arquivos .env
+  // Usando a chave diretamente para nÃ£o depender de bugs do Windows com arquivos .env
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
 
   useEffect(() => {
@@ -67,6 +68,7 @@ function App() {
               
               {/* TikTok Shop Routes */}
               <Route path="/tiktok/persona" element={<PersonaGenerator />} />
+              <Route path="/tiktok/persona-history" element={<PersonaHistory />} />
               <Route path="/tiktok/scripts" element={<ViralScripts />} />
               <Route path="/tiktok/ads" element={<AdCopy />} />
             </Route>

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -52,8 +52,9 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       label: 'TikTok Shop',
       items: [
         { to: '/tiktok/persona', icon: Users, label: 'Gerador de Persona' },
+        { to: '/tiktok/persona-history', icon: BookMarked, label: 'Histórico de Persona' },
         { to: '/tiktok/scripts', icon: Video, label: 'Roteiros Virais' },
-        { to: '/tiktok/ads', icon: TrendingUp, label: 'Copy para AnÃºncios' }
+        { to: '/tiktok/ads', icon: TrendingUp, label: 'Copy para Anúncios' }
       ]
     },
     {
@@ -63,9 +64,9 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       ]
     },
     {
-      label: 'Sistemas e IntegraÃƒÂ§ÃƒÂµes',
+      label: 'Sistemas e Integrações',
       items: [
-        { to: '/integrations', icon: Settings, label: 'IntegraÃƒÂ§ÃƒÂµes' },
+        { to: '/integrations', icon: Settings, label: 'Integrações' },
         { to: '/affiliates', icon: Ghost, label: 'Programa de Afiliados' },
       ]
     },
