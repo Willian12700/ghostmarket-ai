@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { db } from '@/config/firebase'
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 
 export type CRMStatus = 'Lead' | 'Contato' | 'Proposta' | 'Fechado'
 
@@ -9,34 +10,49 @@ export interface Contract {
   amount: number
   date: string
   status: CRMStatus
+  userId: string
 }
 
 interface ContractState {
   contracts: Contract[]
-  addContract: (contract: Omit<Contract, 'id'>) => void
-  updateContract: (id: string, data: Partial<Omit<Contract, 'id'>>) => void
-  deleteContract: (id: string) => void
+  isSynced: boolean
+  syncContracts: (userId: string) => () => void // Returns unsubscribe function
+  addContract: (userId: string, contract: Omit<Contract, 'id' | 'userId'>) => Promise<void>
+  updateContract: (id: string, data: Partial<Omit<Contract, 'id' | 'userId'>>) => Promise<void>
+  deleteContract: (id: string) => Promise<void>
 }
 
-export const useContractStore = create<ContractState>()(
-  persist(
-    (set) => ({
-      contracts: [],
-      addContract: (contract) => set((state) => ({
-        contracts: [
-          { ...contract, id: Math.random().toString(36).substring(2, 9) },
-          ...state.contracts
-        ]
-      })),
-      updateContract: (id, data) => set((state) => ({
-        contracts: state.contracts.map(c => c.id === id ? { ...c, ...data } : c)
-      })),
-      deleteContract: (id) => set((state) => ({
-        contracts: state.contracts.filter(c => c.id !== id)
-      }))
-    }),
-    {
-      name: 'ghostmarket-crm-v1',
-    }
-  )
-)
+export const useContractStore = create<ContractState>()((set) => ({
+  contracts: [],
+  isSynced: false,
+
+  syncContracts: (userId) => {
+    const q = query(
+      collection(db, 'crm_contracts'),
+      where('userId', '==', userId)
+    )
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contract))
+      set({ contracts: txs, isSynced: true })
+    })
+
+    return unsubscribe
+  },
+
+  addContract: async (userId, contract) => {
+    await addDoc(collection(db, 'crm_contracts'), {
+      ...contract,
+      userId,
+      createdAt: serverTimestamp()
+    })
+  },
+
+  updateContract: async (id, data) => {
+    await updateDoc(doc(db, 'crm_contracts', id), data)
+  },
+
+  deleteContract: async (id) => {
+    await deleteDoc(doc(db, 'crm_contracts', id))
+  }
+}))

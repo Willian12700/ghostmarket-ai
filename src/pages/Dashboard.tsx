@@ -8,23 +8,32 @@ import { db } from '@/config/firebase'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
 
 export const Dashboard = () => {
-  const { contracts } = useContractStore()
+  const { contracts, syncContracts } = useContractStore()
   const { user } = useAuthStore()
   const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
   const [firebaseTransactions, setFirebaseTransactions] = useState<any[]>([])
 
-  // Busca Vendas do SaaS do Firebase (Webhooks)
+  // Busca Vendas do SaaS do Firebase (Webhooks) e Sincroniza CRM
   useEffect(() => {
     if (!user?.email) return
+    
+    // Sync SaaS transactions
     const q = query(
       collection(db, 'transactions'),
       where('userId', '==', user.email)
     )
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeTxs = onSnapshot(q, (snapshot) => {
       const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       setFirebaseTransactions(txs)
     })
-    return () => unsubscribe()
+    
+    // Sync CRM contracts
+    const unsubscribeCrm = syncContracts(user.email)
+    
+    return () => {
+      unsubscribeTxs()
+      unsubscribeCrm()
+    }
   }, [user])
 
   // Helper para verificar se a data está no filtro selecionado

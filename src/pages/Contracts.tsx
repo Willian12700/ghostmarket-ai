@@ -1,19 +1,28 @@
-import { useState } from 'react'
-import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react'
-import { useContractStore, Contract, CRMStatus } from '@/store/contractStore'
-import { useToastStore } from '@/store/toastStore'
+import { useState, useEffect } from 'react'
+import { Plus, GripVertical, Edit2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useContractStore, Contract, CRMStatus } from '@/store/contractStore'
+import { useAuthStore } from '@/store/authStore'
+import { useToastStore } from '@/store/toastStore'
 
-const COLUMNS: { id: CRMStatus, title: string, color: string }[] = [
-  { id: 'Lead', title: 'Novos Leads', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-  { id: 'Contato', title: 'Em Contato', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
-  { id: 'Proposta', title: 'Negociação', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-  { id: 'Fechado', title: 'Venda Fechada', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
+const COLUMNS: { id: CRMStatus; title: string; color: string }[] = [
+  { id: 'Lead', title: 'Lead (Prospect)', color: 'text-textSecondary border-border' },
+  { id: 'Contato', title: 'Em Contato', color: 'text-primary border-primary/50' },
+  { id: 'Proposta', title: 'Proposta Enviada', color: 'text-warning border-warning/50' },
+  { id: 'Fechado', title: 'Venda Fechada', color: 'text-success border-success/50' },
 ]
 
 export const Contracts = () => {
-  const { contracts, addContract, updateContract, deleteContract } = useContractStore()
+  const { user } = useAuthStore()
+  const { contracts, addContract, updateContract, deleteContract, syncContracts } = useContractStore()
+
+  useEffect(() => {
+    if (user?.email) {
+      const unsubscribe = syncContracts(user.email)
+      return () => unsubscribe()
+    }
+  }, [user])
   const { addToast } = useToastStore()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -83,11 +92,13 @@ export const Contracts = () => {
       })
       addToast('Card atualizado!', 'success')
     } else {
-      addContract({
-        ...formData,
-        amount: Number(formData.amount)
-      })
-      addToast('Lead adicionado ao funil!', 'success')
+      if (user?.email) {
+        addContract(user.email, {
+          ...formData,
+          amount: Number(formData.amount)
+        })
+        addToast('Lead adicionado ao funil!', 'success')
+      }
     }
     
     setIsModalOpen(false)
