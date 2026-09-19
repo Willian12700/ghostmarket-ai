@@ -1,18 +1,10 @@
-import { Gift, Copy, ExternalLink } from 'lucide-react'
+import { Gift, ExternalLink } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { useToastStore } from '@/store/toastStore'
 
 export const Affiliates = () => {
-  const { addToast } = useToastStore()
-  
-  // Link de convite do produtor na Cakto
-  const CAKTO_AFFILIATE_LINK = "https://cakto.com.br/afiliar/YOUR_PRODUCT_ID_HERE" // O user vai trocar depois
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(CAKTO_AFFILIATE_LINK)
-    addToast('Link de afiliação copiado!', 'success')
-  }
+  const CAKTO_LINK_VITALICIO = "https://app.cakto.com.br/affiliate/invite/89edc200-230b-4857-9d86-1be68991f8e2"
+  const CAKTO_LINK_MENSAL = "https://app.cakto.com.br/affiliate/invite/f35c621d-948d-401c-ac06-e452d47a96a8"
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -33,8 +25,13 @@ export const Affiliates = () => {
             <CardTitle className="text-lg text-textSecondary">Venda do Plano Mensal</CardTitle>
             <div className="text-4xl font-bold text-white mt-2">R$ 19,00 <span className="text-sm font-normal text-textSecondary">/venda</span></div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p className="text-sm text-textSecondary">13% de comissão sobre o plano de R$ 147,00.</p>
+            <a href={CAKTO_LINK_MENSAL} target="_blank" rel="noopener noreferrer" className="block">
+              <Button className="w-full">
+                Afiliar-se ao Mensal <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
+            </a>
           </CardContent>
         </Card>
 
@@ -44,8 +41,13 @@ export const Affiliates = () => {
             <CardTitle className="text-lg text-textSecondary">Venda do Plano Vitalício</CardTitle>
             <div className="text-4xl font-bold text-white mt-2">R$ 19,00 <span className="text-sm font-normal text-textSecondary">/venda</span></div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p className="text-sm text-textSecondary">5.28% de comissão sobre o plano de R$ 360,00.</p>
+            <a href={CAKTO_LINK_VITALICIO} target="_blank" rel="noopener noreferrer" className="block">
+              <Button className="w-full shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)]">
+                Afiliar-se ao Vitalício <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
+            </a>
           </CardContent>
         </Card>
       </div>
@@ -58,36 +60,18 @@ export const Affiliates = () => {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-background rounded-xl p-6 border border-border">
               <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold mb-4">1</div>
-              <h4 className="font-bold text-white mb-2">Crie sua conta</h4>
-              <p className="text-sm text-textSecondary">Você precisará de uma conta gratuita na Cakto para receber seus pagamentos via PIX.</p>
+              <h4 className="font-bold text-white mb-2">Aceite o Convite</h4>
+              <p className="text-sm text-textSecondary">Clique nos botões acima. Você será redirecionado para a Cakto. Crie uma conta gratuita (ou faça login) para aceitar a afiliação.</p>
             </div>
             <div className="bg-background rounded-xl p-6 border border-border">
               <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold mb-4">2</div>
               <h4 className="font-bold text-white mb-2">Pegue seu Link</h4>
-              <p className="text-sm text-textSecondary">Acesse nosso link de recrutamento e clique em "Tornar-se Afiliado".</p>
+              <p className="text-sm text-textSecondary">Dentro do seu painel da Cakto, vá em "Meus Produtos Afiliados" e copie o seu Link de Divulgação exclusivo.</p>
             </div>
             <div className="bg-background rounded-xl p-6 border border-border">
               <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold mb-4">3</div>
               <h4 className="font-bold text-white mb-2">Lucro Automático</h4>
-              <p className="text-sm text-textSecondary">A Cakto divide o pagamento automaticamente. O dinheiro cai direto no seu saldo!</p>
-            </div>
-          </div>
-
-          <div className="mt-8 p-6 bg-primary/5 border border-primary/20 rounded-xl flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h4 className="text-lg font-bold text-white mb-1">Pronto para começar a faturar?</h4>
-              <p className="text-sm text-textSecondary">Junte-se ao nosso exército de parceiros comerciais e faça renda extra.</p>
-            </div>
-            <div className="flex gap-3 w-full md:w-auto">
-              <Button variant="secondary" onClick={handleCopy} className="w-full md:w-auto">
-                <Copy className="w-4 h-4 mr-2" />
-                Copiar Link
-              </Button>
-              <a href={CAKTO_AFFILIATE_LINK} target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
-                <Button className="w-full">
-                  Tornar-se Afiliado <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-              </a>
+              <p className="text-sm text-textSecondary">Quando alguém comprar pelo seu link, a Cakto divide o dinheiro na hora. O valor já cai livre no seu saldo bancário!</p>
             </div>
           </div>
         </CardContent>
@@ -95,7 +79,7 @@ export const Affiliates = () => {
       
       <div className="text-center mt-12">
         <p className="text-sm text-textSecondary">
-          * As comissões são processadas e pagas automaticamente pela plataforma Cakto.
+          * Para que suas vendas apareçam aqui no seu Dashboard do GhostMarket AI, certifique-se de usar o mesmo email cadastrado aqui na sua conta da Cakto.
         </p>
       </div>
     </div>
