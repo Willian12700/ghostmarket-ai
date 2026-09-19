@@ -63,17 +63,17 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
   }
 
   return (
-    <header className="h-20 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-20">
+    <header className="h-20 bg-background/60 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-6 sticky top-0 z-40">
       <div className="flex items-center gap-4">
         <button 
           onClick={onMenuClick}
-          className="md:hidden text-textSecondary hover:text-textPrimary transition-colors"
+          className="md:hidden text-textSecondary hover:text-white transition-colors"
         >
           <Menu className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-white">{title}</h1>
-          {description && <p className="text-sm text-textSecondary hidden sm:block">{description}</p>}
+          <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
+          {description && <p className="text-sm text-textSecondary hidden sm:block font-medium mt-0.5">{description}</p>}
         </div>
       </div>
       

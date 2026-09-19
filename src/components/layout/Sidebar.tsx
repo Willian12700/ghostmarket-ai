@@ -100,30 +100,31 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 z-50 h-screen w-64 bg-panel border-r border-border flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0",
+        "fixed top-0 left-0 z-50 h-screen w-72 bg-panel/90 backdrop-blur-2xl border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="h-20 flex items-center justify-between px-6 border-b border-border flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-white/5 flex-shrink-0 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-primary/10 to-transparent opacity-50 pointer-events-none" />
+          <div className="flex items-center gap-3 relative z-10">
             {theme.logoUrl ? (
-              <img src={theme.logoUrl} alt={theme.agencyName} className="w-8 h-8 rounded object-cover" />
+              <img src={theme.logoUrl} alt={theme.agencyName} className="w-8 h-8 rounded-lg object-cover shadow-lg border border-white/10" />
             ) : (
-              <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-lg shadow-primary/20">
                 <Sparkles className="w-5 h-5" />
               </div>
             )}
-            <span className="font-bold text-lg text-white tracking-tight truncate w-32">{theme.agencyName}</span>
+            <span className="font-bold text-xl text-white tracking-tight truncate max-w-[140px]">{theme.agencyName}</span>
           </div>
-          <button onClick={onClose} className="md:hidden text-textSecondary hover:text-white">
+          <button onClick={onClose} className="md:hidden text-textSecondary hover:text-white relative z-10">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {menuGroups.map((group) => {
             const isExpanded = expandedGroups.includes(group.label)
             
-            // Se o grupo sÁƒÂ³ tiver 1 item (como Painel, OrganizaÁƒÂ§ÁƒÂ£o, Conta), a gente sÁƒÂ³ exibe o item direto sem Accordion
+            // Se o grupo só tiver 1 item (como Painel, Organização, Conta), a gente só exibe o item direto sem Accordion
             if (group.items.length === 1) {
               const link = group.items[0]
               return (
@@ -133,14 +134,14 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     onClick={onClose}
                     className={({ isActive }) =>
                       cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium",
+                        "group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 text-sm font-semibold",
                         isActive 
-                          ? "bg-primary/10 text-primary" 
-                          : "text-textSecondary hover:bg-panelHover hover:text-textPrimary"
+                          ? "bg-primary text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]" 
+                          : "text-textSecondary hover:bg-white/5 hover:text-white"
                       )
                     }
                   >
-                    <link.icon className="w-5 h-5" />
+                    <link.icon className={cn("w-5 h-5 transition-transform duration-300 group-hover:scale-110")} />
                     {link.label}
                   </NavLink>
                 </div>
@@ -149,23 +150,23 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
             // Se for um grupo com vÁƒÂ¡rios itens, usamos o Accordion (gaveta)
             return (
-              <div key={group.label} className="space-y-1">
+              <div key={group.label} className="space-y-2">
                 <button
                   onClick={() => toggleGroup(group.label)}
-                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-bold text-textSecondary hover:text-textPrimary transition-colors"
+                  className="flex items-center justify-between w-full px-2 py-2 text-sm font-bold text-textSecondary hover:text-white transition-colors"
                 >
-                  <span className="uppercase tracking-wider text-[11px]">{group.label}</span>
+                  <span className="uppercase tracking-widest text-[10px] opacity-70">{group.label}</span>
                   {isExpanded ? (
-                    <ChevronDown className="w-4 h-4 opacity-70" />
+                    <ChevronDown className="w-4 h-4 opacity-70 transition-transform" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 opacity-70" />
+                    <ChevronRight className="w-4 h-4 opacity-70 transition-transform" />
                   )}
                 </button>
                 
                 <div 
                   className={cn(
-                    "space-y-1 overflow-hidden transition-all duration-200 ease-in-out pl-2",
-                    isExpanded ? "max-h-64 opacity-100 mt-1" : "max-h-0 opacity-0"
+                    "space-y-1 overflow-hidden transition-all duration-300 ease-in-out pl-2 border-l border-white/5 ml-2",
+                    isExpanded ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
                   )}
                 >
                   {group.items.map((link) => (
@@ -175,15 +176,19 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                       onClick={onClose}
                       className={({ isActive }) =>
                         cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium",
+                          "group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-sm font-medium",
                           isActive 
-                            ? "bg-primary/10 text-primary border-l-2 border-primary" 
-                            : "text-textSecondary hover:bg-panelHover hover:text-textPrimary border-l-2 border-transparent"
+                            ? "bg-primary/20 text-white shadow-sm border border-primary/20" 
+                            : "text-textSecondary hover:bg-white/5 hover:text-white"
                         )
                       }
                     >
-                      <link.icon className="w-4 h-4" />
-                      {link.label}
+                      {({ isActive }) => (
+                        <>
+                          <link.icon className={cn("w-4 h-4 transition-transform duration-300 group-hover:scale-110", isActive ? "text-primary" : "")} />
+                          {link.label}
+                        </>
+                      )}
                     </NavLink>
                   ))}
                 </div>

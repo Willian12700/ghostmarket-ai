@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from 'react'
-import { DollarSign, RefreshCw, Plus, ShoppingCart, TrendingUp, Activity } from 'lucide-react'
+﻿import { useState, useMemo, useEffect } from 'react'
+import { DollarSign,  Plus, ShoppingCart, TrendingUp, Calendar, Zap,  ArrowUpRight, Activity } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { motion } from 'framer-motion'
 
 import { useContractStore } from '@/store/contractStore'
 import { useAuthStore } from '@/store/authStore'
@@ -10,17 +11,16 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore'
 export const Dashboard = () => {
   const { contracts, syncContracts } = useContractStore()
   const { user } = useAuthStore()
-  const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
+  const [dateFilter, setDateFilter] = useState<'semana' | 'mes' | 'ano'>('semana')
   const [firebaseTransactions, setFirebaseTransactions] = useState<any[]>([])
 
-  // Busca Vendas do SaaS do Firebase (Webhooks) e Sincroniza CRM
   useEffect(() => {
-    if (!user?.email) return
+    if (!user?.email && !user?.uid) return
     
     // Sync SaaS transactions
     const q = query(
       collection(db, 'transactions'),
-      where('userId', '==', user.email)
+      where('userId', '==', user?.email || user?.uid)
     )
     const unsubscribeTxs = onSnapshot(q, (snapshot) => {
       const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
@@ -28,7 +28,7 @@ export const Dashboard = () => {
     })
     
     // Sync CRM contracts
-    const unsubscribeCrm = syncContracts(user.email)
+    const unsubscribeCrm = syncContracts(user?.email || user?.uid || '')
     
     return () => {
       unsubscribeTxs()
@@ -36,257 +36,295 @@ export const Dashboard = () => {
     }
   }, [user])
 
-  // Helper para verificar se a data está no filtro selecionado
-  const isWithinFilter = (timestampMs: number, filter: string) => {
-    if (!timestampMs) return true // Se não tiver data, mostra por padrão
-    
-    const now = new Date()
-    const date = new Date(timestampMs)
-    
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-    const itemDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-
-    if (filter === 'hoje') {
-      return itemDay === today
-    }
-    if (filter === 'semana') {
-      const dayOfWeek = now.getDay()
-      const startOfWeek = today - (dayOfWeek * 24 * 60 * 60 * 1000)
-      return itemDay >= startOfWeek
-    }
-    if (filter === 'mes') {
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-    }
-    if (filter === 'ano') {
-      return date.getFullYear() === now.getFullYear()
-    }
-    return true
-  }
-
-  // Prepara todas as transações unificadas e padronizadas com _rawDate
-  const allCombinedTransactions = useMemo(() => {
-    const crmTxs = contracts.map(c => {
-      // Tenta fazer o parse da data DD/MM/YYYY do Kanban
-      let rawMs = Date.now()
-      if (c.date) {
-        const parts = c.date.split('/')
-        if (parts.length === 3) {
-          rawMs = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime()
-        }
-      }
-      return {
+  // Combine CRM Contacts and Firebase Transactions that are PAID
+  const allPaidTransactions = useMemo(() => {
+    const closedContracts = contracts
+      .filter(c => c.status === 'Fechado')
+      .map(c => ({
         id: c.id,
-        clientName: c.client,
         amount: c.amount,
-        status: c.status === 'Fechado' ? 'Fechado' : 'Em Negociação',
-        date: c.date,
-        _rawDate: rawMs,
-        isCRM: true
-      }
-    })
+        date: new Date(c.date).getTime(),
+        clientName: c.client,
+        source: 'CRM'
+      }))
 
-    const saasTxs = firebaseTransactions.map(tx => ({
-      id: tx.id,
-      clientName: tx.clientName,
-      amount: tx.amount,
-      status: tx.status === 'Aprovado' ? 'Fechado' : tx.status,
-      date: tx.date || new Date().toLocaleDateString('pt-BR'),
-      _rawDate: tx.timestamp?.toMillis() || Date.now(),
-      isCRM: false
-    }))
+    const saasTxs = firebaseTransactions
+      .filter(t => t.status === 'paid' || t.status === 'approved')
+      .map(t => ({
+        id: t.id,
+        amount: Number(t.transaction_amount || t.amount || 0),
+        date: t.date_created ? new Date(t.date_created).getTime() : Date.now(),
+        clientName: t.customer?.name || t.clientName || 'Cliente Online',
+        source: 'SaaS'
+      }))
 
-    return [...crmTxs, ...saasTxs]
+    return [...closedContracts, ...saasTxs].sort((a, b) => b.date - a.date)
   }, [contracts, firebaseTransactions])
 
-  // Aplica o filtro de data na lista unificada
-  const filteredTransactions = useMemo(() => {
-    return allCombinedTransactions.filter(tx => isWithinFilter(tx._rawDate, dateFilter))
-  }, [allCombinedTransactions, dateFilter])
+  const calculateMetrics = () => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    
+    const startOfWeek = new Date(startOfToday)
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+    
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+    const startOfYear = new Date(now.getFullYear(), 0, 1).getTime()
 
-  // Calcula estatísticas REAIS baseadas no filtro selecionado
-  const totalRevenue = useMemo(() => {
-    return filteredTransactions
-      .filter(tx => tx.status === 'Fechado')
-      .reduce((acc, curr) => acc + (curr.amount || 0), 0)
-  }, [filteredTransactions])
+    let hoje = 0, semana = 0, mes = 0, ano = 0
 
-  const activeProjects = useMemo(() => {
-    return filteredTransactions.filter(tx => tx.isCRM && tx.status !== 'Fechado').length
-  }, [filteredTransactions])
+    allPaidTransactions.forEach(tx => {
+      if (tx.date >= startOfToday) hoje += tx.amount
+      if (tx.date >= startOfWeek.getTime()) semana += tx.amount
+      if (tx.date >= startOfMonth) mes += tx.amount
+      if (tx.date >= startOfYear) ano += tx.amount
+    })
 
-  const capturedLeads = useMemo(() => {
-    return filteredTransactions.filter(tx => tx.isCRM).length
-  }, [filteredTransactions])
-
-  const recentTransactions = useMemo(() => {
-    const sorted = [...filteredTransactions].sort((a, b) => b._rawDate - a._rawDate)
-    return sorted.slice(0, 5)
-  }, [filteredTransactions])
-
-  // Mock de gráfico (para manter o visual bonito, já que não temos datas reais nos leads do kanban)
-  const salesData = [
-    { day: 'Seg', revenue: totalRevenue * 0.1 },
-    { day: 'Ter', revenue: totalRevenue * 0.2 },
-    { day: 'Qua', revenue: totalRevenue * 0.15 },
-    { day: 'Qui', revenue: totalRevenue * 0.4 },
-    { day: 'Sex', revenue: totalRevenue * 0.6 },
-    { day: 'Sáb', revenue: totalRevenue * 0.8 },
-    { day: 'Dom', revenue: totalRevenue }
-  ]
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+    return { hoje, semana, mes, ano }
   }
 
+  const { hoje, semana, mes, ano } = calculateMetrics()
 
+  // Chart Data Generator
+  const salesData = useMemo(() => {
+    const now = new Date()
+    const data = []
+    
+    let daysToSubtract = dateFilter === 'semana' ? 7 : dateFilter === 'mes' ? 30 : 365
+    
+    for (let i = daysToSubtract - 1; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      
+      const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+      const endOfDay = startOfDay + 24 * 60 * 60 * 1000 - 1
+      
+      const dayTotal = allPaidTransactions
+        .filter(tx => tx.date >= startOfDay && tx.date <= endOfDay)
+        .reduce((sum, tx) => sum + tx.amount, 0)
+        
+      data.push({
+        day: dateFilter === 'ano' 
+          ? d.toLocaleDateString('pt-BR', { month: 'short' }) 
+          : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        revenue: dayTotal
+      })
+    }
+
+    // Se for ano, agrupa por ms
+    if (dateFilter === 'ano') {
+      const monthlyData = data.reduce((acc, curr) => {
+        const month = curr.day
+        if (!acc[month]) acc[month] = 0
+        acc[month] += curr.revenue
+        return acc
+      }, {} as Record<string, number>)
+      
+      return Object.entries(monthlyData).map(([day, revenue]) => ({ day, revenue }))
+    }
+    
+    return data
+  }, [dateFilter, allPaidTransactions])
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+  }
+
+  // Animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       
-      {/* HEADER PRINCIPAL (CENTRAL DE PERFORMANCE) */}
-      <div className="bg-[#0b0416] rounded-2xl p-8 border border-primary/20 shadow-[0_0_30px_rgba(139,92,246,0.05)] relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
-        
-        <div className="z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-4 tracking-wider">
-            <Activity className="w-3 h-3" />
-            CENTRAL DE PERFORMANCE
+      {/* HEADER SECTION */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }} 
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+      >
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-3">
+            <Zap className="w-3 h-3 fill-primary" /> Modo Elite Ativado
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Olá, {user?.name?.split(' ')[0] || 'Usuário'}.</h1>
-          <p className="text-textSecondary mb-6">Sua performance de vendas atualizada em tempo real.</p>
-          
-          {/* Filtros em Pílulas (Pills) */}
-          <div className="flex bg-[#130922] border border-primary/20 rounded-full p-1 w-fit">
-            <button 
-              onClick={() => setDateFilter('hoje')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'hoje' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
-            >
-              Hoje
-            </button>
-            <button 
-              onClick={() => setDateFilter('semana')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'semana' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
-            >
-              7 dias
-            </button>
-            <button 
-              onClick={() => setDateFilter('mes')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'mes' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
-            >
-              30 dias
-            </button>
-            <button 
-              onClick={() => setDateFilter('ano')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${dateFilter === 'ano' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
-            >
-              12 meses
-            </button>
-          </div>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">Dashboard</h1>
+          <p className="text-textSecondary mt-2 text-lg">VisÃ£o geral do seu impÃ©rio digital.</p>
         </div>
 
-        <div className="z-10 md:text-right">
-          <p className="text-xs font-bold text-textSecondary uppercase tracking-widest mb-2">FATURAMENTO TOTAL</p>
-          <div className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
-            {formatCurrency(totalRevenue)}
-          </div>
-          
-          <div className="flex items-center md:justify-end gap-3">
-            <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg font-medium transition-colors text-sm shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-              <Plus className="w-4 h-4" /> Registrar venda
-            </button>
-            <button 
-              onClick={() => window.location.reload()}
-              className="flex items-center gap-2 bg-[#1a0f2e] hover:bg-[#23153d] border border-primary/30 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-            >
-              <RefreshCw className="w-4 h-4 text-textSecondary" /> Atualizar
-            </button>
-          </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-primary hover:bg-primaryLight text-white px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover:-translate-y-1">
+            <Plus className="w-5 h-5" /> Registrar Venda
+          </button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* METRICS ROW */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="bg-[#0b0416] border border-primary/10 rounded-2xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+      {/* TOP METRICS GRID (4 CARDS) */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {/* Card Hoje */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-[11px] font-bold text-textSecondary uppercase tracking-widest">PROJETOS ATIVOS</h3>
-            <ShoppingCart className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Hoje</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <Calendar className="w-4 h-4 text-primary" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-white">{activeProjects}</div>
-        </div>
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(hoje)}</div>
+          <p className="text-xs text-success flex items-center mt-2 font-medium">
+            <ArrowUpRight className="w-3 h-3 mr-1" /> Faturamento diÃ¡rio
+          </p>
+        </motion.div>
 
-        <div className="bg-[#0b0416] border border-primary/10 rounded-2xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+        {/* Card Semana */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-[11px] font-bold text-textSecondary uppercase tracking-widest">LEADS CAPTURADOS</h3>
-            <TrendingUp className="w-4 h-4 text-success/60 group-hover:text-success transition-colors" />
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Esta Semana</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <TrendingUp className="w-4 h-4 text-primary" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-white">{capturedLeads}</div>
-        </div>
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(semana)}</div>
+          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
+            Acumulado nos Ãºltimos 7 dias
+          </p>
+        </motion.div>
 
-        <div className="bg-[#0b0416] border border-primary/10 rounded-2xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+        {/* Card MÃªs */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-[11px] font-bold text-textSecondary uppercase tracking-widest">TICKET MÉDIO</h3>
-            <DollarSign className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este MÃªs</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <ShoppingCart className="w-4 h-4 text-primary" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-white">
-            {formatCurrency(totalRevenue > 0 && activeProjects > 0 ? totalRevenue / activeProjects : 0)}
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(mes)}</div>
+          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
+            Performance mensal
+          </p>
+        </motion.div>
+
+        {/* Card Ano */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Ano</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <DollarSign className="w-4 h-4 text-primary" />
+            </div>
           </div>
-        </div>
-      </div>
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(ano)}</div>
+          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
+            Receita anual bruta
+          </p>
+        </motion.div>
+      </motion.div>
 
       {/* BOTTOM SECTION */}
-      <div className="grid gap-6 md:grid-cols-7">
-        
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.3 }}
+        className="grid gap-6 md:grid-cols-7"
+      >
         {/* CHART BLOCK */}
-        <div className="md:col-span-4 bg-[#0b0416] border border-primary/20 rounded-2xl p-6 relative overflow-hidden">
-          <div className="flex justify-between items-start mb-6">
+        <div className="md:col-span-5 bg-panel border border-border rounded-3xl p-6 lg:p-8 relative overflow-hidden group">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10">
             <div>
-              <p className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">EVOLUÇÁO</p>
-              <h3 className="text-sm font-medium text-white">Faturamento x Vendas</h3>
+              <h3 className="text-xl font-extrabold text-white tracking-tight mb-1">VisÃ£o de Crescimento</h3>
+              <p className="text-sm text-textSecondary font-medium">Acompanhe a escalabilidade do seu negÃ³cio</p>
             </div>
-            <div className="flex items-center gap-4 text-xs font-medium">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(139,92,246,0.8)]"></span> Faturamento</span>
+            
+            <div className="flex items-center p-1 bg-background border border-border rounded-lg mt-4 sm:mt-0">
+              <button 
+                onClick={() => setDateFilter('semana')}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'semana' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+              >
+                7 Dias
+              </button>
+              <button 
+                onClick={() => setDateFilter('mes')}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'mes' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+              >
+                30 Dias
+              </button>
+              <button 
+                onClick={() => setDateFilter('ano')}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'ano' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+              >
+                12 Meses
+              </button>
             </div>
           </div>
           
-          <div className="h-[260px] w-full">
+          <div className="h-[300px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={salesData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRevenueGlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#7C3AED" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.5}/>
+                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis 
                   dataKey="day" 
                   stroke="#6b7280" 
-                  fontSize={10} 
+                  fontSize={12}
+                  fontWeight={500}
                   tickLine={false} 
                   axisLine={false}
+                  dy={10}
                 />
                 <YAxis 
                   stroke="#6b7280" 
-                  fontSize={10} 
+                  fontSize={12}
+                  fontWeight={500}
                   tickLine={false} 
                   axisLine={false}
                   tickFormatter={(value) => `R$ ${value}`}
+                  dx={-10}
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#000000', borderColor: '#7C3AED', borderRadius: '12px', boxShadow: '0 0 20px rgba(139,92,246,0.3)' }}
-                  itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                  labelStyle={{ color: '#9CA3AF' }}
-                  formatter={(value: any) => [formatCurrency(value as number), 'Receita']}
+                  cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '3 3' }}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(10,10,10,0.8)', 
+                    backdropFilter: 'blur(10px)',
+                    borderColor: 'rgba(139,92,246,0.3)', 
+                    borderRadius: '16px', 
+                    boxShadow: '0 0 30px rgba(139,92,246,0.2)',
+                    padding: '12px 16px'
+                  }}
+                  itemStyle={{ color: '#fff', fontWeight: '800', fontSize: '16px' }}
+                  labelStyle={{ color: '#9CA3AF', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}
+                  formatter={(value: any) => [formatCurrency(value as number), 'Faturamento']}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="revenue" 
-                  stroke="#a78bfa" 
-                  strokeWidth={3}
-                  activeDot={{ r: 6, fill: "#fff", stroke: "#a78bfa", strokeWidth: 3 }}
+                  stroke="var(--color-primary)" 
+                  strokeWidth={4}
+                  activeDot={{ r: 8, fill: "var(--color-primary)", stroke: "#fff", strokeWidth: 3, style: { filter: 'drop-shadow(0px 0px 10px var(--color-primary))' } }}
                   fillOpacity={1} 
                   fill="url(#colorRevenueGlow)" 
-                  style={{ filter: 'drop-shadow(0px 0px 8px rgba(139,92,246,0.5))' }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -294,42 +332,46 @@ export const Dashboard = () => {
         </div>
 
         {/* RECENT TRANSACTIONS BLOCK */}
-        <div className="md:col-span-3 bg-[#0b0416] border border-primary/20 rounded-2xl p-6 relative overflow-hidden">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">TEMPO REAL</p>
-              <h3 className="text-sm font-medium text-white">Vendas recentes</h3>
-            </div>
-            <div className="bg-success/20 text-success text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-success/30">
-              <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></span>
+        <div className="md:col-span-2 bg-panel border border-border rounded-3xl p-6 flex flex-col relative overflow-hidden group">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-extrabold text-white tracking-tight">NotificaÃ§Ãµes</h3>
+            <div className="bg-success/10 text-success text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-success/20">
+              <span className="w-2 h-2 bg-success rounded-full animate-pulse shadow-[0_0_8px_#22C55E]"></span>
               Live
             </div>
           </div>
 
-          <div className="space-y-3 overflow-y-auto pr-2 max-h-[260px] custom-scrollbar">
-            {recentTransactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <p className="text-textSecondary text-sm">Nenhuma transação recente.</p>
+          <div className="space-y-3 overflow-y-auto pr-2 flex-1 custom-scrollbar">
+            {allPaidTransactions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center h-full">
+                <Activity className="w-10 h-10 text-border mb-3" />
+                <p className="text-textSecondary text-sm font-medium">Nenhuma venda registrada ainda.</p>
               </div>
             ) : (
-              recentTransactions.map((tx) => (
-                <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#11081e] border border-primary/10 hover:border-primary/30 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-[#0a1e14] border border-[#164a2e] flex items-center justify-center shrink-0">
+              allPaidTransactions.slice(0, 8).map((tx, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * i }}
+                  key={tx.id} 
+                  className="flex items-center gap-3 p-3 rounded-xl bg-background border border-border hover:border-primary/40 transition-colors group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-full bg-success/10 border border-success/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <DollarSign className="w-5 h-5 text-success" />
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-medium text-white truncate">{tx.clientName}</p>
-                    <p className="text-[10px] text-textSecondary mt-0.5">{tx.date}</p>
+                    <p className="text-sm font-bold text-white truncate">{tx.clientName}</p>
+                    <p className="text-[10px] text-textSecondary mt-0.5 font-medium uppercase tracking-wider">{tx.source}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-success">+{formatCurrency(tx.amount)}</p>
+                    <p className="text-sm font-extrabold text-success">+{formatCurrency(tx.amount)}</p>
                   </div>
-                </div>
+                </motion.div>
               ))
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
