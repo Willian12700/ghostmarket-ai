@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useContractStore } from '@/store/contractStore'
 import { useAuthStore } from '@/store/authStore'
 import { db } from '@/config/firebase'
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
 
 export const Dashboard = () => {
   const { contracts } = useContractStore()
@@ -18,8 +18,7 @@ export const Dashboard = () => {
     if (!user?.email) return
     const q = query(
       collection(db, 'transactions'),
-      where('userId', '==', user.email),
-      orderBy('timestamp', 'desc')
+      where('userId', '==', user.email)
     )
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
