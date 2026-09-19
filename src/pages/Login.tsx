@@ -54,7 +54,12 @@ export const Login = () => {
     
     setResetting(true)
     try {
-      await sendPasswordResetEmail(auth, formData.email)
+      const actionCodeSettings = {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: false
+      }
+      
+      await sendPasswordResetEmail(auth, formData.email, actionCodeSettings)
       addToast('E-mail de recuperação enviado! Verifique sua caixa de entrada.', 'success')
     } catch (error: any) {
       addToast('Erro ao enviar e-mail. Verifique se o endereço está correto.', 'error')
