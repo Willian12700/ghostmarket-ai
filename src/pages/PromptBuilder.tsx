@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Wand2, Copy, Check, Code } from 'lucide-react'
+﻿import { useState } from 'react'
+import { Wand2, Copy, Check, Code, Video } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -51,41 +51,41 @@ export const PromptBuilder = () => {
       
       const prompt = `# SYSTEM PROMPT - PROJETO ${formData.projectName.toUpperCase() || 'SAAS'}
 
-Você é um Senior Software Engineer especializado em aplicações SaaS.
-Sua missão é desenvolver a aplicação descrita abaixo.
+VocÃª Ã© um Senior Software Engineer especializado em aplicaÃ§Ãµes SaaS.
+Sua missÃ£o Ã© desenvolver a aplicaÃ§Ã£o descrita abaixo.
 
 ## 1. OBJETIVO
-${formData.description || '[Descrição não informada]'}
+${formData.description || '[DescriÃ§Ã£o nÃ£o informada]'}
 
-## 2. PÚBLICO-ALVO
-${formData.targetAudience || '[Público não informado]'}
-Nicho: ${formData.niche || '[Não informado]'}
+## 2. PÃšBLICO-ALVO
+${formData.targetAudience || '[PÃºblico nÃ£o informado]'}
+Nicho: ${formData.niche || '[NÃ£o informado]'}
 
 ## 3. STACK
 Frontend: ${formData.tech}
 Styling: ${isHtmlMode ? 'CSS Puro' : 'Tailwind CSS'}
 Estado: ${isHtmlMode ? 'Nenhum / Vanilla JS' : 'Zustand ou Context API'}
-Ícones: ${isHtmlMode ? 'FontAwesome ou SVG' : 'Lucide React'}
+Ãcones: ${isHtmlMode ? 'FontAwesome ou SVG' : 'Lucide React'}
 
 ## 4. DESIGN SYSTEM
 Tema principal: ${formData.design}
-UI deve ser moderna, limpa e responsiva, com foco em usabilidade e conversão.
+UI deve ser moderna, limpa e responsiva, com foco em usabilidade e conversÃ£o.
 Incluir estados de loading, estados vazios e tratamento de erros visuais (Error Boundaries).
 
 ## 5. FUNCIONALIDADES SOLICITADAS
-${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.'}
+${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma especÃ­fica selecionada.'}
 
-## 6. REGRAS DE IMPLEMENTAÇÃO
-- Criar componentes reutilizáveis.
-- O código deve ser modular e tipado (TypeScript).
+## 6. REGRAS DE IMPLEMENTAÃ‡ÃƒO
+- Criar componentes reutilizÃ¡veis.
+- O cÃ³digo deve ser modular e tipado (TypeScript).
 - Prever fluxos de tratamento de erro para APIs.
 - Evitar prop-drilling excessivo.
-- Todas as páginas devem ter responsividade para Mobile, Tablet e Desktop.
+- Todas as pÃ¡ginas devem ter responsividade para Mobile, Tablet e Desktop.
 
-## 7. CRITÉRIOS DE CONCLUSÃO
-- A aplicação deve renderizar sem telas pretas.
-- Navegação fluida entre rotas.
-- Formulários devem possuir validação mínima.
+## 7. CRITÃ‰RIOS DE CONCLUSÃƒO
+- A aplicaÃ§Ã£o deve renderizar sem telas pretas.
+- NavegaÃ§Ã£o fluida entre rotas.
+- FormulÃ¡rios devem possuir validaÃ§Ã£o mÃ­nima.
 - Design alinhado com o tema ${formData.design}.
 `
       setGeneratedPrompt(prompt)
@@ -108,11 +108,40 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
         <p className="text-textSecondary">Gere prompts avançados de arquitetura para criar sites e SaaS do zero.</p>
       </div>
 
+      {/* SEÇÃO DE AULA / TUTORIAL */}
+      <div className="bg-[#0b0416] border border-primary/20 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row gap-6 items-center shadow-[0_0_20px_rgba(139,92,246,0.05)]">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
+        
+        <div className="w-full md:w-1/2 flex-shrink-0 z-10">
+          <div className="aspect-VÍDEO bg-black rounded-xl overflow-hidden border border-primary/30 relative group shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+            <iframe 
+              width="100%" 
+              height="100%" 
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ" /* âš ï¸ COLOQUE O LINK DO SEU VÍDEO AQUI âš ï¸ */
+              title="Tutorial Prompt Builder"
+              frameBorder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+
+        <div className="z-10 space-y-4">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold tracking-widest uppercase">
+            <Video className="w-3 h-3" /> Tutorial Completo
+          </div>
+          <h3 className="text-2xl font-bold text-white">Como criar seu Site/SaaS do Zero</h3>
+          <p className="text-textSecondary text-sm leading-relaxed">
+            Assista este VÍDEO antes de começar! Aprenda a configurar o seu System Prompt perfeitamente para extrair o máximo da Inteligência Artificial. Com os comandos certos, a IA vai gerar o código perfeito de primeira.
+          </p>
+        </div>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 1 — Projeto</CardTitle>
+              <CardTitle>Etapa 1 â€” Projeto</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Input
@@ -126,7 +155,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
                 onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
               />
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary">Descrição</label>
+                <label className="text-sm font-medium text-textSecondary">DescriÃ§Ã£o</label>
                 <textarea
                   className="flex min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-textSecondary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
                   value={formData.description}
@@ -134,7 +163,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
                 />
               </div>
               <Input
-                label="Público-alvo"
+                label="PÃºblico-alvo"
                 value={formData.targetAudience}
                 onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
               />
@@ -143,7 +172,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
 
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 2 — Recursos</CardTitle>
+              <CardTitle>Etapa 2 â€” Recursos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
@@ -171,7 +200,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
           <div className="grid grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 3 — Design</CardTitle>
+                <CardTitle className="text-base">Etapa 3 â€” Design</CardTitle>
               </CardHeader>
               <CardContent>
                 <select
@@ -190,7 +219,7 @@ ${activeFeatures.length > 0 ? activeFeatures : 'Nenhuma específica selecionada.
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 4 — Tecnologia</CardTitle>
+                <CardTitle className="text-base">Etapa 4 â€” Tecnologia</CardTitle>
               </CardHeader>
               <CardContent>
                 <select
