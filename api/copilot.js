@@ -18,9 +18,6 @@ export default async function handler(req, res) {
       })
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-
     const systemPrompt = `Você é o Copiloto do GhostMarket AI, um assistente virtual especialista em vendas e growth, criado para ajudar os usuários deste SaaS. 
 Você deve ser amigável, prestativo, objetivo e persuasivo.
 
@@ -41,20 +38,35 @@ Regras:
 6. NUNCA use formatação Markdown (como **negrito** ou *itálico*), responda apenas com texto puro.
 `
 
-    // Prepara o histórico para o formato do Gemini
-    const formattedHistory = [
-      { role: "user", parts: [{ text: systemPrompt }] },
-      { role: "model", parts: [{ text: "Entendido. Eu sou o Copiloto do GhostMarket AI e estou pronto para ajudar nossos usuários a venderem mais!" }] },
-    ]
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: systemPrompt
+    })
 
+    // Prepara o histórico garantindo alternância
+    const formattedHistory = []
+    
+    // Filtra a mensagem inicial padrão para não enviar, ou mapeia corretamente
     if (history && history.length > 0) {
-      history.forEach(msg => {
-        // Ignora a mensagem inicial default que a gente colocou no front se necessário, 
-        // mas vamos mandar tudo como está.
-        formattedHistory.push({
-          role: msg.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.text }]
-        })
+      // Remover a primeira mensagem se for a saudação padrão
+      const filteredHistory = history.filter(msg => msg.id !== '1' && msg.text !== 'Olá! Sou o seu Copiloto GhostMarket AI. Como posso te ajudar a vender mais hoje?')
+      
+      let lastRole = null
+      
+      filteredHistory.forEach(msg => {
+        const role = msg.sender === 'user' ? 'user' : 'model'
+        // Gemini API exige alternância estrita de papéis
+        if (role !== lastRole) {
+          formattedHistory.push({
+            role: role,
+            parts: [{ text: msg.text }]
+          })
+          lastRole = role
+        } else {
+          // Se for o mesmo papel da mensagem anterior, concatena o texto
+          formattedHistory[formattedHistory.length - 1].parts[0].text += '\n\n' + msg.text
+        }
       })
     }
 
