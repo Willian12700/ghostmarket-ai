@@ -4,6 +4,7 @@ import { MainLayout } from '@/layouts/MainLayout'
 import { Landing } from '@/pages/Landing'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
+import { ResetPassword } from '@/pages/ResetPassword'
 import { Dashboard } from '@/pages/Dashboard'
 import { Creator } from '@/pages/Creator'
 import { PromptBuilder } from '@/pages/PromptBuilder'
@@ -46,6 +47,7 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
