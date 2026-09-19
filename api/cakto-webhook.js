@@ -1,10 +1,11 @@
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
+if (getApps().length === 0) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    initializeApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         // Handle newlines in private key securely
@@ -16,7 +17,7 @@ if (!admin.apps.length) {
   }
 }
 
-const db = admin.firestore();
+const db = getFirestore();
 
 export default async function handler(req, res) {
   // Allow only POST requests
@@ -44,7 +45,7 @@ export default async function handler(req, res) {
       await db.collection('allowed_users').doc(customerEmail).set({
         email: customerEmail,
         status: 'approved',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         used: false,
       });
 
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
         amount: Number(amount),
         status: 'Aprovado',
         date: new Date().toLocaleDateString('pt-BR'),
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
         source: 'Assinatura SaaS'
       });
 
