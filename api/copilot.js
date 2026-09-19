@@ -39,49 +39,63 @@ Regras:
 `
 
     const genAI = new GoogleGenerativeAI(apiKey)
+    
+    // Tenta primeiro com o Gemini 1.5 Flash (mais rápido e inteligente)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-1.5-flash",
       systemInstruction: systemPrompt
     })
 
-    // Prepara o histórico garantindo alternância
     const formattedHistory = []
     
-    // Filtra a mensagem inicial padrão para não enviar, ou mapeia corretamente
     if (history && history.length > 0) {
-      // Remover a primeira mensagem se for a saudação padrão
       const filteredHistory = history.filter(msg => msg.id !== '1' && msg.text !== 'Olá! Sou o seu Copiloto GhostMarket AI. Como posso te ajudar a vender mais hoje?')
-      
       let lastRole = null
       
       filteredHistory.forEach(msg => {
         const role = msg.sender === 'user' ? 'user' : 'model'
-        // Gemini API exige alternância estrita de papéis
         if (role !== lastRole) {
-          formattedHistory.push({
-            role: role,
-            parts: [{ text: msg.text }]
-          })
+          formattedHistory.push({ role: role, parts: [{ text: msg.text }] })
           lastRole = role
         } else {
-          // Se for o mesmo papel da mensagem anterior, concatena o texto
           formattedHistory[formattedHistory.length - 1].parts[0].text += '\n\n' + msg.text
         }
       })
     }
 
-    const chat = model.startChat({
-      history: formattedHistory,
-      generationConfig: {
-        maxOutputTokens: 500,
-        temperature: 0.7,
-      },
-    })
+    try {
+      const chat = model.startChat({
+        history: formattedHistory,
+        generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+      })
+      const result = await chat.sendMessage(message)
+      return res.status(200).json({ text: result.response.text() })
+      
+    } catch (primaryError) {
+      // Se der erro 404 (modelo não encontrado para esta chave), fazemos um fallback para o gemini-pro (1.0)
+      if (primaryError.message && primaryError.message.includes('not found')) {
+        console.log('Fallback para gemini-pro devido a erro 404 no 1.5-flash')
+        
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" })
+        
+        // No gemini-pro (1.0), injetamos o systemPrompt como a primeira mensagem do usuário
+        const fallbackHistory = [
+          { role: 'user', parts: [{ text: systemPrompt }] },
+          { role: 'model', parts: [{ text: 'Entendido. Sou o Copiloto do GhostMarket AI.' }] },
+          ...formattedHistory
+        ]
 
-    const result = await chat.sendMessage(message)
-    const responseText = result.response.text()
-
-    return res.status(200).json({ text: responseText })
+        const fallbackChat = fallbackModel.startChat({
+          history: fallbackHistory,
+          generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+        })
+        
+        const fallbackResult = await fallbackChat.sendMessage(message)
+        return res.status(200).json({ text: fallbackResult.response.text() })
+      }
+      
+      throw primaryError // Lança para o catch principal se não for 404
+    }
   } catch (error) {
     console.error('Erro na API do Copilot:', error)
     
