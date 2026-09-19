@@ -27,36 +27,54 @@ export const Dashboard = () => {
     return () => unsubscribe()
   }, [user])
 
-  // Calcula estatísticas reais (CRM + Vendas SaaS)
-  const totalRevenue = useMemo(() => {
-    const crmRevenue = contracts
-      .filter(c => c.status === 'Fechado')
-      .reduce((acc, curr) => acc + curr.amount, 0)
+  // Helper para verificar se a data está no filtro selecionado
+  const isWithinFilter = (timestampMs: number, filter: string) => {
+    if (!timestampMs) return true // Se não tiver data, mostra por padrão
     
-    const saasRevenue = firebaseTransactions
-      .filter(tx => tx.status === 'Aprovado')
-      .reduce((acc, curr) => acc + (curr.amount || 0), 0)
-      
-    return crmRevenue + saasRevenue
-  }, [contracts, firebaseTransactions])
+    const now = new Date()
+    const date = new Date(timestampMs)
+    
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    const itemDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 
-  const activeProjects = useMemo(() => {
-    return contracts.filter(c => c.status === 'Proposta' || c.status === 'Contato').length
-  }, [contracts])
+    if (filter === 'hoje') {
+      return itemDay === today
+    }
+    if (filter === 'semana') {
+      const dayOfWeek = now.getDay()
+      const startOfWeek = today - (dayOfWeek * 24 * 60 * 60 * 1000)
+      return itemDay >= startOfWeek
+    }
+    if (filter === 'mes') {
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+    }
+    if (filter === 'ano') {
+      return date.getFullYear() === now.getFullYear()
+    }
+    return true
+  }
 
-  const capturedLeads = contracts.length
-
-  // Mescla as transações do CRM com as transações do Webhook SaaS
-  const recentTransactions = useMemo(() => {
-    const crmTxs = contracts.map(c => ({
-      id: c.id,
-      clientName: c.client,
-      amount: c.amount,
-      status: c.status === 'Fechado' ? 'Fechado' : 'Em Negociação',
-      date: c.date,
-      // Usar string para sort se possivel, senao usar data fixa (CRM local guarda apenas DD/MM/YYYY)
-      _rawDate: new Date(c.date.split('/').reverse().join('-')).getTime() || 0
-    }))
+  // Prepara todas as transações unificadas e padronizadas com _rawDate
+  const allCombinedTransactions = useMemo(() => {
+    const crmTxs = contracts.map(c => {
+      // Tenta fazer o parse da data DD/MM/YYYY do Kanban
+      let rawMs = Date.now()
+      if (c.date) {
+        const parts = c.date.split('/')
+        if (parts.length === 3) {
+          rawMs = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime()
+        }
+      }
+      return {
+        id: c.id,
+        clientName: c.client,
+        amount: c.amount,
+        status: c.status === 'Fechado' ? 'Fechado' : 'Em Negociação',
+        date: c.date,
+        _rawDate: rawMs,
+        isCRM: true
+      }
+    })
 
     const saasTxs = firebaseTransactions.map(tx => ({
       id: tx.id,
@@ -64,15 +82,37 @@ export const Dashboard = () => {
       amount: tx.amount,
       status: tx.status === 'Aprovado' ? 'Fechado' : tx.status,
       date: tx.date || new Date().toLocaleDateString('pt-BR'),
-      _rawDate: tx.timestamp?.toMillis() || Date.now()
+      _rawDate: tx.timestamp?.toMillis() || Date.now(),
+      isCRM: false
     }))
 
-    const combined = [...crmTxs, ...saasTxs]
-    // Ordena do mais recente para o mais antigo (Aproximação)
-    combined.sort((a, b) => b._rawDate - a._rawDate)
-    
-    return combined.slice(0, 5)
+    return [...crmTxs, ...saasTxs]
   }, [contracts, firebaseTransactions])
+
+  // Aplica o filtro de data na lista unificada
+  const filteredTransactions = useMemo(() => {
+    return allCombinedTransactions.filter(tx => isWithinFilter(tx._rawDate, dateFilter))
+  }, [allCombinedTransactions, dateFilter])
+
+  // Calcula estatísticas REAIS baseadas no filtro selecionado
+  const totalRevenue = useMemo(() => {
+    return filteredTransactions
+      .filter(tx => tx.status === 'Fechado')
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0)
+  }, [filteredTransactions])
+
+  const activeProjects = useMemo(() => {
+    return filteredTransactions.filter(tx => tx.isCRM && tx.status !== 'Fechado').length
+  }, [filteredTransactions])
+
+  const capturedLeads = useMemo(() => {
+    return filteredTransactions.filter(tx => tx.isCRM).length
+  }, [filteredTransactions])
+
+  const recentTransactions = useMemo(() => {
+    const sorted = [...filteredTransactions].sort((a, b) => b._rawDate - a._rawDate)
+    return sorted.slice(0, 5)
+  }, [filteredTransactions])
 
   // Mock de gráfico (para manter o visual bonito, já que não temos datas reais nos leads do kanban)
   const salesData = [
