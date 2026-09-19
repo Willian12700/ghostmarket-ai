@@ -84,9 +84,13 @@ Regras:
     return res.status(200).json({ text: responseText })
   } catch (error) {
     console.error('Erro na API do Copilot:', error)
+    
+    // Extrair a mensagem de erro real do Google Generative AI se existir
+    const errorMessage = error.message || 'Erro desconhecido'
+    
     return res.status(500).json({ 
       error: 'Erro interno',
-      message: 'A inteligência artificial está temporariamente indisponível. Tente novamente mais tarde.' 
+      message: \`Ops! Falha na IA: \${errorMessage.includes('API key not valid') ? 'A chave da API informada na Vercel (GEMINI_API_KEY) é inválida.' : 'A inteligência artificial está temporariamente indisponível.'}\`
     })
   }
 }
