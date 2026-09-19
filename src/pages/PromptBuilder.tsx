@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Wand2, Copy, Check, Code, Video, Bot } from 'lucide-react'
+﻿import { useState } from 'react'
+import { Wand2, Copy, Check, Code, Video, Bot, Zap } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -42,6 +42,30 @@ export const PromptBuilder = () => {
     }))
   }
 
+  const generateAutoDescription = () => {
+    const finalNiche = formData.niche === 'Outro' ? formData.customNiche : formData.niche;
+    const finalAudience = formData.targetAudience === 'Outro' ? formData.customAudience : formData.targetAudience;
+    
+    let base = 'Desenvolver uma plataforma web completa voltada para ' + (finalNiche || 'o mercado') + '. ';
+    
+    if (finalNiche.includes('E-commerce') || finalNiche.includes('Lojas')) {
+      base += 'O sistema deve focar em um catÃ¡logo de produtos atraente, carrinho de compras fluido e um checkout de alta conversÃ£o voltado para o pÃºblico de ' + finalAudience + '.';
+    } else if (finalNiche.includes('SaaS') || finalNiche.includes('Tecnologia')) {
+      base += 'A aplicaÃ§Ã£o serÃ¡ um SaaS escalÃ¡vel projetado para ' + finalAudience + ', contando com um dashboard gerencial intuitivo, gestÃ£o de assinaturas e automaÃ§Ã£o de processos internos.';
+    } else if (finalNiche.includes('SaÃºde') || finalNiche.includes('MÃ©dicos')) {
+      base += 'A soluÃ§Ã£o tem o objetivo de facilitar o agendamento de consultas e acompanhamento de pacientes focando em ' + finalAudience + ', com painel de mÃ©dicos e interface limpa e confiÃ¡vel.';
+    } else if (finalNiche.includes('FinanÃ§as')) {
+      base += 'Um sistema de gestÃ£o financeira e analytics seguro para ' + finalAudience + ', com grÃ¡ficos em tempo real, controle de fluxo de caixa e relatÃ³rios detalhados.';
+    } else if (finalNiche.includes('EducaÃ§Ã£o')) {
+      base += 'Uma plataforma EAD otimizada para ' + finalAudience + ', com Ã¡rea de membros, visualizaÃ§Ã£o de aulas em vÃ­deo, progresso do aluno e emissÃ£o de certificados.';
+    } else {
+      base += 'O sistema serÃ¡ estruturado para atender perfeitamente Ã s necessidades de ' + finalAudience + ', entregando uma experiÃªncia de usuÃ¡rio (UX) premium, navegaÃ§Ã£o rÃ¡pida e painel administrativo completo.';
+    }
+
+    setFormData(prev => ({ ...prev, description: base }));
+    addToast('DescriÃ§Ã£o gerada com IA âš¡', 'success');
+  }
+
   const generatePrompt = () => {
     setIsGenerating(true)
     setTimeout(() => {
@@ -56,37 +80,37 @@ export const PromptBuilder = () => {
       const finalAudience = formData.targetAudience === 'Outro' ? formData.customAudience : formData.targetAudience
 
       const prompt = `# SYSTEM INSTRUCTION - ARQUITETURA E DESENVOLVIMENTO
-Você atuará como um Senior Full-Stack Software Engineer.
+VocÃª atuarÃ¡ como um Senior Full-Stack Software Engineer.
 IA Escolhida: ${formData.aiPlatform}
 
-## 1. VISÃO GERAL DO PROJETO
+## 1. VISÃƒO GERAL DO PROJETO
 - **Nome**: ${formData.projectName.toUpperCase() || 'SISTEMA/SAAS'}
-- **Nicho**: ${finalNiche || 'Não informado'}
-- **Público-alvo**: ${finalAudience || 'Não informado'}
-- **Objetivo Principal**: ${formData.description || 'Desenvolver um SaaS/Site de alta performance e conversão.'}
+- **Nicho**: ${finalNiche || 'NÃ£o informado'}
+- **PÃºblico-alvo**: ${finalAudience || 'NÃ£o informado'}
+- **Objetivo Principal**: ${formData.description || 'Desenvolver um SaaS/Site de alta performance e conversÃ£o.'}
 
-## 2. STACK TECNOLÓGICA
+## 2. STACK TECNOLÃ“GICA
 - **Linguagem/Framework**: ${formData.tech}
-- **Estilização**: ${isHtmlMode ? 'CSS Puro' : 'Tailwind CSS'}
-- **Ícones**: ${isHtmlMode ? 'FontAwesome' : 'lucide-react'}
+- **EstilizaÃ§Ã£o**: ${isHtmlMode ? 'CSS Puro' : 'Tailwind CSS'}
+- **Ãcones**: ${isHtmlMode ? 'FontAwesome' : 'lucide-react'}
 ${!isHtmlMode ? '- **Gerenciamento de Estado**: Zustand ou Context API' : ''}
 
 ## 3. DESIGN E UI/UX
 - **Tema Visual**: ${formData.design}
-- **Experiência do Usuário (UX)**: A interface deve ser extremamente moderna, responsiva, com foco absoluto em usabilidade. Utilize componentes bem espaçados, efeitos de hover sutis e feedback visual para o usuário.
+- **ExperiÃªncia do UsuÃ¡rio (UX)**: A interface deve ser extremamente moderna, responsiva, com foco absoluto em usabilidade. Utilize componentes bem espaÃ§ados, efeitos de hover sutis e feedback visual para o usuÃ¡rio.
 
 ## 4. FUNCIONALIDADES A IMPLEMENTAR
-O sistema deve conter os seguintes módulos/features essenciais:
-${activeFeatures || 'Apenas estrutura básica da Landing Page.'}
+O sistema deve conter os seguintes mÃ³dulos/features essenciais:
+${activeFeatures || 'Apenas estrutura bÃ¡sica da Landing Page.'}
 
-## 5. REGRAS DE CÓDIGO (CRÍTICO)
-1. Escreva o código completo, sem placeholders como "// código aqui".
+## 5. REGRAS DE CÃ“DIGO (CRÃTICO)
+1. Escreva o cÃ³digo completo, sem placeholders como "// cÃ³digo aqui".
 2. Separe componentes de forma modular.
-3. Se houver integração com APIs, crie serviços isolados.
-4. O código deve estar pronto para rodar sem erros (Production-ready).
-5. Retorne a resposta utilizando a estrutura de artefatos ou blocos de código formatados corretamente.
+3. Se houver integraÃ§Ã£o com APIs, crie serviÃ§os isolados.
+4. O cÃ³digo deve estar pronto para rodar sem erros (Production-ready).
+5. Retorne a resposta utilizando a estrutura de artefatos ou blocos de cÃ³digo formatados corretamente.
 
-AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
+AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÃ‡ÃƒO PASSO A PASSO.`
 
       setGeneratedPrompt(prompt)
       setIsGenerating(false)
@@ -105,10 +129,10 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">System Prompt Builder</h2>
-        <p className="text-textSecondary">Gere prompts avançados de arquitetura para criar sites e SaaS do zero.</p>
+        <p className="text-textSecondary">Gere prompts avanÃ§ados de arquitetura para criar sites e SaaS do zero.</p>
       </div>
 
-      {/* SEÇÃO DE AULA / TUTORIAL */}
+      {/* SEÃ‡ÃƒO DE AULA / TUTORIAL */}
       <div className="bg-[#0b0416] border border-primary/20 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row gap-6 items-center shadow-[0_0_20px_rgba(139,92,246,0.05)]">
         <div className="absolute top-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
         
@@ -117,7 +141,7 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
             <iframe 
               width="100%" 
               height="100%" 
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ" /* ⚠️ COLOQUE O LINK DO SEU VÍDEO AQUI ⚠️ */
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ" /* âš ï¸ COLOQUE O LINK DO SEU VÃDEO AQUI âš ï¸ */
               title="Tutorial Prompt Builder"
               frameBorder="0" 
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -132,7 +156,7 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
           </div>
           <h3 className="text-2xl font-bold text-white">Como criar seu Site/SaaS do Zero</h3>
           <p className="text-textSecondary text-sm leading-relaxed">
-            Assista este vídeo antes de começar! Aprenda a configurar o seu System Prompt perfeitamente para extrair o máximo da Inteligência Artificial. Com os comandos certos, a IA vai gerar o código perfeito de primeira.
+            Assista este vÃ­deo antes de comeÃ§ar! Aprenda a configurar o seu System Prompt perfeitamente para extrair o mÃ¡ximo da InteligÃªncia Artificial. Com os comandos certos, a IA vai gerar o cÃ³digo perfeito de primeira.
           </p>
         </div>
       </div>
@@ -141,11 +165,11 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 1 — Projeto Base</CardTitle>
+              <CardTitle>Etapa 1 â€” Projeto Base</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary flex items-center gap-2"><Bot className="w-4 h-4"/> Qual IA você vai usar?</label>
+                <label className="text-sm font-medium text-textSecondary flex items-center gap-2"><Bot className="w-4 h-4"/> Qual IA vocÃª vai usar?</label>
                 <select
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   value={formData.aiPlatform}
@@ -176,13 +200,13 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
                 >
                   <option>SaaS / Tecnologia</option>
                   <option>E-commerce / Lojas Virtuais</option>
-                  <option>Saúde e Bem-estar (Médicos/Estética)</option>
-                  <option>Finanças / Investimentos</option>
-                  <option>Imobiliária / Corretores</option>
-                  <option>Educação / Cursos Online (EAD)</option>
+                  <option>SaÃºde e Bem-estar (MÃ©dicos/EstÃ©tica)</option>
+                  <option>FinanÃ§as / Investimentos</option>
+                  <option>ImobiliÃ¡ria / Corretores</option>
+                  <option>EducaÃ§Ã£o / Cursos Online (EAD)</option>
                   <option>Restaurante / Delivery</option>
-                  <option>Agência de Marketing / Serviços</option>
-                  <option>Advocacia / Jurídico</option>
+                  <option>AgÃªncia de Marketing / ServiÃ§os</option>
+                  <option>Advocacia / JurÃ­dico</option>
                   <option>Outro</option>
                 </select>
               </div>
@@ -196,32 +220,43 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
               )}
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary">Público-alvo Principal</label>
+                <label className="text-sm font-medium text-textSecondary">PÃºblico-alvo Principal</label>
                 <select
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   value={formData.targetAudience}
                   onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
                 >
-                  <option>B2B (Outras Empresas e Negócios)</option>
+                  <option>B2B (Outras Empresas e NegÃ³cios)</option>
                   <option>B2C (Consumidor Final)</option>
                   <option>Jovens (18-24 anos)</option>
                   <option>Adultos e Profissionais (25-45 anos)</option>
                   <option>Idosos (60+ anos)</option>
-                  <option>Profissionais Autônomos</option>
+                  <option>Profissionais AutÃ´nomos</option>
                   <option>Outro</option>
                 </select>
               </div>
               {formData.targetAudience === 'Outro' && (
                 <Input
-                  label="Descreva o Público-alvo"
-                  placeholder="Ex: Mães de primeira viagem"
+                  label="Descreva o PÃºblico-alvo"
+                  placeholder="Ex: MÃ£es de primeira viagem"
                   value={formData.customAudience}
                   onChange={(e) => setFormData({ ...formData, customAudience: e.target.value })}
                 />
               )}
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary">Descrição do Projeto</label>
+              <div className="space-y-1.5 relative">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-textSecondary">DescriÃ§Ã£o do Projeto</label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={generateAutoDescription}
+                    className="text-primary hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs font-bold"
+                  >
+                    <Zap className="w-3 h-3 mr-1" />
+                    Gerar com IA
+                  </Button>
+                </div>
                 <textarea
                   className="flex min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-textSecondary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
                   placeholder="Explique o que o sistema/site faz em 2 ou 3 frases..."
@@ -234,7 +269,7 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
 
           <Card>
             <CardHeader>
-              <CardTitle>Etapa 2 — Recursos</CardTitle>
+              <CardTitle>Etapa 2 â€” Recursos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
@@ -262,7 +297,7 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
           <div className="grid grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 3 — Design</CardTitle>
+                <CardTitle className="text-base">Etapa 3 â€” Design</CardTitle>
               </CardHeader>
               <CardContent>
                 <select
@@ -274,14 +309,14 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÇÃO PASSO A PASSO.`
                   <option>Cyberpunk</option>
                   <option>Minimalista Claro</option>
                   <option>Premium (Dourado/Preto)</option>
-                  <option>Corporativo Clássico</option>
+                  <option>Corporativo ClÃ¡ssico</option>
                 </select>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Etapa 4 — Stack</CardTitle>
+                <CardTitle className="text-base">Etapa 4 â€” Stack</CardTitle>
               </CardHeader>
               <CardContent>
                 <select
