@@ -1,19 +1,45 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { DollarSign, Briefcase, Users, CreditCard, CheckCircle2, Clock } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useContractStore } from '@/store/contractStore'
+import { useAuthStore } from '@/store/authStore'
+import { db } from '@/config/firebase'
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 
 export const Dashboard = () => {
   const { contracts } = useContractStore()
+  const { user } = useAuthStore()
   const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
+  const [firebaseTransactions, setFirebaseTransactions] = useState<any[]>([])
 
-  // Calcula estatísticas reais do CRM (Funil Kanban)
+  // Busca Vendas do SaaS do Firebase (Webhooks)
+  useEffect(() => {
+    if (!user?.email) return
+    const q = query(
+      collection(db, 'transactions'),
+      where('userId', '==', user.email),
+      orderBy('timestamp', 'desc')
+    )
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      setFirebaseTransactions(txs)
+    })
+    return () => unsubscribe()
+  }, [user])
+
+  // Calcula estatísticas reais (CRM + Vendas SaaS)
   const totalRevenue = useMemo(() => {
-    return contracts
+    const crmRevenue = contracts
       .filter(c => c.status === 'Fechado')
       .reduce((acc, curr) => acc + curr.amount, 0)
-  }, [contracts])
+    
+    const saasRevenue = firebaseTransactions
+      .filter(tx => tx.status === 'Aprovado')
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0)
+      
+    return crmRevenue + saasRevenue
+  }, [contracts, firebaseTransactions])
 
   const activeProjects = useMemo(() => {
     return contracts.filter(c => c.status === 'Proposta' || c.status === 'Contato').length
@@ -21,16 +47,33 @@ export const Dashboard = () => {
 
   const capturedLeads = contracts.length
 
-  // Transforma os contratos do CRM na lista de últimas transações
+  // Mescla as transações do CRM com as transações do Webhook SaaS
   const recentTransactions = useMemo(() => {
-    return [...contracts].reverse().slice(0, 5).map(c => ({
+    const crmTxs = contracts.map(c => ({
       id: c.id,
       clientName: c.client,
       amount: c.amount,
       status: c.status === 'Fechado' ? 'Fechado' : 'Em Negociação',
-      date: c.date
+      date: c.date,
+      // Usar string para sort se possivel, senao usar data fixa (CRM local guarda apenas DD/MM/YYYY)
+      _rawDate: new Date(c.date.split('/').reverse().join('-')).getTime() || 0
     }))
-  }, [contracts])
+
+    const saasTxs = firebaseTransactions.map(tx => ({
+      id: tx.id,
+      clientName: tx.clientName,
+      amount: tx.amount,
+      status: tx.status === 'Aprovado' ? 'Fechado' : tx.status,
+      date: tx.date || new Date().toLocaleDateString('pt-BR'),
+      _rawDate: tx.timestamp?.toMillis() || Date.now()
+    }))
+
+    const combined = [...crmTxs, ...saasTxs]
+    // Ordena do mais recente para o mais antigo (Aproximação)
+    combined.sort((a, b) => b._rawDate - a._rawDate)
+    
+    return combined.slice(0, 5)
+  }, [contracts, firebaseTransactions])
 
   // Mock de gráfico (para manter o visual bonito, já que não temos datas reais nos leads do kanban)
   const salesData = [
