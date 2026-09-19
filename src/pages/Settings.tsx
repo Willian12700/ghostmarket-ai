@@ -1,28 +1,75 @@
-import { useState, useRef } from 'react'
-import { User, Shield, Moon, Globe, Key, Webhook, Camera } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { User, Shield, Globe, Key, Moon, Camera, Webhook, Palette, LayoutTemplate } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import { useToastStore } from '@/store/toastStore'
 
 export const Settings = () => {
   const { user, updateUserProfile, updateUserPassword } = useAuthStore()
+  const { theme, updateTheme } = useThemeStore()
   const { addToast } = useToastStore()
   
-  // Profile state
   const [name, setName] = useState(user?.name || '')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Password state
+  
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSavingPassword, setIsSavingPassword] = useState(false)
 
-  // API state
-  const [isApiModalOpen, setIsApiModalOpen] = useState(false)
   const [apiKey, setApiKey] = useState('')
+  const [isApiModalOpen, setIsApiModalOpen] = useState(false)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // White-Label state
+  const [agencyName, setAgencyName] = useState(theme.agencyName)
+  const [primaryColor, setPrimaryColor] = useState(theme.primaryColor)
+  const [isSavingTheme, setIsSavingTheme] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setAgencyName(theme.agencyName)
+    setPrimaryColor(theme.primaryColor)
+  }, [theme])
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        addToast('A logo deve ter no mǭximo 2MB', 'error')
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64String = reader.result as string
+        if (user?.email) {
+          await updateTheme(user.email, { logoUrl: base64String })
+          addToast('Logo atualizada com sucesso!', 'success')
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSaveTheme = async () => {
+    if (!user?.email) return
+    setIsSavingTheme(true)
+    try {
+      await updateTheme(user.email, { 
+        agencyName, 
+        primaryColor 
+      })
+      addToast('Personalizaǜo salva com sucesso!', 'success')
+    } catch (error) {
+      addToast('Erro ao salvar personalizaǜo', 'error')
+    } finally {
+      setIsSavingTheme(false)
+    }
+  }
 
   const handleSaveApi = () => {
     addToast('Configuração salva com sucesso!', 'success')
@@ -192,6 +239,79 @@ export const Settings = () => {
           <Button onClick={handleSaveProfile} disabled={isSavingProfile || name === user?.name}>
             {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
           </Button>
+        </CardContent>
+      </Card>
+
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LayoutTemplate className="w-5 h-5 text-primary" />
+            Personalizaǜo da AgǦncia (White-Label)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-6">
+            <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
+              <input 
+                type="file" 
+                ref={logoInputRef} 
+                onChange={handleLogoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              {theme.logoUrl ? (
+                <img 
+                  src={theme.logoUrl} 
+                  alt="Logo da AgǦncia" 
+                  className="w-20 h-20 rounded-lg object-contain border-2 border-primary/20 bg-panel p-2"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-lg bg-panel border-2 border-dashed border-border flex flex-col items-center justify-center text-textSecondary group-hover:border-primary/50 group-hover:text-primary transition-colors">
+                  <Palette className="w-6 h-6 mb-1" />
+                  <span className="text-xs">Logo</span>
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-white mb-1">Logo do Painel</p>
+              <p className="text-sm text-textSecondary mb-2">Recomendado: 256x256px, PNG. Mǭximo 2MB.</p>
+              <Button size="sm" variant="secondary" onClick={() => logoInputRef.current?.click()}>
+                Enviar nova logo
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input 
+              label="Nome da AgǦncia" 
+              placeholder="Ex: AgǦncia Rocket" 
+              value={agencyName}
+              onChange={(e) => setAgencyName(e.target.value)}
+            />
+            
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-textSecondary">Cor Principal (HEX)</label>
+              <div className="flex gap-3">
+                <div 
+                  className="w-10 h-10 rounded-md border border-border shadow-sm shrink-0" 
+                  style={{ backgroundColor: primaryColor }}
+                />
+                <Input 
+                  placeholder="#8B5CF6" 
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Button onClick={handleSaveTheme} disabled={isSavingTheme || (agencyName === theme.agencyName && primaryColor === theme.primaryColor)}>
+              {isSavingTheme ? 'Salvando...' : 'Salvar Personalizaǜo'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

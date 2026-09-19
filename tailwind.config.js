@@ -15,10 +15,10 @@ export default {
         borderHover: '#334155',
         textPrimary: '#F3F4F6',
         textSecondary: '#9CA3AF',
-        primary: '#8B5CF6',
-        primaryLight: '#A855F7',
-        secondary: '#EC4899', // Pink
-        accent: '#D946EF', // Fuchsia
+        primary: 'var(--color-primary, #8B5CF6)',
+        primaryLight: 'var(--color-primary-light, #A855F7)',
+        secondary: 'var(--color-secondary, #EC4899)', // Pink
+        accent: 'var(--color-accent, #D946EF)', // Fuchsia
         success: '#22C55E',
         error: '#EF4444',
       }

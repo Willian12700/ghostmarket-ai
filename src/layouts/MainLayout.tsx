@@ -5,6 +5,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { CopilotChat } from '@/components/ui/CopilotChat'
 import { OnboardingModal } from '@/components/ui/OnboardingModal'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { db } from '@/config/firebase'
 import { doc, getDoc } from 'firebase/firestore'
@@ -18,14 +19,23 @@ const pageInfo: Record<string, { title: string; description: string }> = {
   '/scanner': { title: 'Scanner de Leads', description: 'Encontre oportunidades comerciais por localização e nicho.' },
   '/contracts': { title: 'Gestão de Contratos', description: 'Gerencie seus clientes, contratos e valores em um único painel.' },
   '/integrations': { title: 'Integração API', description: 'Conecte seu gateway de pagamento para sincronizar suas vendas automaticamente.' },
+  '/settings': { title: 'Minha Agência', description: 'Personalize o GhostMarket com as cores e logo da sua marca (White-Label).' },
 }
 
 export const MainLayout = () => {
   const { isAuthenticated, user } = useAuthStore()
+  const { syncTheme } = useThemeStore()
   const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      const unsubscribe = syncTheme(user.email)
+      return () => unsubscribe()
+    }
+  }, [isAuthenticated, user])
 
   useEffect(() => {
     const checkSubscription = async () => {

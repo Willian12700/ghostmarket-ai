@@ -1,7 +1,8 @@
 
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked } from 'lucide-react'
+import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, X, Code, User, BookMarked, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
 
 interface SidebarProps {
@@ -11,6 +12,7 @@ interface SidebarProps {
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore()
+  const { theme } = useThemeStore()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -44,12 +46,16 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         "fixed top-0 left-0 z-50 h-screen w-64 bg-panel border-r border-border flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 flex items-center justify-between">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-              <Ghost className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-lg text-white tracking-tight">GhostMarket AI</span>
+            {theme.logoUrl ? (
+              <img src={theme.logoUrl} alt={theme.agencyName} className="w-8 h-8 rounded object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary">
+                <Sparkles className="w-5 h-5" />
+              </div>
+            )}
+            <span className="font-bold text-lg text-white tracking-tight truncate w-32">{theme.agencyName}</span>
           </div>
           <button onClick={onClose} className="md:hidden text-textSecondary hover:text-white">
             <X className="w-5 h-5" />
