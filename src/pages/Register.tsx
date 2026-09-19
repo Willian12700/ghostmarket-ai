@@ -47,21 +47,6 @@ export const Register = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
       await updateProfile(userCredential.user, { displayName: formData.name })
       
-      // Libera o acesso automaticamente (Ideal para fase de testes/MVP)
-      // Nota: Para produção extrema, isso deve ser removido e confiar apenas no Webhook
-      try {
-        const { doc, setDoc } = await import('firebase/firestore')
-        const { db } = await import('@/config/firebase')
-        await setDoc(doc(db, 'allowed_users', formData.email), {
-          email: formData.email,
-          status: 'approved',
-          createdAt: new Date().toISOString(),
-          used: true
-        }, { merge: true })
-      } catch (dbError) {
-        console.error("Erro ao salvar permissão automática:", dbError)
-      }
-      
       addToast('Conta criada com sucesso!', 'success')
       navigate('/dashboard')
     } catch (error: any) {
