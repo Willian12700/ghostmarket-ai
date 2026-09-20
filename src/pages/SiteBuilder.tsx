@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Monitor, Smartphone, Globe, UploadCloud, Eye, Download, Code, FileCode2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Monitor, Smartphone, Globe, UploadCloud, Eye, Code, FileCode2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
@@ -99,7 +99,7 @@ export const SiteBuilder = () => {
             onChange={handleFileUpload} 
             className="hidden" 
           />
-          <Button variant="outline" className="hidden md:flex bg-background border-primary/30 text-white hover:bg-primary/20" onClick={() => fileInputRef.current?.click()}>
+          <Button variant="secondary" className="hidden md:flex bg-background border-primary/30 text-white hover:bg-primary/20" onClick={() => fileInputRef.current?.click()}>
             <FileCode2 className="w-4 h-4 mr-2 text-primary" /> Fazer Upload de .HTML
           </Button>
 
