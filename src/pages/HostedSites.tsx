@@ -3,7 +3,7 @@ import { collection, query, where, getDocs, deleteDoc, doc, setDoc, getDoc } fro
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { Globe, Trash2, Edit, ExternalLink, Plus, Search, Eye, TrendingUp, Link2 } from 'lucide-react'
+import { Globe, Trash2, Edit, ExternalLink, Plus, Search, Eye, TrendingUp, Link2, BarChart } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -207,7 +207,15 @@ export const HostedSites = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => navigate(`/builder?edit=${site.id}`)} className="p-2 text-textSecondary hover:text-primary transition-colors bg-panel rounded-md border border-border" title="Editar Código">
+                        <button onClick={() => {
+                            const url = `${window.location.origin}/report/${site.id}`;
+                            navigator.clipboard.writeText(url);
+                            addToast('Link do relatório copiado!', 'success');
+                            window.open(url, '_blank');
+                          }} className="p-2 text-textSecondary hover:text-green-500 transition-colors bg-panel rounded-md border border-border" title="Gerar Relatório do Cliente">
+                            <BarChart className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => navigate(`/builder?edit=${site.id}`)} className="p-2 text-textSecondary hover:text-primary transition-colors bg-panel rounded-md border border-border" title="Editar Código">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleDelete(site.id)} className="p-2 text-textSecondary hover:text-red-500 transition-colors bg-panel rounded-md border border-border" title="Apagar Site">

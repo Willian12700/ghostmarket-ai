@@ -13,6 +13,7 @@ import { PromptBuilder } from '@/pages/PromptBuilder'
 import { SiteBuilder } from '@/pages/SiteBuilder'
 import { HostedSites } from '@/pages/HostedSites'
 import { SiteViewer } from '@/pages/SiteViewer'
+import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
@@ -81,6 +82,7 @@ function App() {
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />
+            <Route path="/report/:siteId" element={<ClientReport />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
