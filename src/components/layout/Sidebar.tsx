@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, LayoutTemplate, Globe , ShieldAlert, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Trophy, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, LayoutTemplate, Globe , ShieldAlert, MessageCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -36,7 +36,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     {
       label: 'Painel',
       items: [
-        { to: '/dashboard', icon: LayoutDashboard, label: 'Painel' }
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
+          { to: '/ranking', icon: Trophy, label: 'Top Global' }
       ]
     },
     {

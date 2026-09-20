@@ -7,6 +7,7 @@ import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { ResetPassword } from '@/pages/ResetPassword'
 import { Dashboard } from '@/pages/Dashboard'
+import { Ranking } from '@/pages/Ranking'
 import { Creator } from '@/pages/Creator'
 import { Library } from '@/pages/Library'
 import { PromptBuilder } from '@/pages/PromptBuilder'
@@ -62,6 +63,7 @@ function App() {
             
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/ranking" element={<Ranking />} />
               <Route path="/creator" element={<Creator />} />
               <Route path="/library" element={<Library />} />
               <Route path="/prompt-builder" element={<PromptBuilder />} />
