@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react'
-import { Wand2, Copy, Check, Code, Video, Bot, Zap, MonitorSmartphone } from 'lucide-react'
+import { Wand2, Copy, Check, Code, Video, Bot, Zap, MonitorSmartphone, Plus, Trash2, Tag } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -33,6 +33,14 @@ export const PromptBuilder = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [copied, setCopied] = useState(false)
+  const [services, setServices] = useState<{name: string, price: string}[]>([])
+  const addService = () => setServices([...services, {name: '', price: ''}])
+  const removeService = (index: number) => setServices(services.filter((_, i) => i !== index))
+  const updateService = (index: number, field: 'name' | 'price', value: string) => {
+    const newS = [...services];
+    newS[index][field] = value;
+    setServices(newS);
+  }
 
   const handleFeatureToggle = (feature: keyof typeof formData.features) => {
     setFormData(prev => ({
@@ -92,7 +100,11 @@ IA Escolhida: ${formData.aiPlatform}
 - **Nome**: ${formData.projectName.toUpperCase() || 'SISTEMA/SAAS'}
 - **Nicho**: ${finalNiche || 'Não informado'}
 - **Público-alvo**: ${finalAudience || 'Não informado'}
-- **Objetivo Principal**: ${formData.description || 'Desenvolver um SaaS/Site de alta performance e conversão.'}
+  - **Objetivo Principal**: ${formData.description || 'Desenvolver um SaaS/Site de alta performance e conversão.'}
+  
+  ${services.length > 0 && services.some(s => s.name) ? `## 1.5. PRODUTOS / SERVIÇOS E PREÇOS OBRIGATÓRIOS
+  O site DEVE listar os seguintes serviços/produtos com seus respectivos preços de forma atrativa:
+  ${services.filter(s => s.name).map(s => `- ${s.name}: ${s.price || 'A combinar'}`).join('\n  ')}` : ''}
 
 ## 2. STACK TECNOLÓGICA
 - **Linguagem/Framework**: ${formData.tech}
@@ -297,7 +309,54 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
             </CardContent>
           </Card>
 
-          <Card>
+                      {/* SEÇÃO DE PRODUTOS E SERVIÇOS */}
+            <Card>
+              <CardHeader className="pb-3 border-b border-border mb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-primary" />
+                  Serviços e Preços (Opcional)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-xs text-textSecondary mb-2">
+                  Adicione os produtos ou serviços que você quer que a IA inclua na página com seus respectivos valores. Ex: "Corte de Cabelo" - "R$ 35".
+                </p>
+                {services.map((svc, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input 
+                      placeholder="Nome do Produto/Serviço" 
+                      value={svc.name} 
+                      onChange={(e) => updateService(idx, 'name', e.target.value)} 
+                      className="flex-1"
+                    />
+                    <Input 
+                      placeholder="Preço (ex: R$ 35)" 
+                      value={svc.price} 
+                      onChange={(e) => updateService(idx, 'price', e.target.value)} 
+                      className="w-32"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => removeService(idx)}
+                      className="text-red-500 hover:text-red-400 hover:bg-red-500/10 px-3"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button 
+                  variant="ghost" 
+                  onClick={addService} 
+                  className="w-full border-dashed border-border hover:border-primary text-textSecondary hover:text-primary mt-2"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Produto / Serviço
+                </Button>
+              </CardContent>
+            </Card>
+
+<Card>
             <CardHeader>
               <CardTitle>Etapa 2 â€” Recursos</CardTitle>
             </CardHeader>
