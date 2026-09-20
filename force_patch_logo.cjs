@@ -1,0 +1,85 @@
+const fs = require('fs');
+let content = fs.readFileSync('src/pages/Settings.tsx', 'utf8');
+
+const targetLogo = `  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user?.uid) return
+
+    setIsUploadingLogo(true)
+    try {
+      const storageRef = ref(storage, \`logos/\${user.uid}_\${Date.now()}\`)
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      
+      await updateTheme(user.uid, { logoUrl: url })
+      addToast('Logo atualizada com sucesso', 'success')
+    } catch (error) {
+      addToast('Erro ao fazer upload da logo', 'error')
+      console.error(error)
+    } finally {
+      setIsUploadingLogo(false)
+    }
+  }`;
+
+const newLogoLogic = `  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user?.uid) return
+
+    if (!file.type.startsWith('image/')) {
+      addToast('Por favor, selecione uma imagem válida.', 'error')
+      return
+    }
+
+    setIsUploadingLogo(true)
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = async () => {
+        const canvas = document.createElement('canvas')
+        const MAX_WIDTH = 256
+        const MAX_HEIGHT = 256
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width
+            width = MAX_WIDTH
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height
+            height = MAX_HEIGHT
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        const base64Url = canvas.toDataURL('image/jpeg', 0.8)
+        
+        try {
+          await updateTheme(user.uid, { logoUrl: base64Url })
+          addToast('Logo atualizada com sucesso', 'success')
+        } catch (error) {
+          addToast('Erro ao fazer upload da logo. A imagem pode ser muito grande.', 'error')
+          console.error(error)
+        } finally {
+          setIsUploadingLogo(false)
+        }
+      }
+      img.src = event.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }`;
+
+if (content.includes("await uploadBytes(storageRef, file)")) {
+  content = content.replace(targetLogo, newLogoLogic);
+  fs.writeFileSync('src/pages/Settings.tsx', content);
+  console.log("Force patched Logo Settings!");
+} else {
+  console.log("Could not find logo logic!");
+}

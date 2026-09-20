@@ -7,9 +7,9 @@ import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useToastStore } from '@/store/toastStore'
 import { updatePassword, getAuth } from 'firebase/auth'
-import { storage } from '@/config/firebase'
 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+
+
 
 export const Settings = () => {
   const { user, updateUserProfile } = useAuthStore()
@@ -42,41 +42,21 @@ export const Settings = () => {
     setAppTheme(theme.appTheme || 'default')
   }, [theme])
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !user?.uid) return
 
-    setIsUploadingLogo(true)
-    try {
-      const storageRef = ref(storage, `logos/${user.uid}_${Date.now()}`)
-      await uploadBytes(storageRef, file)
-      const url = await getDownloadURL(storageRef)
-      
-      await updateTheme(user.uid, { logoUrl: url })
-      addToast('Logo atualizada com sucesso', 'success')
-    } catch (error) {
-      addToast('Erro ao fazer upload da logo', 'error')
-      console.error(error)
-    } finally {
-      setIsUploadingLogo(false)
-    }
-  }
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user?.uid) return
-    
     if (!file.type.startsWith('image/')) {
       addToast('Por favor, selecione uma imagem válida.', 'error')
       return
     }
 
-    setIsSavingProfile(true)
+    setIsUploadingLogo(true)
 
     const reader = new FileReader()
     reader.onload = (event) => {
       const img = new Image()
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas')
         const MAX_WIDTH = 256
         const MAX_HEIGHT = 256
@@ -100,33 +80,74 @@ export const Settings = () => {
         const ctx = canvas.getContext('2d')
         ctx?.drawImage(img, 0, 0, width, height)
 
-        canvas.toBlob(async (blob) => {
-          if (!blob) {
-            setIsSavingProfile(false)
-            addToast('Erro ao processar imagem.', 'error')
-            return
+        const base64Url = canvas.toDataURL('image/jpeg', 0.8)
+        
+        try {
+          await updateTheme(user.uid, { logoUrl: base64Url })
+          addToast('Logo atualizada com sucesso', 'success')
+        } catch (error) {
+          addToast('Erro ao fazer upload da logo. A imagem pode ser muito grande.', 'error')
+          console.error(error)
+        } finally {
+          setIsUploadingLogo(false)
+        }
+      }
+      img.src = event.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user?.uid) return
+    
+    if (!file.type.startsWith('image/')) {
+      addToast('Por favor, selecione uma imagem válida.', 'error')
+      return
+    }
+
+    setIsSavingProfile(true)
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = async () => {
+        const canvas = document.createElement('canvas')
+        const MAX_WIDTH = 256
+        const MAX_HEIGHT = 256
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width
+            width = MAX_WIDTH
           }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height
+            height = MAX_HEIGHT
+          }
+        }
 
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        const base64Url = canvas.toDataURL('image/jpeg', 0.8)
+          
           try {
-            const storageRef = ref(storage, `logos/${user.uid}_profile_${Date.now()}.jpg`)
-            await uploadBytes(storageRef, blob)
-            const downloadUrl = await getDownloadURL(storageRef)
-
-            await updateUserProfile(name, downloadUrl)
+            await updateUserProfile(name, base64Url)
             addToast('Foto de perfil atualizada!', 'success')
           } catch (error: any) {
-            console.error('Erro no uploadBytes:', error)
-            addToast('Erro ao enviar foto para o servidor.', 'error')
+            console.error('Erro ao salvar foto:', error)
+            addToast('Erro ao salvar foto. A imagem pode ser muito grande.', 'error')
           } finally {
             setIsSavingProfile(false)
           }
-        }, 'image/jpeg', 0.8)
-      }
-      img.onerror = () => {
-        setIsSavingProfile(false)
-        addToast('Erro ao ler a imagem.', 'error')
-      }
-      img.src = event.target?.result as string
+        }
+        img.src = event.target?.result as string
     }
     reader.onerror = () => {
       setIsSavingProfile(false)
