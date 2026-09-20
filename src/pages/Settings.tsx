@@ -9,7 +9,7 @@ import { useToastStore } from '@/store/toastStore'
 import { updatePassword, getAuth } from 'firebase/auth'
 import { storage } from '@/config/firebase'
 
-import { ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export const Settings = () => {
   const { user, updateUserProfile } = useAuthStore()
@@ -71,13 +71,15 @@ export const Settings = () => {
       return
     }
 
+    setIsSavingProfile(true)
+
     const reader = new FileReader()
     reader.onload = (event) => {
       const img = new Image()
-      img.onload = async () => {
+      img.onload = () => {
         const canvas = document.createElement('canvas')
-        const MAX_WIDTH = 200
-        const MAX_HEIGHT = 200
+        const MAX_WIDTH = 256
+        const MAX_HEIGHT = 256
         let width = img.width
         let height = img.height
 
@@ -98,24 +100,37 @@ export const Settings = () => {
         const ctx = canvas.getContext('2d')
         ctx?.drawImage(img, 0, 0, width, height)
 
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8)
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            setIsSavingProfile(false)
+            addToast('Erro ao processar imagem.', 'error')
+            return
+          }
 
-        try {
-          setIsSavingProfile(true)
-          const storageRef = ref(storage, `logos/${user.uid}_profile_${Date.now()}.jpg`)
-          await uploadString(storageRef, compressedBase64, 'data_url')
-          const downloadUrl = await getDownloadURL(storageRef)
+          try {
+            const storageRef = ref(storage, `logos/${user.uid}_profile_${Date.now()}.jpg`)
+            await uploadBytes(storageRef, blob)
+            const downloadUrl = await getDownloadURL(storageRef)
 
-          await updateUserProfile(name, downloadUrl)
-          addToast('Foto de perfil atualizada!', 'success')
-        } catch (error: any) {
-          console.error(error)
-          addToast('Erro ao enviar foto.', 'error')
-        } finally {
-          setIsSavingProfile(false)
-        }
+            await updateUserProfile(name, downloadUrl)
+            addToast('Foto de perfil atualizada!', 'success')
+          } catch (error: any) {
+            console.error('Erro no uploadBytes:', error)
+            addToast('Erro ao enviar foto para o servidor.', 'error')
+          } finally {
+            setIsSavingProfile(false)
+          }
+        }, 'image/jpeg', 0.8)
+      }
+      img.onerror = () => {
+        setIsSavingProfile(false)
+        addToast('Erro ao ler a imagem.', 'error')
       }
       img.src = event.target?.result as string
+    }
+    reader.onerror = () => {
+      setIsSavingProfile(false)
+      addToast('Erro no leitor de arquivos.', 'error')
     }
     reader.readAsDataURL(file)
   }
