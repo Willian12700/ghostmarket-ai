@@ -1,4 +1,4 @@
-export const generateHtmlSite = async (prompt: string) => {
+export const generateHtmlSite = async (prompt: string, currentHtml?: string) => {
   const systemPrompt = `
 Você é um desenvolvedor Frontend e Web Designer Sênior. 
 Crie uma Landing Page COMPLETA e INCRÍVEL em um único arquivo HTML.
@@ -24,8 +24,8 @@ Crie um site que pareça uma Landing Page de R$ 5.000,00!
       },
       body: JSON.stringify({
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
+{ role: 'system', content: systemPrompt },
+          { role: 'user', content: currentHtml && currentHtml.length > 500 && !currentHtml.includes('Site Vazio') ? `Aqui está o código HTML atual do site:\n` + currentHtml + `\n\nBaseado neste HTML, faça a seguinte alteração pedida pelo usuário e retorne o HTML completo atualizado:\n` + prompt : prompt }
         ],
         model: 'openai'
       })
@@ -41,6 +41,11 @@ Crie um site que pareça uma Landing Page de R$ 5.000,00!
 
     // Limpar o texto caso venha com blocos de markdown
     text = text.replace(/```html/gi, '').replace(/```/g, '').trim()
+
+    
+    if (!text.includes('<base target="_blank"')) {
+      text = text.replace('<head>', '<head>\n<base target="_blank">');
+    }
 
     // Forçar a injeção do Tailwind se a IA esquecer
     if (!text.includes('cdn.tailwindcss.com')) {

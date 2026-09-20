@@ -44,7 +44,7 @@ export const SiteBuilder = () => {
     addToast('A IA está codificando seu site do zero...', 'success')
 
     try {
-      const generatedHtml = await generateHtmlSite(aiPrompt)
+      const generatedHtml = await generateHtmlSite(aiPrompt, rawHtml)
       setRawHtml(generatedHtml)
       addToast('Site gerado com sucesso!', 'success')
       setEditorMode('visual') // Switch to visual to see the magic
@@ -117,11 +117,11 @@ export const SiteBuilder = () => {
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             disabled={isGenerating}
-            placeholder={isGenerating ? "IA programando o HTML..." : "Ex: Crie uma landing page de alta conversão para meu ebook de emagrecimento..."} 
+            placeholder={isGenerating ? "IA trabalhando..." : rawHtml.includes('Site Vazio') ? "Ex: Crie uma landing page para minha barbearia..." : "Ex: Mude a cor do botão principal para verde..."} 
             className="w-full bg-background border border-primary/30 rounded-full py-2 pl-11 pr-32 text-sm text-white focus:outline-none focus:border-primary transition-all disabled:opacity-50" 
           />
           <Button type="submit" disabled={isGenerating || !aiPrompt.trim()} size="sm" className="absolute right-1 top-1 h-7 rounded-full text-xs px-4">
-            {isGenerating ? 'Gerando...' : 'Gerar Site Agora'}
+            {isGenerating ? 'Gerando...' : rawHtml.includes('Site Vazio') ? 'Gerar Site' : 'Atualizar Site'}
           </Button>
         </form>
 
