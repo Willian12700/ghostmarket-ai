@@ -42,6 +42,14 @@ const BlockItem = ({ block, onRemove, onUpdate }: { block: Block, onRemove: (id:
         </button>
       </div>
 
+      
+      {block.type === 'custom-html' && (
+        <div 
+          className="w-full text-left"
+          dangerouslySetInnerHTML={{ __html: block.content.html }} 
+        />
+      )}
+
       {block.type === 'hero' && (
         <div className="py-20 px-6 md:px-12 text-center bg-gradient-to-b from-primary/10 to-transparent relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[300px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
