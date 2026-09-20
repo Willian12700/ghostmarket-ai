@@ -98,7 +98,7 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
           {showNotifications && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setShowNotifications(false)} />
-              <div className="absolute right-0 mt-2 w-80 bg-surface border border-border rounded-xl shadow-2xl z-40 overflow-hidden flex flex-col">
+              <div className="absolute right-0 mt-2 w-80 bg-panel border border-border rounded-xl shadow-2xl z-40 overflow-hidden flex flex-col">
                 <div className="p-3 border-b border-border bg-background/50 flex justify-between items-center">
                   <h3 className="font-bold text-sm text-textPrimary">Notificações</h3>
                   {unreadCount > 0 && (
