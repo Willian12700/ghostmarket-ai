@@ -40,23 +40,53 @@ export const Dashboard = () => {
   const allPaidTransactions = useMemo(() => {
     const closedContracts = contracts
       .filter(c => c.status === 'Fechado')
-      .map(c => ({
-        id: c.id,
-        amount: c.amount,
-        date: new Date(c.date).getTime(),
-        clientName: c.client,
-        source: 'CRM'
-      }))
+      .map(c => {
+        let rawMs = Date.now()
+        if (c.date) {
+          if (c.date.includes('/')) {
+            const parts = c.date.split('/')
+            if (parts.length === 3) {
+              rawMs = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime()
+            }
+          } else if (c.date.includes('-')) {
+            const parts = c.date.split('-')
+            if (parts.length === 3) {
+              rawMs = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime()
+            }
+          } else {
+            rawMs = new Date(c.date).getTime()
+          }
+        }
+        return {
+          id: c.id,
+          amount: Number(c.amount || 0),
+          date: rawMs,
+          clientName: c.client,
+          source: 'CRM'
+        }
+      })
 
     const saasTxs = firebaseTransactions
-      .filter(t => t.status === 'paid' || t.status === 'approved')
-      .map(t => ({
-        id: t.id,
-        amount: Number(t.transaction_amount || t.amount || 0),
-        date: t.date_created ? new Date(t.date_created).getTime() : Date.now(),
-        clientName: t.customer?.name || t.clientName || 'Cliente Online',
-        source: 'SaaS'
-      }))
+      .filter(t => {
+        const s = (t.status || '').toLowerCase()
+        return s === 'aprovado' || s === 'paid' || s === 'approved'
+      })
+      .map(t => {
+        let timestampMs = Date.now()
+        if (t.timestamp && typeof t.timestamp.toMillis === 'function') {
+          timestampMs = t.timestamp.toMillis()
+        } else if (t.date_created) {
+          timestampMs = new Date(t.date_created).getTime()
+        }
+
+        return {
+          id: t.id,
+          amount: Number(t.transaction_amount || t.amount || 0),
+          date: timestampMs,
+          clientName: t.customer?.name || t.clientName || 'Cliente Online',
+          source: 'SaaS'
+        }
+      })
 
     return [...closedContracts, ...saasTxs].sort((a, b) => b.date - a.date)
   }, [contracts, firebaseTransactions])
