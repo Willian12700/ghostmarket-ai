@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Monitor, Smartphone, Globe, UploadCloud, Eye, Code, FileCode2 } from 'lucide-react'
+import { Globe, UploadCloud, ChevronRight, ChevronLeft, CheckCircle2, FileCode2, Monitor, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
@@ -9,45 +9,74 @@ import { db } from '@/config/firebase'
 
 export const SiteBuilder = () => {
   const { addToast } = useToastStore()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const [step, setStep] = useState(1)
+  const [htmlContent, setHtmlContent] = useState('')
+  const [cssContent, setCssContent] = useState('')
+  const [jsContent, setJsContent] = useState('')
   
   const [activeView, setActiveView] = useState<'desktop' | 'mobile'>('desktop')
-  const [editorMode, setEditorMode] = useState<'code' | 'visual'>('code')
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
   const [domainType, setDomainType] = useState<'subdomain' | 'custom'>('subdomain')
   const [domainName, setDomainName] = useState('')
   const [isPublishing, setIsPublishing] = useState(false)
-  
-  const [rawHtml, setRawHtml] = useState(`<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Landing Page</title>
-    <!-- Cole seu código HTML, CSS e JS aqui! -->
-</head>
-<body>
-    <h1>Site Hospedado no GhostMarket</h1>
-</body>
-</html>`)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadType, setUploadType] = useState<'html'|'css'|'js'>('html')
+
+  const getCombinedHtml = () => {
+    let finalHtml = htmlContent || ''
+    
+    if (!finalHtml.toLowerCase().includes('<html')) {
+      finalHtml = `<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <!-- CSS_INJECT -->\n</head>\n<body>\n  ${finalHtml}\n  <!-- JS_INJECT -->\n</body>\n</html>`
+    } else {
+       if (finalHtml.toLowerCase().includes('</head>')) {
+           finalHtml = finalHtml.replace(/<\/head>/i, '<!-- CSS_INJECT --></head>')
+       } else {
+           finalHtml = finalHtml.replace('<html', '<html\n<!-- CSS_INJECT -->')
+       }
+       
+       if (finalHtml.toLowerCase().includes('</body>')) {
+           finalHtml = finalHtml.replace(/<\/body>/i, '<!-- JS_INJECT --></body>')
+       } else {
+           finalHtml += '<!-- JS_INJECT -->'
+       }
+    }
+
+    if (cssContent.trim()) {
+      finalHtml = finalHtml.replace('<!-- CSS_INJECT -->', `<style>${cssContent}</style>`)
+    } else {
+      finalHtml = finalHtml.replace('<!-- CSS_INJECT -->', '')
+    }
+
+    if (jsContent.trim()) {
+      finalHtml = finalHtml.replace('<!-- JS_INJECT -->', `<script>${jsContent}</script>`)
+    } else {
+      finalHtml = finalHtml.replace('<!-- JS_INJECT -->', '')
+    }
+
+    return finalHtml
+  }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith('.html')) {
-      addToast('Por favor, faça upload de um arquivo .html', 'error')
-      return
-    }
-
     const reader = new FileReader()
     reader.onload = (event) => {
       const content = event.target?.result as string
-      setRawHtml(content)
-      setEditorMode('visual')
+      if (uploadType === 'html') setHtmlContent(content)
+      if (uploadType === 'css') setCssContent(content)
+      if (uploadType === 'js') setJsContent(content)
       addToast('Arquivo carregado com sucesso!', 'success')
     }
     reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  const triggerUpload = (type: 'html'|'css'|'js') => {
+    setUploadType(type)
+    fileInputRef.current?.click()
   }
 
   const handlePublish = async (e: React.FormEvent) => {
@@ -62,6 +91,8 @@ export const SiteBuilder = () => {
       const siteId = domainName.toLowerCase().replace(/[^a-z0-9-]/g, '')
       const fullDomain = domainType === 'subdomain' ? `${siteId}.ghostmarket.ai` : siteId
       
+      const rawHtml = getCombinedHtml()
+
       await setDoc(doc(db, 'sites', siteId), {
         id: siteId,
         rawHtml,
@@ -70,7 +101,7 @@ export const SiteBuilder = () => {
         publishedAt: new Date().toISOString()
       })
 
-      addToast('Site hospedado e publicado com sucesso!', 'success')
+      addToast('Site hospedado com sucesso!', 'success')
       setIsPublishModalOpen(false)
     } catch (error) {
       console.error(error)
@@ -80,82 +111,114 @@ export const SiteBuilder = () => {
     }
   }
 
+  const steps = [
+    { id: 1, name: 'HTML', desc: 'Estrutura', value: htmlContent, setter: setHtmlContent, accept: '.html' },
+    { id: 2, name: 'CSS', desc: 'Estilos', value: cssContent, setter: setCssContent, accept: '.css' },
+    { id: 3, name: 'JS', desc: 'Scripts', value: jsContent, setter: setJsContent, accept: '.js' },
+    { id: 4, name: 'Preview', desc: 'Publicar', value: '', setter: () => {}, accept: '' }
+  ]
+
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0b0416]">
-      {/* BUILDER HEADER */}
-      <div className="h-16 border-b border-border bg-panel flex items-center justify-between px-6 shrink-0 z-10">
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept={steps.find(s => s.id === step)?.accept} className="hidden" />
+      
+      {/* HEADER WIZARD */}
+      <div className="h-20 border-b border-border bg-panel flex items-center justify-between px-8 shrink-0 z-10">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <UploadCloud className="w-5 h-5 text-primary" />
-            Hospedagem Expressa
-          </h2>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-white leading-tight">Hospedagem Expressa</h2>
+            <p className="text-xs text-textSecondary">Faça o upload do seu funil</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-8 hidden md:flex">
+          {steps.map((s, i) => (
+            <div key={s.id} className="flex items-center">
+              <div className={`flex flex-col items-center gap-2 ${step === s.id ? 'opacity-100' : step > s.id ? 'opacity-70' : 'opacity-40'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${step === s.id ? 'bg-primary text-white ring-4 ring-primary/20' : step > s.id ? 'bg-primary text-white' : 'bg-background border border-border text-textSecondary'}`}>
+                  {step > s.id ? <CheckCircle2 className="w-4 h-4" /> : s.id}
+                </div>
+                <span className="text-xs font-bold text-white">{s.name}</span>
+              </div>
+              {i < steps.length - 1 && <div className={`w-12 h-[2px] mx-4 mt-[-20px] ${step > s.id ? 'bg-primary' : 'bg-border'}`} />}
+            </div>
+          ))}
         </div>
         
-        <div className="flex items-center gap-4 ml-auto">
-          <input 
-            type="file" 
-            accept=".html" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            className="hidden" 
-          />
-          <Button variant="secondary" className="hidden md:flex bg-background border-primary/30 text-white hover:bg-primary/20" onClick={() => fileInputRef.current?.click()}>
-            <FileCode2 className="w-4 h-4 mr-2 text-primary" /> Fazer Upload de .HTML
-          </Button>
-
-          <div className="h-6 w-px bg-border hidden sm:block" />
-
-          {/* Editor Mode Toggle */}
-          <div className="flex items-center gap-1 bg-background border border-border p-1 rounded-lg hidden sm:flex">
-            <button onClick={() => setEditorMode('code')} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 ${editorMode === 'code' ? 'bg-primary text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}><Code className="w-3.5 h-3.5" /> Código HTML</button>
-            <button onClick={() => setEditorMode('visual')} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 ${editorMode === 'visual' ? 'bg-primary text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}><Eye className="w-3.5 h-3.5" /> Preview Visual</button>
-          </div>
-
-          <div className="flex items-center gap-1 bg-background border border-border p-1 rounded-lg hidden sm:flex">
-            <button onClick={() => setActiveView('desktop')} className={`p-1.5 rounded-md transition-all ${activeView === 'desktop' ? 'bg-panel text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}><Monitor className="w-4 h-4" /></button>
-            <button onClick={() => setActiveView('mobile')} className={`p-1.5 rounded-md transition-all ${activeView === 'mobile' ? 'bg-panel text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}><Smartphone className="w-4 h-4" /></button>
-          </div>
-
-          <Button onClick={() => setIsPublishModalOpen(true)} className="shadow-[0_0_15px_rgba(139,92,246,0.3)]"><Globe className="w-4 h-4 mr-2" /> Hospedar e Publicar</Button>
+        <div className="w-[200px] flex justify-end">
+          {step === 4 && (
+            <Button onClick={() => setIsPublishModalOpen(true)} className="shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-green-500 hover:bg-green-600 text-white">
+              <Globe className="w-4 h-4 mr-2" /> Hospedar Site
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* CANVAS AREA */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 overflow-hidden relative bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat flex flex-col items-center">
         <div className="absolute inset-0 bg-[#0b0416]/95 z-0" />
         
-        {/* Render Mode */}
-        <div className="z-10 w-full h-full flex flex-col items-center p-4 md:p-8 overflow-y-auto custom-scrollbar">
+        <div className="z-10 w-full h-full max-w-5xl p-6 md:p-8 flex flex-col">
           
-          {editorMode === 'visual' ? (
-            <div className={`transition-all duration-500 ease-in-out border border-border rounded-xl bg-white shadow-2xl overflow-hidden relative flex-shrink-0 ${activeView === 'mobile' ? 'w-[375px] min-h-[812px] ring-[12px] ring-zinc-900 shadow-[0_0_50px_rgba(0,0,0,0.5)] mt-4 mb-8' : 'w-full max-w-5xl min-h-[800px] h-full flex flex-col'}`}>
-              {activeView === 'mobile' && (
-                <div className="absolute top-0 inset-x-0 h-7 bg-zinc-900 z-50 flex justify-center rounded-b-3xl w-[150px] mx-auto pointer-events-none">
-                  <div className="w-16 h-4 bg-black rounded-full mt-1.5 opacity-50"></div>
+          <AnimatePresence mode="wait">
+            {step < 4 ? (
+              <motion.div key="editor" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col bg-panel rounded-2xl border border-border overflow-hidden shadow-2xl">
+                <div className="h-14 bg-background border-b border-border flex items-center justify-between px-6">
+                  <div className="flex items-center gap-3">
+                    <FileCode2 className="w-5 h-5 text-primary" />
+                    <span className="font-bold text-white">Insira seu código {steps[step-1].name}</span>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => triggerUpload(steps[step-1].name.toLowerCase() as any)} className="bg-primary/10 text-primary hover:bg-primary/20">
+                    <UploadCloud className="w-4 h-4 mr-2" /> Upload do Arquivo .{steps[step-1].name.toLowerCase()}
+                  </Button>
                 </div>
-              )}
-              <iframe 
-                srcDoc={rawHtml} 
-                className={`w-full bg-white ${activeView === 'mobile' ? 'h-[812px]' : 'flex-1 min-h-[800px]'}`} 
-                frameBorder="0"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
-              />
-            </div>
-          ) : (
-            <div className="w-full max-w-5xl h-full flex flex-col rounded-xl border border-border shadow-2xl overflow-hidden bg-panel">
-              <div className="bg-background border-b border-border p-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-textSecondary font-mono">index.html</span>
-                <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded font-bold">Cole o código do seu site aqui</span>
-              </div>
-              <textarea 
-                value={rawHtml}
-                onChange={(e) => setRawHtml(e.target.value)}
-                className="flex-1 w-full p-6 bg-[#0d1117] text-gray-300 font-mono text-sm focus:outline-none resize-none custom-scrollbar leading-relaxed"
-                spellCheck={false}
-                placeholder="Cole o código HTML da sua Landing Page aqui..."
-              />
-            </div>
-          )}
+                <textarea 
+                  value={steps[step-1].value}
+                  onChange={(e) => steps[step-1].setter(e.target.value)}
+                  placeholder={`Cole o seu código ${steps[step-1].name} aqui...`}
+                  className="flex-1 w-full bg-[#0d1117] text-gray-300 font-mono text-sm p-6 focus:outline-none resize-none custom-scrollbar"
+                  spellCheck={false}
+                />
+              </motion.div>
+            ) : (
+              <motion.div key="preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex-1 flex flex-col items-center w-full">
+                <div className="w-full flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-white">Preview Final</h3>
+                  <div className="flex items-center gap-1 bg-panel border border-border p-1 rounded-lg">
+                    <button onClick={() => setActiveView('desktop')} className={`p-2 rounded-md transition-all ${activeView === 'desktop' ? 'bg-background text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Monitor className="w-4 h-4" /></button>
+                    <button onClick={() => setActiveView('mobile')} className={`p-2 rounded-md transition-all ${activeView === 'mobile' ? 'bg-background text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Smartphone className="w-4 h-4" /></button>
+                  </div>
+                </div>
+                <div className={`transition-all duration-500 ease-in-out border border-border rounded-xl bg-white shadow-2xl overflow-hidden relative flex-shrink-0 ${activeView === 'mobile' ? 'w-[375px] min-h-[812px] ring-[12px] ring-zinc-900 shadow-[0_0_50px_rgba(0,0,0,0.5)] mt-4 mb-12' : 'w-full flex-1'}`}>
+                  {activeView === 'mobile' && (
+                    <div className="absolute top-0 inset-x-0 h-7 bg-zinc-900 z-50 flex justify-center rounded-b-3xl w-[150px] mx-auto pointer-events-none">
+                      <div className="w-16 h-4 bg-black rounded-full mt-1.5 opacity-50"></div>
+                    </div>
+                  )}
+                  <iframe 
+                    srcDoc={getCombinedHtml()} 
+                    className="w-full h-full bg-white" 
+                    frameBorder="0"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="mt-6 flex justify-between items-center">
+            <Button variant="ghost" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="text-textSecondary hover:text-white">
+              <ChevronLeft className="w-4 h-4 mr-2" /> Voltar
+            </Button>
+            {step < 4 ? (
+              <Button onClick={() => setStep(step + 1)} className="shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                Próximo Passo <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : null}
+          </div>
 
         </div>
       </div>
@@ -188,7 +251,7 @@ export const SiteBuilder = () => {
                 )}
                 <div className="pt-2 flex justify-end gap-3">
                   <Button type="button" variant="ghost" onClick={() => setIsPublishModalOpen(false)}>Cancelar</Button>
-                  <Button type="submit" disabled={isPublishing} className="shadow-[0_0_15px_rgba(139,92,246,0.3)]">{isPublishing ? 'Hospedando...' : 'Colocar no Ar Agora'}</Button>
+                  <Button type="submit" disabled={isPublishing} className="shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-primary text-white">{isPublishing ? 'Hospedando...' : 'Colocar no Ar Agora'}</Button>
                 </div>
               </form>
             </motion.div>
