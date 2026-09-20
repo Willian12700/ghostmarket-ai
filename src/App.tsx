@@ -16,6 +16,7 @@ import { HostedSites } from '@/pages/HostedSites'
 import { SiteViewer } from '@/pages/SiteViewer'
 import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
+import { Chatbots } from '@/pages/Chatbots'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
 import { Affiliates } from '@/pages/Affiliates'
@@ -70,6 +71,7 @@ function App() {
               <Route path="/builder" element={<SiteBuilder />} />
               <Route path="/sites" element={<HostedSites />} />
               <Route path="/scanner" element={<Scanner />} />
+              <Route path="/chatbots" element={<Chatbots />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminPanel />} />

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Baixando Logo...</title>
+  <style>
+    body {
+      background: #0B0A0F;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      width: 300px;
+      height: 300px;
+      border-radius: 60px;
+      box-shadow: 0 0 50px rgba(168, 85, 247, 0.4);
+      margin: 20px 0;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      font-weight: bold;
+      background: #A855F7;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: scale(1.05);
+      background: #9333EA;
+    }
+  </style>
+</head>
+<body>
+  
+  <h2>Sua logo em altíssima resolução (2000x2000)</h2>
+  <p style="color: #9CA3AF">Se o download não começar sozinho, clique no botão abaixo.</p>
+  
+  <canvas id="canvas" width="2000" height="2000"></canvas>
+  <button onclick="downloadLogo()">Salvar Imagem (PNG)</button>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // 1. Fundo escuro (mesma cor da foto)
+    ctx.fillStyle = '#1A1625'; // Um roxo bem escuro como no print
+    ctx.fillRect(0, 0, 2000, 2000);
+
+    // 2. SVG path do Ghost
+    const svgPathStr = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2000" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 10h.01"/>
+        <path d="M15 10h.01"/>
+        <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
+      </svg>
+    `;
+
+    const blob = new Blob([svgPathStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    
+    img.onload = () => {
+      // Desenhar o fantasma perfeitamente centralizado
+      // Viewbox é 24x24. Margin para dar respiro (400px de cada lado)
+      const margin = 400; 
+      const size = 2000 - (margin * 2);
+      ctx.drawImage(img, margin, margin, size, size);
+      
+      // Auto download
+      setTimeout(downloadLogo, 1000);
+    };
+    img.src = url;
+
+    function downloadLogo() {
+      const link = document.createElement('a');
+      link.download = 'GhostMarket_Logo_Alta_Qualidade.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
