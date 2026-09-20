@@ -6,6 +6,8 @@ import { useToastStore } from '@/store/toastStore'
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
+import { generateSiteBlocks } from '@/lib/gemini'
+import { Wand2 } from 'lucide-react'
 
 type BlockContent = any;
 type Block = { id: string; type: string; content: BlockContent };
@@ -131,6 +133,30 @@ export const SiteBuilder = () => {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
   const [domainName, setDomainName] = useState('')
   const [domainType, setDomainType] = useState<'subdomain' | 'custom'>('subdomain')
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleGenerateSite = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true)
+    addToast('A IA está criando seu site. Isso leva uns segundos...', 'success')
+    try {
+      const generatedBlocks = await generateSiteBlocks(aiPrompt)
+      setBlocks(generatedBlocks)
+      addToast('Site gerado com sucesso pela IA!', 'success')
+      setAiPrompt('')
+    } catch (err: any) {
+      if (err.message.includes('VITE_GEMINI_API_KEY')) {
+        addToast('Configure a VITE_GEMINI_API_KEY no painel da Vercel ou .env', 'error')
+      } else {
+        addToast('Erro ao gerar site com IA.', 'error')
+      }
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   
   const [blocks, setBlocks] = useState<Block[]>([
     { id: '1', type: 'hero', content: { title: 'Construa o Futuro do Seu Negócio', subtitle: 'A plataforma definitiva para criar landing pages de alta conversão em minutos, sem escrever uma única linha de código.', button: 'Começar Agora' } },
@@ -203,6 +229,21 @@ export const SiteBuilder = () => {
             Ghost Builder <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/20">BETA</span>
           </h2>
         </div>
+
+        <form onSubmit={handleGenerateSite} className="flex-1 max-w-2xl mx-8 relative hidden md:block">
+          <Wand2 className="w-4 h-4 text-primary absolute left-4 top-1/2 -translate-y-1/2" />
+          <input 
+            type="text" 
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            disabled={isGenerating}
+            placeholder={isGenerating ? "IA trabalhando..." : "Ex: Crie uma landing page para minha barbearia premium..."} 
+            className="w-full bg-background border border-primary/30 rounded-full py-2 pl-11 pr-32 text-sm text-white focus:outline-none focus:border-primary transition-all disabled:opacity-50" 
+          />
+          <Button type="submit" disabled={isGenerating || !aiPrompt.trim()} size="sm" className="absolute right-1 top-1 h-7 rounded-full text-xs px-4">
+            {isGenerating ? 'Gerando...' : 'Gerar com IA'}
+          </Button>
+        </form>
         
         <div className="flex items-center gap-1 bg-background border border-border p-1 rounded-lg">
           <button 
