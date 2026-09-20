@@ -45,7 +45,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/creator', icon: Wand2, label: 'Creator IA' },
         { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
         { to: '/prompt-builder', icon: Code, label: 'Prompt Builder' },
-        { to: '/builder', icon: LayoutTemplate, label: 'Construtor de Sites' },
+        { to: '/builder', icon: LayoutTemplate, label: 'Hospedagem de Sites' },
         { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
       ]
     },
