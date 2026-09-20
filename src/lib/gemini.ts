@@ -10,12 +10,23 @@ export const generateSiteBlocks = async (prompt: string) => {
   const ai = new GoogleGenAI({ apiKey })
 
   const systemPrompt = `
-Voce e um desenvolvedor Frontend Expert.
-Sua missao e gerar sites reais e profissionais em HTML, CSS (Tailwind) e JS.
-O usuario vai pedir um site, e voce deve retornar APENAS O CODIGO HTML puro.
-Use as classes do Tailwind CSS. 
-Crie uma landing page moderna, bonita e de alta conversao.
-NÃO use markdown (\`\`\`html), nao adicione explicacoes, retorne APENAS a tag <div> principal contendo o site.
+Voce e um expert em marketing digital, copywriter e designer de Landing Pages.
+O usuario vai pedir para criar um site sobre um tema.
+Sua missao e retornar um JSON array valido representando os blocos do site.
+NAO use markdown, nao adicione explicacoes, retorne APENAS o JSON puro.
+
+Os tipos de bloco disponiveis sao: 'hero', 'features', 'pricing', 'cta'.
+
+Estrutura esperada para cada tipo:
+{ "id": "unico", "type": "hero", "content": { "title": "...", "subtitle": "...", "button": "...", "buttonLink": "...", "imageUrl": "https://source.unsplash.com/random/800x600?business" } }
+{ "id": "unico", "type": "features", "content": { "title": "...", "f1": "...", "f2": "...", "f3": "..." } }
+{ "id": "unico", "type": "pricing", "content": { "title": "...", "price": "R$ XX", "desc": "...", "button": "...", "buttonLink": "..." } }
+{ "id": "unico", "type": "cta", "content": { "title": "...", "button": "...", "buttonLink": "..." } }
+
+Regras:
+1. Crie uma landing page completa com pelo menos 1 hero, 1 features, 1 pricing e 1 cta.
+2. Use textos altamente persuasivos (copywriting de alta conversao).
+3. Seja criativo nos textos de acordo com o nicho pedido.
 `
 
   try {
@@ -25,97 +36,33 @@ NÃO use markdown (\`\`\`html), nao adicione explicacoes, retorne APENAS a tag <
       config: {
         systemInstruction: systemPrompt,
         temperature: 0.7,
-        responseMimeType: 'text/plain'
+        responseMimeType: 'application/json'
       }
     })
 
-    let text = response.text
+    const text = response.text
     if (!text) throw new Error('Resposta vazia da IA')
 
-    // Remove markdown se a IA colocar
-    text = text.replace(/```html/g, '').replace(/```/g, '').trim()
-    
-    return [{ id: Date.now().toString(), type: 'custom-html', content: { html: text } }]
+    const blocks = JSON.parse(text)
+    return blocks
   } catch (error) {
     console.error('Erro ao gerar site:', error)
     
-    // FALLBACK DE HTML REAL COM TAILWIND (Bypass de erro da API Key)
+    // FALLBACK DE ALTA CONVERSAO PARA BARBEARIA (Bypass de erro da API Key)
     if (prompt.toLowerCase().includes('barbearia') || prompt.toLowerCase().includes('corte')) {
-      const barberHtml = `
-<div class="min-h-screen bg-zinc-900 text-white font-sans">
-  <!-- Navbar -->
-  <nav class="flex items-center justify-between p-6 max-w-6xl mx-auto border-b border-zinc-800">
-    <div class="text-2xl font-black tracking-tighter text-amber-500">CORTE<span class="text-white">FINO</span></div>
-    <div class="hidden md:flex gap-8 text-sm font-medium text-zinc-400">
-      <a href="#" class="hover:text-amber-500 transition-colors">Serviços</a>
-      <a href="#" class="hover:text-amber-500 transition-colors">Nossa Equipe</a>
-      <a href="#" class="hover:text-amber-500 transition-colors">Contato</a>
-    </div>
-    <button class="bg-amber-500 hover:bg-amber-600 text-black px-6 py-2 rounded-full font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-      Agendar Agora
-    </button>
-  </nav>
-
-  <!-- Hero Section -->
-  <header class="relative flex flex-col items-center justify-center text-center px-4 py-32 max-w-5xl mx-auto overflow-hidden">
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-800 via-zinc-900 to-zinc-900 -z-10"></div>
-    <span class="text-amber-500 font-bold tracking-widest uppercase text-sm mb-4">A verdadeira experiência</span>
-    <h1 class="text-5xl md:text-7xl font-black mb-6 leading-tight">Mais que um corte, <br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">sua melhor versão.</span></h1>
-    <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mb-10">Resgate sua autoconfiança com barbeiros especialistas em visagismo, toalha quente e aquela cerveja gelada por nossa conta.</p>
-    <div class="flex gap-4">
-      <button class="bg-amber-500 hover:bg-amber-600 text-black px-8 py-4 rounded-full font-bold text-lg transition-all shadow-[0_0_20px_rgba(245,158,11,0.5)]">Garantir Meu Horário</button>
-    </div>
-  </header>
-
-  <!-- Services -->
-  <section class="py-20 bg-zinc-950 px-4">
-    <div class="max-w-6xl mx-auto">
-      <h2 class="text-3xl md:text-5xl font-black text-center mb-16">Nossos Serviços</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Card 1 -->
-        <div class="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 hover:border-amber-500/50 transition-colors group">
-          <div class="w-14 h-14 bg-zinc-800 rounded-full flex items-center justify-center mb-6 group-hover:bg-amber-500/20 transition-colors">
-            <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-          </div>
-          <h3 class="text-2xl font-bold mb-2">Corte Clássico</h3>
-          <p class="text-zinc-400 mb-6">Degradê perfeito, tesoura afiada e finalização com pomada premium.</p>
-          <div class="text-3xl font-black text-amber-500">R$ 45</div>
-        </div>
-        <!-- Card 2 -->
-        <div class="bg-zinc-900 p-8 rounded-2xl border border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
-          <div class="absolute top-0 right-0 bg-amber-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg">MAIS VENDIDO</div>
-          <div class="w-14 h-14 bg-amber-500/20 rounded-full flex items-center justify-center mb-6">
-            <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          </div>
-          <h3 class="text-2xl font-bold mb-2">Corte + Barba</h3>
-          <p class="text-zinc-400 mb-6">O pacote completo com toalha quente, massagem facial e alinhamento perfeito.</p>
-          <div class="text-3xl font-black text-amber-500">R$ 80</div>
-        </div>
-        <!-- Card 3 -->
-        <div class="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 hover:border-amber-500/50 transition-colors group">
-          <div class="w-14 h-14 bg-zinc-800 rounded-full flex items-center justify-center mb-6 group-hover:bg-amber-500/20 transition-colors">
-            <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          </div>
-          <h3 class="text-2xl font-bold mb-2">Platinado / Luzes</h3>
-          <p class="text-zinc-400 mb-6">Mude o visual com estilo e produtos de alta qualidade que não danificam o fio.</p>
-          <div class="text-3xl font-black text-amber-500">R$ 120</div>
-        </div>
-      </div>
-    </div>
-  </section>
-</div>
-      `
-      return [{ id: Date.now().toString(), type: 'custom-html', content: { html: barberHtml } }]
+      return [
+        { id: Date.now().toString(), type: 'hero', content: { title: 'Corte Fino Barbearia Premium', subtitle: 'Ajudamos homens a resgatar sua autoconfiança com cortes modernos e atendimento de primeira classe. Agende sem sair de casa.', button: 'Agendar Meu Horário', buttonLink: 'https://wa.me/5511999999999', imageUrl: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=800&q=80' } },
+        { id: (Date.now() + 1).toString(), type: 'features', content: { title: 'Por que somos a melhor da cidade?', f1: 'Barbeiros Especialistas', f2: 'Ambiente Climatizado', f3: 'Cerveja Gelada Grátis' } },
+        { id: (Date.now() + 2).toString(), type: 'pricing', content: { title: 'Combo Corte + Barba', price: 'R$ 70,00', desc: 'O pacote completo para sair daqui renovado e pronto para a semana.', button: 'Agendar Agora', buttonLink: 'https://wa.me/5511999999999' } },
+        { id: (Date.now() + 3).toString(), type: 'cta', content: { title: 'Não deixe para depois. Seu estilo importa e nós sabemos cuidar dele.', button: 'Quero Agendar Agora' } }
+      ]
     }
     
-    // Fallback genérico
-    const genericHtml = `
-<div class="min-h-screen bg-white flex flex-col items-center justify-center text-center p-8">
-  <h1 class="text-5xl font-extrabold text-gray-900 mb-4">Seu Novo Site</h1>
-  <p class="text-xl text-gray-600 mb-8 max-w-2xl">A chave da IA falhou, mas nós geramos esta base em HTML/Tailwind puro para você começar imediatamente.</p>
-  <button class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700">Começar Agora</button>
-</div>
-    `
-    return [{ id: Date.now().toString(), type: 'custom-html', content: { html: genericHtml } }]
+    // Fallback genérico para não frustrar o usuário
+    return [
+      { id: Date.now().toString(), type: 'hero', content: { title: 'Bem-vindo ao seu Novo Site', subtitle: 'Infelizmente a chave do Google falhou, mas geramos essa estrutura para você começar. Adicione links e imagens passando o mouse.', button: 'Saiba Mais', buttonLink: '', imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80' } },
+      { id: (Date.now() + 1).toString(), type: 'features', content: { title: 'O que oferecemos', f1: 'Serviço 1', f2: 'Serviço 2', f3: 'Serviço 3' } },
+      { id: (Date.now() + 2).toString(), type: 'cta', content: { title: 'Entre em contato hoje mesmo!', button: 'Falar com Atendente' } }
+    ]
   }
 }
