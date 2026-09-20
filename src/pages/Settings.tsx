@@ -1,8 +1,8 @@
-﻿import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Settings as SettingsIcon, Palette, Image as ImageIcon, Link as Shield, Moon, Globe, Key, Webhook, Unlock } from 'lucide-react'
+import { Settings as SettingsIcon, Palette, Image as ImageIcon, Link as Shield, Moon, Globe, Key, Webhook, Unlock, Camera, User } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useToastStore } from '@/store/toastStore'
@@ -12,7 +12,7 @@ import { doc, setDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export const Settings = () => {
-  const { user } = useAuthStore()
+  const { user, updateUserProfile } = useAuthStore()
   const { theme, updateTheme } = useThemeStore()
   const { addToast } = useToastStore()
   
@@ -26,6 +26,10 @@ export const Settings = () => {
   const [isSavingTheme, setIsSavingTheme] = useState(false)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
+
+  const [name, setName] = useState(user?.name || '')
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [apiKey, setApiKey] = useState('')
   const [isApiModalOpen, setIsApiModalOpen] = useState(false)
@@ -56,6 +60,75 @@ export const Settings = () => {
       console.error(error)
     } finally {
       setIsUploadingLogo(false)
+    }
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    if (!file.type.startsWith('image/')) {
+      addToast('Por favor, selecione uma imagem válida.', 'error')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = async () => {
+        const canvas = document.createElement('canvas')
+        const MAX_WIDTH = 200
+        const MAX_HEIGHT = 200
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width
+            width = MAX_WIDTH
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height
+            height = MAX_HEIGHT
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5)
+
+        try {
+          setIsSavingProfile(true)
+          await updateUserProfile(name, compressedBase64)
+          addToast('Foto de perfil atualizada!', 'success')
+        } catch (error: any) {
+          console.error(error)
+          localStorage.setItem(`profile_pic_${user?.uid}`, compressedBase64)
+          await updateUserProfile(name, compressedBase64)
+          addToast('Foto de perfil salva localmente!', 'success')
+        } finally {
+          setIsSavingProfile(false)
+        }
+      }
+      img.src = event.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsSavingProfile(true)
+      await updateUserProfile(name, user?.photoURL || undefined)
+      addToast('Perfil atualizado com sucesso!', 'success')
+    } catch (error) {
+      console.error(error)
+      addToast('Erro ao atualizar perfil.', 'error')
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
@@ -144,6 +217,68 @@ export const Settings = () => {
         <p className="text-textSecondary">Gerencie as preferências da sua conta e aparência do painel.</p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            Perfil
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-6">
+            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+              {user?.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt="Profile" 
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primaryLight flex items-center justify-center text-2xl text-white font-bold border-2 border-transparent">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Camera className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div>
+              <p className="font-bold text-lg">{user?.name || 'Usuário'}</p>
+              <p className="text-textSecondary">{user?.email || 'email@exemplo.com'}</p>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="text-xs text-primary hover:underline mt-1"
+                disabled={isSavingProfile}
+              >
+                Trocar foto de perfil
+              </button>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input 
+              label="Nome completo" 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+            />
+            <Input 
+              label="E-mail" 
+              value={user?.email || ''} 
+              disabled 
+            />
+          </div>
+          <Button onClick={handleSaveProfile} disabled={isSavingProfile || name === user?.name}>
+            {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
+          </Button>
+        </CardContent>
+      </Card>
+
       {user?.email === 'willrandrier@gmail.com' && (
         <>
           <Card className="border-primary/50 shadow-[0_0_15px_rgba(139,92,246,0.15)] bg-gradient-to-br from-panel to-primary/5">
@@ -156,7 +291,7 @@ export const Settings = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-sm text-textSecondary">
-                  Libere acesso vitalício gratuito para qualquer usuário. Basta informar o e-mail que ele utilizará (ou utilizou) para criar a conta.
+                  Libere acesso vitalício gratuito para qualquer usuário. Basta informar o e-mail que ele utilizaráá (ou utilizou) para criar a conta.
                 </p>
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
@@ -298,14 +433,14 @@ export const Settings = () => {
             <Input 
               label="Nova senha" 
               type="password" 
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" 
+              placeholder="••••••••" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
             <Input 
               label="Confirmar nova senha" 
               type="password" 
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
@@ -371,7 +506,7 @@ export const Settings = () => {
           <div className="bg-panel border border-border rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
             <div className="px-6 py-4 border-b border-border flex justify-between items-center">
               <h3 className="text-lg font-bold">Integrações</h3>
-              <button onClick={() => setIsApiModalOpen(false)} className="text-textSecondary hover:text-white">âœ•</button>
+              <button onClick={() => setIsApiModalOpen(false)} className="text-textSecondary hover:text-white">✕</button>
             </div>
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-2 mb-4">
