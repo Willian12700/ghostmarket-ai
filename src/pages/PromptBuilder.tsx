@@ -43,13 +43,16 @@ export const PromptBuilder = () => {
     tech: 'React',
     design: 'Dark SaaS',
     features: {
-      auth: true,
-      database: true,
-      payments: false,
-      api: true,
-      dashboard: true,
-      ai: false
-    }
+        auth: true,
+        database: true,
+        payments: false,
+        api: true,
+        dashboard: true,
+        ai: false,
+        catalog: false,
+        pix: false,
+        delivery: false
+      }
   })
 
   const [isGenerating, setIsGenerating] = useState(false)
