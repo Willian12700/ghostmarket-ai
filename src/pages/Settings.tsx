@@ -2,13 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Settings as SettingsIcon, Palette, Image as ImageIcon, Link as Shield, Moon, Globe, Key, Webhook, Unlock, Camera, User } from 'lucide-react'
+import { Settings as SettingsIcon, Palette, Image as ImageIcon, Link as Shield, Moon, Globe, Key, Webhook, Camera, User } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useToastStore } from '@/store/toastStore'
 import { updatePassword, getAuth } from 'firebase/auth'
-import { db, storage } from '@/config/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { storage } from '@/config/firebase'
+
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export const Settings = () => {
@@ -34,8 +34,7 @@ export const Settings = () => {
   const [apiKey, setApiKey] = useState('')
   const [isApiModalOpen, setIsApiModalOpen] = useState(false)
   
-  const [freeAccessEmail, setFreeAccessEmail] = useState('')
-  const [isGrantingAccess, setIsGrantingAccess] = useState(false)
+  
 
   useEffect(() => {
     setAgencyName(theme.agencyName)
@@ -181,31 +180,7 @@ export const Settings = () => {
     setIsApiModalOpen(false)
   }
 
-  const handleGrantFreeAccess = async () => {
-    if (!freeAccessEmail.trim()) {
-      addToast('Digite um email válido', 'error')
-      return
-    }
-
-    setIsGrantingAccess(true)
-    try {
-      await setDoc(doc(db, 'allowed_users', freeAccessEmail.toLowerCase().trim()), {
-        email: freeAccessEmail.toLowerCase().trim(),
-        status: 'approved',
-        plan: 'vitalicio',
-        grantedByAdmin: true,
-        grantedAt: new Date().toISOString()
-      })
-      
-      addToast(`Acesso Vitalício liberado para ${freeAccessEmail}!`, 'success')
-      setFreeAccessEmail('')
-    } catch (error) {
-      console.error(error)
-      addToast('Erro ao liberar acesso.', 'error')
-    } finally {
-      setIsGrantingAccess(false)
-    }
-  }
+  
 
   return (
     <div className="space-y-6 max-w-4xl pb-10">
@@ -281,38 +256,7 @@ export const Settings = () => {
 
       {user?.email === 'willrandrier@gmail.com' && (
         <>
-          <Card className="border-primary/50 shadow-[0_0_15px_rgba(139,92,246,0.15)] bg-gradient-to-br from-panel to-primary/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary">
-                <Unlock className="w-5 h-5" />
-                Painel do Administrador - Liberação de Acesso
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-textSecondary">
-                  Libere acesso vitalício gratuito para qualquer usuário. Basta informar o e-mail que ele utilizaráá (ou utilizou) para criar a conta.
-                </p>
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Input 
-                      label="E-mail do Usuário" 
-                      placeholder="email@exemplo.com"
-                      value={freeAccessEmail}
-                      onChange={(e) => setFreeAccessEmail(e.target.value)}
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleGrantFreeAccess}
-                    disabled={isGrantingAccess || !freeAccessEmail}
-                    className="w-48"
-                  >
-                    {isGrantingAccess ? 'Liberando...' : 'Liberar Acesso Free'}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          
 
           <Card>
             <CardHeader>

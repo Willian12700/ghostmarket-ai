@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, LayoutTemplate, Globe } from 'lucide-react'
+import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, LayoutTemplate, Globe , ShieldAlert} from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -32,7 +32,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     navigate('/login')
   }
 
-  const menuGroups = [
+    const menuGroups = [
     {
       label: 'Painel',
       items: [
@@ -80,7 +80,16 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     }
   ]
 
-  // Automatically expand group if a child is active
+  if (user?.email === 'willrandrier@gmail.com') {
+    menuGroups.push({
+      label: 'PAINEL ADM',
+      items: [
+        { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' }
+      ]
+    })
+  }
+
+  // Automatically expand group if a child is active group if a child is active
   useEffect(() => {
     menuGroups.forEach(group => {
       const hasActiveChild = group.items.some(item => location.pathname === item.to)

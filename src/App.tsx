@@ -1,3 +1,4 @@
+import { AdminPanel } from './pages/AdminPanel'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
@@ -68,6 +69,7 @@ function App() {
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<AdminPanel />} />
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/affiliates" element={<Affiliates />} />
               
