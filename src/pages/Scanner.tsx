@@ -175,9 +175,9 @@ export const Scanner = () => {
     }
     
     try {
-      await addContract(user.uid, {
+      await addContract(user.email, {
         client: lead.name,
-        amount: 0, // Pode ser atualizado depois
+        amount: 0,
         date: new Date().toISOString().split('T')[0],
         status: 'Lead',
         phone: lead.phone,

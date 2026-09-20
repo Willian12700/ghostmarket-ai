@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/Input'
 import { useContractStore, Contract, CRMStatus } from '@/store/contractStore'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
+import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent } from '@dnd-kit/core'
+import { useDroppable, useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 
 const COLUMNS: { id: CRMStatus; title: string; color: string }[] = [
   { id: 'Lead', title: 'Lead (Prospect)', color: 'text-textSecondary border-border' },
@@ -13,9 +16,85 @@ const COLUMNS: { id: CRMStatus; title: string; color: string }[] = [
   { id: 'Fechado', title: 'Venda Fechada', color: 'text-success border-success/50' },
 ]
 
+function DroppableColumn({ col, children, count }: { col: typeof COLUMNS[0], children: React.ReactNode, count: number }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: col.id,
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`flex-1 min-w-[280px] bg-panel/50 border rounded-xl flex flex-col transition-colors ${
+        isOver ? 'border-primary shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-primary/5' : 'border-border'
+      }`}
+    >
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`px-2 py-0.5 rounded text-xs font-semibold border ${col.color}`}>
+            {col.title}
+          </div>
+        </div>
+        <div className="text-sm font-medium text-textSecondary bg-background px-2 py-0.5 rounded-full">
+          {count}
+        </div>
+      </div>
+      <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function DraggableCard({ card, onEdit, onDelete }: { card: Contract, onEdit: (c: Contract) => void, onDelete: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: card.id,
+    data: card
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-panel border border-border hover:border-primary/50 rounded-lg p-3 shadow-sm transition-colors group relative"
+    >
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="font-medium text-white">{card.client}</h4>
+        <div {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing p-1 -mt-1 -mr-1">
+          <GripVertical className="w-4 h-4 text-textSecondary/30 hover:text-textSecondary transition-colors" />
+        </div>
+      </div>
+      <div className="text-lg font-bold text-primary mb-2">
+        {formatCurrency(card.amount)}
+      </div>
+      <div className="flex items-center justify-between text-xs text-textSecondary">
+        <span>{new Date(card.date).toLocaleDateString('pt-BR')}</span>
+        
+        <div className="flex gap-1">
+          <button onClick={() => onEdit(card)} className="p-1 hover:text-white transition-colors cursor-pointer relative z-10">
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onDelete(card.id)} className="p-1 text-error hover:text-red-400 transition-colors cursor-pointer relative z-10">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export const Contracts = () => {
   const { user } = useAuthStore()
   const { contracts, addContract, updateContract, deleteContract, syncContracts } = useContractStore()
+  const { addToast } = useToastStore()
 
   useEffect(() => {
     if (user?.email) {
@@ -23,7 +102,6 @@ export const Contracts = () => {
       return () => unsubscribe()
     }
   }, [user])
-  const { addToast } = useToastStore()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -35,26 +113,35 @@ export const Contracts = () => {
     status: 'Lead' as CRMStatus
   })
 
-  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', id)
-  }
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
 
-  const handleDrop = (e: React.DragEvent, status: CRMStatus) => {
-    e.preventDefault()
-    if (draggedId) {
-      updateContract(draggedId, { status })
-      setDraggedId(null)
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.data.current) {
+      const newStatus = over.id as CRMStatus;
+      const currentContract = active.data.current as Contract;
+      
+      if (currentContract.status !== newStatus) {
+        updateContract(currentContract.id, { status: newStatus });
+        addToast('Status atualizado!', 'success');
+      }
     }
-  }
+  };
 
   const handleOpenModal = (contract?: Contract) => {
     if (contract) {
@@ -108,89 +195,77 @@ export const Contracts = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
   }
 
+  const activeContract = activeId ? contracts.find(c => c.id === activeId) : null;
+
   return (
     <div className="space-y-6 h-[calc(100vh-120px)] flex flex-col">
       <div className="flex justify-between items-center shrink-0">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Funil de Vendas (CRM)</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-white">Funil de Vendas (CRM)</h2>
           <p className="text-textSecondary">Arraste os cards para atualizar o status da negociação.</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
+        <Button onClick={() => handleOpenModal()} className="shadow-[0_0_15px_rgba(139,92,246,0.3)]">
           <Plus className="w-4 h-4 mr-2" />
           Novo Card
         </Button>
       </div>
 
-      <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
-        {COLUMNS.map(col => {
-          const columnCards = contracts.filter(c => c.status === col.id)
-          
-          return (
-            <div 
-              key={col.id} 
-              className="flex-1 min-w-[280px] bg-panel/50 border border-border rounded-xl flex flex-col"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, col.id)}
-            >
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`px-2 py-0.5 rounded text-xs font-semibold border ${col.color}`}>
-                    {col.title}
-                  </div>
-                </div>
-                <div className="text-sm font-medium text-textSecondary bg-background px-2 py-0.5 rounded-full">
-                  {columnCards.length}
-                </div>
-              </div>
-
-              <div className="flex-1 p-3 space-y-3 overflow-y-auto">
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex-1 flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+          {COLUMNS.map(col => {
+            const columnCards = contracts.filter(c => c.status === col.id)
+            
+            return (
+              <DroppableColumn key={col.id} col={col} count={columnCards.length}>
                 {columnCards.length === 0 ? (
                   <div className="h-24 flex items-center justify-center border-2 border-dashed border-border rounded-lg text-sm text-textSecondary/50">
                     Solte cards aqui
                   </div>
                 ) : (
                   columnCards.map(card => (
-                    <div
-                      key={card.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, card.id)}
-                      className="bg-panel border border-border hover:border-primary/50 rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm transition-colors group relative"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-white">{card.client}</h4>
-                        <GripVertical className="w-4 h-4 text-textSecondary/30 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <div className="text-lg font-bold text-primary mb-2">
-                        {formatCurrency(card.amount)}
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-textSecondary">
-                        <span>{new Date(card.date).toLocaleDateString('pt-BR')}</span>
-                        
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleOpenModal(card)} className="p-1 hover:text-white transition-colors">
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteContract(card.id)} className="p-1 text-error hover:text-red-400 transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    <DraggableCard 
+                      key={card.id} 
+                      card={card} 
+                      onEdit={handleOpenModal} 
+                      onDelete={deleteContract} 
+                    />
                   ))
                 )}
+              </DroppableColumn>
+            )
+          })}
+        </div>
+
+        <DragOverlay>
+          {activeContract ? (
+            <div className="bg-panel border border-primary rounded-lg p-3 shadow-[0_0_30px_rgba(139,92,246,0.3)] opacity-90 scale-105 transform rotate-2">
+              <div className="flex items-start justify-between mb-2">
+                <h4 className="font-medium text-white">{activeContract.client}</h4>
+                <GripVertical className="w-4 h-4 text-primary" />
+              </div>
+              <div className="text-lg font-bold text-primary mb-2">
+                {formatCurrency(activeContract.amount)}
+              </div>
+              <div className="flex items-center justify-between text-xs text-textSecondary">
+                <span>{new Date(activeContract.date).toLocaleDateString('pt-BR')}</span>
               </div>
             </div>
-          )
-        })}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-panel border border-border rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-bold">{editingId ? 'Editar Card' : 'Novo Card no Funil'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-textSecondary hover:text-white">x</button>
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-background/50">
+              <h3 className="text-lg font-bold text-white">{editingId ? 'Editar Card' : 'Novo Card no Funil'}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-textSecondary hover:text-white transition-colors">x</button>
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <Input
@@ -218,7 +293,7 @@ export const Contracts = () => {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-textSecondary">Estágio do Funil</label>
                 <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as CRMStatus })}
                 >
@@ -231,7 +306,7 @@ export const Contracts = () => {
                 <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="shadow-[0_0_15px_rgba(139,92,246,0.3)]">
                   Salvar
                 </Button>
               </div>
