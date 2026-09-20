@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, query, where, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore'
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -61,7 +61,16 @@ export const HostedSites = () => {
     setIsCreatingRedirect(true)
     try {
       const siteId = redirectSlug.toLowerCase().replace(/[^a-z0-9-]/g, '')
-      await setDoc(doc(db, 'sites', siteId), {
+
+      const docRef = doc(db, 'sites', siteId)
+      const snap = await getDoc(docRef)
+      if (snap.exists()) {
+        addToast('Este link já está em uso! Escolha outro nome.', 'error')
+        setIsCreatingRedirect(false)
+        return
+      }
+
+      await setDoc(docRef, {
         id: siteId,
         redirectUrl: redirectDest,
         isRedirect: true,
