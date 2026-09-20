@@ -32,29 +32,41 @@ export const PromptBuilder = () => {
   }, []);
 
   const [formData, setFormData] = useState({
-    aiPlatform: 'Antigravity',
-    systemType: 'Landing Page (Site Institucional)',
-    customSystemType: '',
-    projectName: '',
-    description: '',
-    targetAudience: 'B2B (Empresas)',
-    customAudience: '',
-    niche: 'SaaS / Tecnologia',
-    customNiche: '',
-    tech: 'React',
-    design: 'Dark SaaS',
-    features: {
-        auth: true,
-        database: true,
-        payments: false,
-        api: true,
-        dashboard: true,
-        ai: false,
-        catalog: false,
-        pix: false,
-        delivery: false
+      aiPlatform: 'Antigravity',
+      systemType: 'Landing Page (Site Institucional)',
+      customSystemType: '',
+      projectName: '',
+      tone: 'Moderno e Profissional',
+      description: '',
+      targetAudience: 'B2B (Empresas)',
+      customAudience: '',
+      niche: 'SaaS / Tecnologia',
+      customNiche: '',
+      tech: 'React',
+      design: 'Dark SaaS',
+      features: {
+          auth: true,
+          database: true,
+          payments: false,
+          api: false,
+          dashboard: false,
+          ai: false,
+          catalog: false,
+          pix: false,
+          delivery: false
+      },
+      sections: {
+        hero: true,
+        socialProof: true,
+        about: false,
+        benefits: true,
+        catalog: true,
+        testimonials: true,
+        faq: true,
+        cta: true,
+        footer: true
       }
-  })
+    })
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState('')
@@ -168,7 +180,8 @@ ${!isHtmlMode ? '- **Gerenciamento de Estado**: Zustand ou Context API' : ''}
 
   ## 3. DESIGN E UI/UX (ESTILO PREMIUM "AWARDS" E ALTA CONVERSÃO)
   - **Tema Visual Base**: ${formData.design}
-  - **Nível Visual Exigido**: O site DEVE ter o aspecto visual impressionante, semelhante a sites feitos no Webflow, Framer ou por agências gringas de alto padrão. NADA de design amador.
+  - **Tom de Voz (Copy)**: ${formData.tone}. Escreva os textos do site (Títulos, parágrafos, CTAs) usando esse tom exato.
+    - **Nível Visual Exigido**: O site DEVE ter o aspecto visual impressionante, semelhante a sites feitos no Webflow, Framer ou por agências gringas de alto padrão. NADA de design amador.
   - **Hero Section Épica**: Crie uma primeira dobra de tirar o fôlego. Use 'bg-gradient-to-r', títulos gigantes (text-5xl a text-7xl font-extrabold) com 'bg-clip-text text-transparent', botões grandes e chamativos, e coloque uma imagem incrível de fundo com um overlay escuro ('bg-black/50').
   - **Glassmorphism**: Aplique o efeito de vidro ('backdrop-blur-md bg-white/10 border border-white/20') no Navbar (que deve ser 'sticky top-0 z-50') e nos Cards.
   - **Animações e Vida**: O site NÃO PODE ser estático. Adicione classes Tailwind como 'hover:scale-[1.02] transition-all duration-300 ease-in-out hover:shadow-2xl' em TODOS os botões, cards de produto e imagens.
