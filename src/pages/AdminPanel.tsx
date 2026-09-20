@@ -1,12 +1,13 @@
-import { useState } from 'react'
-import { doc, setDoc } from 'firebase/firestore'
+import { useState, useEffect } from 'react'
+import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { ShieldAlert, UserCheck } from 'lucide-react'
+import { ShieldAlert, UserCheck, Search, Users, Circle, Calendar, DollarSign, Globe, X, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export const AdminPanel = () => {
   const { user } = useAuthStore()
@@ -15,7 +16,101 @@ export const AdminPanel = () => {
   const [freeAccessEmail, setFreeAccessEmail] = useState('')
   const [isGrantingAccess, setIsGrantingAccess] = useState(false)
 
-  // Double check admin protection
+  const [users, setUsers] = useState<any[]>([])
+  const [search, setSearch] = useState('')
+  const [loadingUsers, setLoadingUsers] = useState(true)
+
+  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [userSites, setUserSites] = useState<any[]>([])
+  const [userDashboardValue, setUserDashboardValue] = useState(0)
+  const [loadingDetails, setLoadingDetails] = useState(false)
+
+  useEffect(() => {
+    if (user?.email !== 'willrandrier@gmail.com') return
+
+    const fetchUsers = async () => {
+      try {
+        const usersMap = new Map()
+
+        const allowedSnap = await getDocs(collection(db, 'allowed_users'))
+        allowedSnap.forEach(doc => {
+          const data = doc.data()
+          const email = doc.id.toLowerCase()
+          usersMap.set(email, { ...data, email, isAllowed: true, docId: doc.id })
+        })
+
+        const usersSnap = await getDocs(collection(db, 'users'))
+        usersSnap.forEach(doc => {
+          const data = doc.data()
+          const email = (data.email || doc.id).toLowerCase()
+          if (usersMap.has(email)) {
+            usersMap.set(email, { ...usersMap.get(email), ...data })
+          } else {
+            usersMap.set(email, { ...data, email, isAllowed: false, docId: doc.id })
+          }
+        })
+
+        setUsers(Array.from(usersMap.values()).sort((a, b) => {
+          const dateA = a.lastLogin || a.grantedAt || ''
+          const dateB = b.lastLogin || b.grantedAt || ''
+          return dateB.localeCompare(dateA)
+        }))
+      } catch (err) {
+        console.error('Error fetching users', err)
+      } finally {
+        setLoadingUsers(false)
+      }
+    }
+
+    fetchUsers()
+  }, [user])
+
+  const loadUserDetails = async (u: any) => {
+    setSelectedUser(u)
+    setLoadingDetails(true)
+    setUserSites([])
+    setUserDashboardValue(0)
+
+    try {
+      const email = u.email
+      const uid = u.uid || email 
+
+      const sitesQuery = query(collection(db, 'sites'), where('userId', 'in', [email, uid]))
+      const sitesSnap = await getDocs(sitesQuery)
+      const sites: any[] = []
+      sitesSnap.forEach(doc => sites.push({ id: doc.id, ...doc.data() }))
+      setUserSites(sites)
+
+      let totalValue = 0
+
+      const txsQuery = query(collection(db, 'transactions'), where('userId', 'in', [email, uid]))
+      const txsSnap = await getDocs(txsQuery)
+      txsSnap.forEach(doc => {
+        const t = doc.data()
+        const s = (t.status || '').toLowerCase().trim()
+        if (s === 'aprovado' || s === 'paid' || s === 'approved' || s === 'fechado') {
+          totalValue += (Number(t.amount) || 0)
+        }
+      })
+
+      const crmQuery = query(collection(db, 'crm_contracts'), where('userId', 'in', [email, uid]))
+      const crmSnap = await getDocs(crmQuery)
+      crmSnap.forEach(doc => {
+        const c = doc.data()
+        const s = (c.status || '').toLowerCase()
+        if (s === 'fechado' || s === 'aprovado') {
+          totalValue += (Number(c.value) || 0)
+        }
+      })
+
+      setUserDashboardValue(totalValue)
+    } catch (error) {
+      console.error('Error loading details', error)
+    } finally {
+      setLoadingDetails(false)
+    }
+  }
+
   if (user?.email !== 'willrandrier@gmail.com') {
     return <div className="text-white p-8">Acesso Negado. Esta área é restrita ao Administrador.</div>
   }
@@ -34,7 +129,7 @@ export const AdminPanel = () => {
         plan: 'vitalicio',
         grantedByAdmin: true,
         grantedAt: new Date().toISOString()
-      })
+      }, { merge: true })
       
       addToast(`Acesso Vitalício liberado para ${freeAccessEmail}!`, 'success')
       setFreeAccessEmail('')
@@ -46,14 +141,16 @@ export const AdminPanel = () => {
     }
   }
 
+  const filteredUsers = users.filter(u => u.email.includes(search.toLowerCase()) || (u.name && u.name.toLowerCase().includes(search.toLowerCase())))
+
   return (
-    <div className="space-y-6 max-w-4xl pb-10">
+    <div className="space-y-6 max-w-6xl pb-10">
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
           <ShieldAlert className="w-8 h-8 text-primary" />
           Painel de Administração
         </h2>
-        <p className="text-textSecondary mt-2">Área restrita. Gerencie o sistema, controle acessos e permissões.</p>
+        <p className="text-textSecondary mt-2">Visão geral do SaaS. Gerencie usuários e acessos.</p>
       </div>
 
       <Card className="border-primary/50 shadow-[0_0_20px_rgba(139,92,246,0.15)] bg-gradient-to-br from-panel to-primary/5">
@@ -88,11 +185,170 @@ export const AdminPanel = () => {
           </div>
         </CardContent>
       </Card>
-      
-      {/* Aqui vão entrar os futuros recursos do Painel ADM */}
-      <div className="pt-8 text-center text-textSecondary border-t border-border border-dashed mt-8">
-        Mais ferramentas de administração serão adicionadas aqui em breve.
-      </div>
+
+      <Card className="border-border bg-panel">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Gestão de Usuários
+            </div>
+            <div className="relative w-72">
+              <Search className="w-4 h-4 absolute left-3 top-3 text-textSecondary" />
+              <Input 
+                placeholder="Pesquisar por email ou nome..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 bg-background h-10"
+              />
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-left text-sm text-gray-300">
+              <thead className="bg-background text-textSecondary font-medium">
+                <tr>
+                  <th className="px-6 py-4">Usuário</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Último Acesso</th>
+                  <th className="px-6 py-4 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loadingUsers ? (
+                  <tr><td colSpan={4} className="text-center py-8">Carregando usuários...</td></tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr><td colSpan={4} className="text-center py-8">Nenhum usuário encontrado.</td></tr>
+                ) : (
+                  filteredUsers.map((u, i) => {
+                    const isOnline = u.lastLogin && (new Date().getTime() - new Date(u.lastLogin).getTime() < 15 * 60 * 1000)
+                    return (
+                      <tr key={i} className="hover:bg-white/5 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                              {u.name?.charAt(0).toUpperCase() || u.email?.charAt(0).toUpperCase() || '?'}
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{u.name || 'Sem Nome'}</div>
+                              <div className="text-textSecondary text-xs">{u.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {u.isAllowed ? (
+                            <span className="px-2 py-1 bg-green-500/10 text-green-500 rounded-md text-xs font-medium border border-green-500/20">Ativo (Pago/VIP)</span>
+                          ) : (
+                            <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 rounded-md text-xs font-medium border border-yellow-500/20">Gratuito</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Circle className={`w-2 h-2 fill-current ${isOnline ? 'text-green-500' : 'text-gray-500'}`} />
+                            {u.lastLogin ? new Date(u.lastLogin).toLocaleString('pt-BR') : 'Nunca'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <Button size="sm" variant="secondary" onClick={() => loadUserDetails(u)}>Ver Detalhes</Button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AnimatePresence>
+        {selectedUser && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+              onClick={() => setSelectedUser(null)}
+            />
+            <motion.div 
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md bg-panel h-full shadow-2xl border-l border-border flex flex-col"
+            >
+              <div className="h-20 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-lg">
+                    {selectedUser.name?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase() || '?'}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white leading-tight">{selectedUser.name || 'Usuário'}</h3>
+                    <p className="text-xs text-textSecondary">{selectedUser.email}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedUser(null)} className="text-textSecondary hover:text-white p-2">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                
+                {/* Status Geral */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-background border border-border rounded-xl p-4">
+                    <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Circle className={`w-2 h-2 fill-current ${selectedUser.lastLogin && (new Date().getTime() - new Date(selectedUser.lastLogin).getTime() < 15 * 60 * 1000) ? 'text-green-500' : 'text-gray-500'}`} /> Status</div>
+                    <div className="text-white font-bold">{selectedUser.lastLogin && (new Date().getTime() - new Date(selectedUser.lastLogin).getTime() < 15 * 60 * 1000) ? 'Online Agora' : 'Offline'}</div>
+                  </div>
+                  <div className="bg-background border border-border rounded-xl p-4">
+                    <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Fim do Plano</div>
+                    <div className="text-white font-bold text-sm truncate">{selectedUser.plan === 'vitalicio' ? 'Vitalício' : (selectedUser.isAllowed ? 'Mensal (Ativo)' : 'Sem Plano')}</div>
+                  </div>
+                </div>
+
+                {/* Saldo Financeiro */}
+                <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-6 relative overflow-hidden">
+                  <DollarSign className="absolute -right-4 -bottom-4 w-24 h-24 text-green-500/10" />
+                  <div className="text-green-400 text-sm font-medium mb-1 relative z-10">Faturamento no Dashboard</div>
+                  <div className="text-3xl font-bold text-white relative z-10">
+                    {loadingDetails ? '...' : `R$ ${userDashboardValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                  </div>
+                </div>
+
+                {/* Sites Produzidos */}
+                <div>
+                  <h4 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                    <Globe className="w-5 h-5 text-primary" /> Sites Hospedados ({userSites.length})
+                  </h4>
+                  {loadingDetails ? (
+                    <div className="text-center text-textSecondary py-4">Carregando sites...</div>
+                  ) : userSites.length === 0 ? (
+                    <div className="text-center text-textSecondary py-4 bg-background border border-border rounded-xl text-sm">Este usuário não hospedou nenhum site ainda.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {userSites.map(site => (
+                        <div key={site.id} className="bg-background border border-border rounded-xl p-4 flex items-center justify-between group">
+                          <div className="overflow-hidden">
+                            <div className="text-white font-medium truncate">{site.id}</div>
+                            <div className="text-xs text-textSecondary mt-1">{site.views || 0} acessos totais</div>
+                          </div>
+                          <a 
+                            href={site.domain} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="p-2 text-textSecondary hover:text-primary bg-panel rounded-lg transition-colors shrink-0 ml-2"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

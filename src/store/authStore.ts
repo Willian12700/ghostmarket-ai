@@ -1,6 +1,22 @@
 import { create } from 'zustand'
 import { auth } from '@/config/firebase'
 import { signOut, onAuthStateChanged, User, updateProfile, updatePassword as updateFirebasePassword } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '@/config/firebase'
+
+const syncUserToFirestore = async (user: User) => {
+  try {
+    await setDoc(doc(db, 'users', user.email || user.uid), {
+      uid: user.uid,
+      email: user.email || '',
+      name: user.displayName || user.email?.split('@')[0] || 'User',
+      photoURL: user.photoURL || '',
+      lastLogin: new Date().toISOString()
+    }, { merge: true })
+  } catch(e) {
+    console.error('Error syncing user', e)
+  }
+}
 
 interface AuthUser {
   name: string
@@ -42,6 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: true,
           isLoading: false
         })
+        syncUserToFirestore(firebaseUser)
       } else {
         set({ user: null, isAuthenticated: false, isLoading: false })
       }
