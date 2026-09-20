@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
 import { Landing } from '@/pages/Landing'
@@ -9,6 +9,7 @@ import { Dashboard } from '@/pages/Dashboard'
 import { Creator } from '@/pages/Creator'
 import { Library } from '@/pages/Library'
 import { PromptBuilder } from '@/pages/PromptBuilder'
+import { SiteBuilder } from '@/pages/SiteBuilder'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
@@ -60,6 +61,7 @@ function App() {
               <Route path="/creator" element={<Creator />} />
               <Route path="/library" element={<Library />} />
               <Route path="/prompt-builder" element={<PromptBuilder />} />
+              <Route path="/builder" element={<SiteBuilder />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
