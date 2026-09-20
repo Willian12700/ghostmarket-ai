@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, GripVertical, Settings2, Trash2, Monitor, Smartphone, Globe, Play, CheckCircle2, Rocket, Server, LayoutTemplate, Image as ImageIcon, Link as LinkIcon, Wand2 } from 'lucide-react'
+import { Plus, GripVertical, Settings2, Trash2, Monitor, Smartphone, Globe, Play, CheckCircle2, Rocket, Image as ImageIcon, Link as LinkIcon, Wand2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
@@ -259,7 +259,7 @@ export const SiteBuilder = () => {
             <button onClick={() => setActiveView('mobile')} className={`p-1.5 rounded-md transition-all ${activeView === 'mobile' ? 'bg-panel text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}><Smartphone className="w-4 h-4" /></button>
           </div>
           <div className="h-6 w-px bg-border hidden sm:block" />
-          <Button variant="outline" className="hidden sm:flex" onClick={() => window.open('/s/preview', '_blank')}><Eye className="w-4 h-4 mr-2" /> Preview</Button>
+          <Button variant="ghost" className="hidden sm:flex" onClick={() => window.open('/s/preview', '_blank')}><Eye className="w-4 h-4 mr-2" /> Preview</Button>
           <Button onClick={() => setIsPublishModalOpen(true)} className="shadow-[0_0_15px_rgba(139,92,246,0.3)]"><Globe className="w-4 h-4 mr-2" /> Publicar</Button>
         </div>
       </div>

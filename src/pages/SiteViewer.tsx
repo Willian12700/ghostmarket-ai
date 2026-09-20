@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { Button } from '@/components/ui/Button'
-import { CheckCircle2, Rocket } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 export const SiteViewer = () => {
   const { siteId } = useParams()
