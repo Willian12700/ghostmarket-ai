@@ -102,10 +102,22 @@ export const PromptBuilder = () => {
   const generatePrompt = () => {
     setIsGenerating(true)
     setTimeout(() => {
+      const activeFeaturesMap: Record<string, string> = {
+        auth: "Autenticação de Usuários (Login/Registro)",
+        database: "Banco de Dados (CRUD e Armazenamento)",
+        payments: "Integração de Pagamentos (Stripe/Cartão)",
+        api: "Consumo de API Externa",
+        dashboard: "Dashboard Administrativo/Gerencial",
+        ai: "Integração com Inteligência Artificial",
+        catalog: "Catálogo de Produtos (A interface deve permitir exibir Fotos, Nomes e Preços dinamicamente)",
+        pix: "Checkout via PIX (Geração de QR Code ou chave copia e cola com aprovação)",
+        delivery: "Sistema de Delivery (Formulário avançado para captação de Endereço de entrega)"
+      };
+      
       const activeFeatures = Object.entries(formData.features)
         .filter(([_, isActive]) => isActive)
-        .map(([key]) => key)
-        .join(', ')
+        .map(([key]) => '- ' + (activeFeaturesMap[key] || key))
+        .join('\n  ')
 
       const isHtmlMode = formData.tech === 'HTML + CSS + JS'
       
@@ -327,8 +339,19 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
               <CardTitle>Etapa 2 â€” Recursos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.keys(formData.features).map((feature) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Object.keys(formData.features).map((feature) => {
+                    const featureLabels: Record<string, string> = {
+                      auth: "Autenticação",
+                      database: "Banco de Dados",
+                      payments: "Pagamentos (Stripe)",
+                      api: "API Externa",
+                      dashboard: "Dashboard Administrativo",
+                      ai: "Integração IA",
+                      catalog: "Catálogo de Produtos (Fotos e Preços)",
+                      pix: "Pagamento via PIX",
+                      delivery: "Sistema de Delivery e Endereços"
+                    };
                   const isHtmlMode = formData.tech === 'HTML + CSS + JS'
                   return (
                     <label key={feature} className={`flex items-center space-x-2 ${isHtmlMode ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
@@ -339,8 +362,8 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
                         disabled={isHtmlMode}
                         onChange={() => handleFeatureToggle(feature as keyof typeof formData.features)}
                       />
-                      <span className={`text-sm capitalize ${isHtmlMode ? 'text-textSecondary/50 line-through' : 'text-textPrimary'}`}>
-                        {feature.replace(/([A-Z])/g, ' $1').trim()}
+                      <span className={`text-sm ${isHtmlMode ? 'text-textSecondary/50 line-through' : 'text-textPrimary'}`}>
+                        {featureLabels[feature] || feature}
                       </span>
                     </label>
                   )
