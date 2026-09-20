@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { Globe, Trash2, Edit, ExternalLink, Plus, Search } from 'lucide-react'
+import { Globe, Trash2, Edit, ExternalLink, Plus, Search, Eye, TrendingUp, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -14,6 +14,9 @@ type Site = {
   domain: string;
   publishedAt: string;
   domainType: string;
+  views?: number;
+  isRedirect?: boolean;
+  redirectUrl?: string;
 }
 
 export const HostedSites = () => {
@@ -24,6 +27,10 @@ export const HostedSites = () => {
   const [sites, setSites] = useState<Site[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [isRedirectModalOpen, setIsRedirectModalOpen] = useState(false)
+  const [redirectDest, setRedirectDest] = useState('')
+  const [redirectSlug, setRedirectSlug] = useState('')
+  const [isCreatingRedirect, setIsCreatingRedirect] = useState(false)
 
   useEffect(() => {
     fetchSites()
@@ -46,6 +53,34 @@ export const HostedSites = () => {
       setLoading(false)
     }
   }
+
+  
+  const handleCreateRedirect = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!redirectDest || !redirectSlug) return
+    setIsCreatingRedirect(true)
+    try {
+      const siteId = redirectSlug.toLowerCase().replace(/[^a-z0-9-]/g, '')
+      await setDoc(doc(db, 'sites', siteId), {
+        id: siteId,
+        redirectUrl: redirectDest,
+        isRedirect: true,
+        domain: `${window.location.origin}/s/${siteId}`,
+        domainType: 'subdomain',
+        userId: user?.uid,
+        publishedAt: new Date().toISOString()
+      })
+      addToast('Link camuflado com sucesso!', 'success')
+      setIsRedirectModalOpen(false)
+      fetchSites()
+    } catch(e) {
+      console.error(e)
+      addToast('Erro ao criar link', 'error')
+    } finally {
+      setIsCreatingRedirect(false)
+    }
+  }
+
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Tem certeza que deseja apagar este site? Ele sairá do ar imediatamente.')) return
@@ -70,12 +105,38 @@ export const HostedSites = () => {
             <h1 className="text-3xl font-bold text-white mb-2">Meus Sites Hospedados</h1>
             <p className="text-textSecondary">Gerencie suas Landing Pages e funis ativos na GhostMarket.</p>
           </div>
-          <Button onClick={() => navigate('/builder')} className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]">
-            <Plus className="w-4 h-4 mr-2" /> Hospedar Novo Site
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => setIsRedirectModalOpen(true)} className="border-primary/50 text-primary hover:bg-primary/10">
+              <Link2 className="w-4 h-4 mr-2" /> Camuflar Link
+            </Button>
+            <Button onClick={() => navigate('/builder')} className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+              <Plus className="w-4 h-4 mr-2" /> Hospedar Novo Site
+            </Button>
+          </div>
         </div>
 
         <div className="bg-panel rounded-2xl border border-border p-6 shadow-xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-background border border-border p-4 rounded-xl flex items-center justify-between shadow-lg">
+              <div>
+                <p className="text-xs text-textSecondary mb-1 font-bold">Total de Sites Ativos</p>
+                <h3 className="text-3xl font-black text-white">{sites.length}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+                <Globe className="w-6 h-6" />
+              </div>
+            </div>
+            <div className="bg-background border border-border p-4 rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-green-500/10 blur-[50px] pointer-events-none" />
+              <div className="relative z-10">
+                <p className="text-xs text-textSecondary mb-1 font-bold">Total de Acessos (Tráfego)</p>
+                <h3 className="text-3xl font-black text-green-400">{sites.reduce((acc, site) => acc + (site.views || 0), 0)}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center relative z-10 shadow-[0_0_15px_rgba(34,197,94,0.2)]">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
             <div className="relative w-full md:w-96">
               <Search className="w-5 h-5 text-textSecondary absolute left-3 top-1/2 -translate-y-1/2" />
@@ -121,8 +182,20 @@ export const HostedSites = () => {
                     <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     
                     <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <Globe className="w-6 h-6" />
+                      <div className="flex items-center gap-3">
+                        {site.isRedirect ? (
+                          <div className="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-500" title="Link Camuflado">
+                            <Link2 className="w-6 h-6" />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary" title="Landing Page Hospedada">
+                            <Globe className="w-6 h-6" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5 bg-background border border-border px-2.5 py-1 rounded-md shadow-sm">
+                          <Eye className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-xs font-bold text-white">{site.views || 0}</span>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => navigate(`/builder?edit=${site.id}`)} className="p-2 text-textSecondary hover:text-primary transition-colors bg-panel rounded-md border border-border" title="Editar Código">
@@ -151,6 +224,37 @@ export const HostedSites = () => {
         </div>
         
       </div>
+
+      <AnimatePresence>
+        {isRedirectModalOpen && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-panel border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+              <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-background/50">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2"><Link2 className="w-5 h-5 text-pink-500" /> Camuflador Anti-Ban</h3>
+                <button onClick={() => setIsRedirectModalOpen(false)} className="text-textSecondary hover:text-white transition-colors">x</button>
+              </div>
+              <form onSubmit={handleCreateRedirect} className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-textSecondary">Link Feio (Hotmart, Kiwify, etc)</label>
+                  <Input value={redirectDest} onChange={(e) => setRedirectDest(e.target.value)} placeholder="https://pay.kiwify.com.br/12345" required type="url" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-textSecondary">Link Camuflado Desejado</label>
+                  <div className="flex relative items-center">
+                    <span className="absolute left-4 text-textSecondary text-sm font-medium pointer-events-none">.../s/</span>
+                    <Input value={redirectSlug} onChange={(e) => setRedirectSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} placeholder="oferta-vip" className="pl-[60px]" required />
+                  </div>
+                </div>
+                <div className="pt-2 flex justify-end gap-3">
+                  <Button type="button" variant="ghost" onClick={() => setIsRedirectModalOpen(false)}>Cancelar</Button>
+                  <Button type="submit" disabled={isCreatingRedirect} className="shadow-[0_0_15px_rgba(236,72,153,0.3)] bg-pink-500 hover:bg-pink-600 text-white">{isCreatingRedirect ? 'Criando...' : 'Criar Link'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }

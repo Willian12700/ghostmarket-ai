@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, increment } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 
 export const SiteViewer = () => {
@@ -15,9 +15,26 @@ export const SiteViewer = () => {
         const docRef = doc(db, 'sites', siteId)
         const docSnap = await getDoc(docRef)
         
+
         if (docSnap.exists()) {
           const data = docSnap.data()
+          
+          if (data.isRedirect && data.redirectUrl) {
+            window.location.replace(data.redirectUrl)
+            return;
+          }
+          
+          // Analytics Tracker Invisível
+          const visited = sessionStorage.getItem(`visited_${siteId}`)
+          if (!visited) {
+            try {
+              await updateDoc(docRef, { views: increment(1) })
+              sessionStorage.setItem(`visited_${siteId}`, 'true')
+            } catch(e) { console.error('Analytics err', e) }
+          }
+          
           if (data.rawHtml) {
+
             setHtml(data.rawHtml)
           } else {
             // Caso seja um site antigo feito com blocks
