@@ -4,18 +4,18 @@ export const generateSiteBlocks = async (prompt: string) => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
   
   if (!apiKey) {
-    throw new Error('VITE_GEMINI_API_KEY não está configurada no .env')
+    throw new Error('VITE_GEMINI_API_KEY nao esta configurada no .env')
   }
 
   const ai = new GoogleGenAI({ apiKey })
 
   const systemPrompt = `
-Você é um expert em marketing digital, copywriter e designer de Landing Pages.
-O usuário vai pedir para criar um site sobre um tema.
-Sua missão é retornar um JSON array válido representando os blocos do site.
-NÃO use markdown, não adicione explicações, retorne APENAS o JSON puro.
+Voce e um expert em marketing digital, copywriter e designer de Landing Pages.
+O usuario vai pedir para criar um site sobre um tema.
+Sua missao e retornar um JSON array valido representando os blocos do site.
+NAO use markdown, nao adicione explicacoes, retorne APENAS o JSON puro.
 
-Os tipos de bloco disponíveis são: 'hero', 'features', 'pricing', 'cta'.
+Os tipos de bloco disponiveis sao: 'hero', 'features', 'pricing', 'cta'.
 
 Estrutura esperada para cada tipo:
 { "id": "unico", "type": "hero", "content": { "title": "...", "subtitle": "...", "button": "..." } }
@@ -25,7 +25,7 @@ Estrutura esperada para cada tipo:
 
 Regras:
 1. Crie uma landing page completa com pelo menos 1 hero, 1 features, 1 pricing e 1 cta.
-2. Use textos altamente persuasivos (copywriting de alta conversão).
+2. Use textos altamente persuasivos (copywriting de alta conversao).
 3. Seja criativo nos textos de acordo com o nicho pedido.
 `
 
