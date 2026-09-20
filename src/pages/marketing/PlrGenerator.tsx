@@ -82,10 +82,10 @@ Formate tudo com Markdown (H1 para Título, H2 para Capítulos, etc).`
       .replace(/^# (.*$)/gim, '<h1>$1</h1>')
       .replace(/^## (.*$)/gim, '<h2>$1</h2>')
       .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/\\*\\*(.*?)\\*\\*/gim, '<strong>$1</strong>')
-      .replace(/\\*(.*?)\\*/gim, '<em>$1</em>')
-      .replace(/^\\s*-\\s+(.*$)/gim, '<li>$1</li>')
-      .replace(/\\n/g, '<br>');
+      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+      .replace(/^\s*-\s+(.*$)/gim, '<li>$1</li>')
+      .replace(/\n/g, '<br>');
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -200,9 +200,9 @@ Formate tudo com Markdown (H1 para Título, H2 para Capítulos, etc).`
                   .replace(/^# (.*$)/gim, '<h1 style="font-size: 2em; font-weight: bold; margin-bottom: 0.5em; font-family: sans-serif;">$1</h1>')
                   .replace(/^## (.*$)/gim, '<h2 style="font-size: 1.5em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; font-family: sans-serif;">$1</h2>')
                   .replace(/^### (.*$)/gim, '<h3 style="font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; font-family: sans-serif;">$1</h3>')
-                  .replace(/\\*\\*(.*?)\\*\\*/gim, '<strong>$1</strong>')
-                  .replace(/\\*(.*?)\\*/gim, '<em>$1</em>')
-                  .replace(/\\n/g, '<br>')
+                  .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                  .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                  .replace(/\n/g, '<br>')
                 }} />
               </div>
             ) : (
