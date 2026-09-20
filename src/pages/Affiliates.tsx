@@ -42,9 +42,9 @@ export const Affiliates = () => {
           
           <div className="mb-8 relative z-10">
             <div className="text-5xl font-extrabold text-white tracking-tight">
-              R$ 19,00
+              R$ 64,99
             </div>
-            <p className="text-sm text-textSecondary mt-2">Por cada venda aprovada (13% de comissão).</p>
+            <p className="text-sm text-textSecondary mt-2">Por cada venda do Plano Vitalício (50% de comissão).</p>
           </div>
 
           <a href={CAKTO_LINK_MENSAL} target="_blank" rel="noopener noreferrer" className="block relative z-10">
@@ -71,9 +71,9 @@ export const Affiliates = () => {
           
           <div className="mb-8 relative z-10">
             <div className="text-5xl font-extrabold text-white tracking-tight">
-              R$ 19,00
+              R$ 14,99
             </div>
-            <p className="text-sm text-textSecondary mt-2">Por cada venda aprovada (Comissão Fixa).</p>
+            <p className="text-sm text-textSecondary mt-2">Por cada venda do Plano Mensal (50% de comissão).</p>
           </div>
 
           <a href={CAKTO_LINK_VITALICIO} target="_blank" rel="noopener noreferrer" className="block relative z-10">

@@ -255,7 +255,7 @@ export const Landing = () => {
             {/* Mensal */}
             <motion.div variants={fadeInUp} className="bg-panel border border-border rounded-2xl p-8 shadow-xl flex flex-col h-full hover:border-primary/50 transition-colors">
               <h3 className="text-xl font-bold text-white mb-2">PLANO MENSAL</h3>
-              <div className="text-4xl font-bold text-white mb-6">R$ 149 <span className="text-lg text-textSecondary font-normal">/mês</span></div>
+              <div className="text-4xl font-bold text-white mb-6">R$ 29,99 <span className="text-lg text-textSecondary font-normal">/mês</span></div>
               <ul className="space-y-4 mb-8 flex-1">
                 {['Acesso completo', 'Gerador avançado', 'Prospecção inteligente', 'Scanner', 'Dashboard', 'CRM'].map((feature, i) => (
                   <li key={i} className="flex items-start text-textSecondary">
@@ -275,8 +275,8 @@ export const Landing = () => {
                 MAIS VENDIDO
               </div>
               <h3 className="text-xl font-bold text-white mb-2">PLANO VITALÍCIO</h3>
-              <div className="text-4xl font-bold text-white mb-2">12x R$ 30,00</div>
-              <p className="text-sm text-textSecondary mb-6">Ou R$ 360 à vista</p>
+              <div className="text-4xl font-bold text-white mb-2">12x R$ 13,41</div>
+              <p className="text-sm text-textSecondary mb-6">Ou R$ 129,99 à vista</p>
               <ul className="space-y-4 mb-8 flex-1">
                 {['Acesso vitalício', 'Atualizações gratuitas', 'Suporte VIP prioritário', 'Sem mensalidades', 'Acesso completo para sempre'].map((feature, i) => (
                   <li key={i} className="flex items-center text-white">
