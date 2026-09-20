@@ -102,7 +102,7 @@ export const Settings = () => {
 
         try {
           setIsSavingProfile(true)
-          const storageRef = ref(storage, `profile_pics/${user.uid}_${Date.now()}.jpg`)
+          const storageRef = ref(storage, `logos/${user.uid}_profile_${Date.now()}.jpg`)
           await uploadString(storageRef, compressedBase64, 'data_url')
           const downloadUrl = await getDownloadURL(storageRef)
 
