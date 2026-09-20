@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '@/config/firebase'
 
 type BlockContent = any;
 type Block = { id: string; type: string; content: BlockContent };
@@ -17,7 +19,7 @@ const BLOCKS_TEMPLATE = [
 ]
 
 
-const BlockItem = ({ block, onRemove }: { block: Block, onRemove: (id: string) => void }) => {
+const BlockItem = ({ block, onRemove, onUpdate }: { block: Block, onRemove: (id: string) => void, onUpdate: (id: string, field: string, value: string) => void }) => {
   const controls = useDragControls()
   return (
     <Reorder.Item
@@ -42,16 +44,12 @@ const BlockItem = ({ block, onRemove }: { block: Block, onRemove: (id: string) =
         <div className="py-20 px-6 md:px-12 text-center bg-gradient-to-b from-primary/10 to-transparent relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[300px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
           <h1 
-            className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 outline-none"
-            contentEditable
-            suppressContentEditableWarning
+            className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'title', e.currentTarget.textContent || '')}
           >
             {block.content.title}
           </h1>
           <p 
-            className="text-lg text-textSecondary max-w-2xl mx-auto mb-8 outline-none"
-            contentEditable
-            suppressContentEditableWarning
+            className="text-lg text-textSecondary max-w-2xl mx-auto mb-8 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'subtitle', e.currentTarget.textContent || '')}
           >
             {block.content.subtitle}
           </p>
@@ -64,9 +62,7 @@ const BlockItem = ({ block, onRemove }: { block: Block, onRemove: (id: string) =
       {block.type === 'features' && (
         <div className="py-20 px-6 md:px-12 bg-panel">
           <h2 
-            className="text-3xl font-bold text-center text-white mb-12 outline-none"
-            contentEditable
-            suppressContentEditableWarning
+            className="text-3xl font-bold text-center text-white mb-12 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'title', e.currentTarget.textContent || '')}
           >
             {block.content.title}
           </h2>
@@ -77,9 +73,7 @@ const BlockItem = ({ block, onRemove }: { block: Block, onRemove: (id: string) =
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <h3 
-                  className="text-lg font-bold text-white outline-none"
-                  contentEditable
-                  suppressContentEditableWarning
+                  className="text-lg font-bold text-white outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'f' + (i + 1), e.currentTarget.textContent || '')}
                 >
                   {f}
                 </h3>
@@ -94,23 +88,17 @@ const BlockItem = ({ block, onRemove }: { block: Block, onRemove: (id: string) =
           <div className="max-w-sm mx-auto p-8 rounded-2xl border border-primary/50 bg-panel shadow-[0_0_30px_rgba(139,92,246,0.15)] text-center relative overflow-hidden">
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-purple-400" />
             <h3 
-              className="text-xl font-bold text-white mb-2 outline-none"
-              contentEditable
-              suppressContentEditableWarning
+              className="text-xl font-bold text-white mb-2 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'title', e.currentTarget.textContent || '')}
             >
               {block.content.title}
             </h3>
             <div 
-              className="text-4xl font-extrabold text-primary mb-4 outline-none"
-              contentEditable
-              suppressContentEditableWarning
+              className="text-4xl font-extrabold text-primary mb-4 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'price', e.currentTarget.textContent || '')}
             >
               {block.content.price}
             </div>
             <p 
-              className="text-textSecondary mb-8 outline-none"
-              contentEditable
-              suppressContentEditableWarning
+              className="text-textSecondary mb-8 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'desc', e.currentTarget.textContent || '')}
             >
               {block.content.desc}
             </p>
@@ -123,9 +111,7 @@ const BlockItem = ({ block, onRemove }: { block: Block, onRemove: (id: string) =
         <div className="py-24 px-6 md:px-12 text-center bg-primary relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
           <h2 
-            className="text-3xl md:text-5xl font-extrabold text-white mb-8 relative z-10 outline-none"
-            contentEditable
-            suppressContentEditableWarning
+            className="text-3xl md:text-5xl font-extrabold text-white mb-8 relative z-10 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => onUpdate(block.id, 'title', e.currentTarget.textContent || '')}
           >
             {block.content.title}
           </h2>
@@ -162,23 +148,49 @@ export const SiteBuilder = () => {
     addToast('Bloco adicionado!', 'success')
   }
 
+  
+  const handleUpdateBlock = (id: string, field: string, value: string) => {
+    setBlocks(blocks.map(b => b.id === id ? { ...b, content: { ...b.content, [field]: value } } : b))
+  }
+
   const handleRemoveBlock = (id: string) => {
     setBlocks(blocks.filter(b => b.id !== id))
     addToast('Bloco removido!', 'success')
   }
 
-  const handlePublish = (e: React.FormEvent) => {
+  const [isPublishing, setIsPublishing] = useState(false)
+
+  const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!domainName) {
-      addToast('Digite um domínio válido', 'error')
+      addToast('Digite um endereço válido', 'error')
       return
     }
     
-    addToast('Iniciando deploy na infraestrutura Vercel...', 'success')
-    setTimeout(() => {
+    const siteId = domainName.toLowerCase().replace(/[^a-z0-9-]/g, '')
+
+    setIsPublishing(true)
+    addToast('Publicando site...', 'success')
+    
+    try {
+      await setDoc(doc(db, 'sites', siteId), {
+        blocks,
+        domainType,
+        domainName: siteId,
+        createdAt: new Date().toISOString()
+      })
+      
       setIsPublishModalOpen(false)
-      addToast(`Site publicado com sucesso em: ${domainName}${domainType === 'subdomain' ? '.ghostmarket.ai' : ''}`, 'success')
-    }, 2000)
+      addToast('Site publicado com sucesso!', 'success')
+      
+      // Open the viewer route
+      window.open(`/s/${siteId}`, '_blank')
+    } catch (err) {
+      console.error(err)
+      addToast('Erro ao publicar site', 'error')
+    } finally {
+      setIsPublishing(false)
+    }
   }
 
   return (
@@ -277,7 +289,7 @@ export const SiteBuilder = () => {
               
 <Reorder.Group axis="y" values={blocks} onReorder={setBlocks} className="w-full h-full min-h-[500px]">
   {blocks.map((block) => (
-    <BlockItem key={block.id} block={block} onRemove={handleRemoveBlock} />
+    <BlockItem key={block.id} block={block} onRemove={handleRemoveBlock} onUpdate={handleUpdateBlock} />
   ))}
 </Reorder.Group>
 
@@ -385,8 +397,8 @@ export const SiteBuilder = () => {
                   <Button type="button" variant="ghost" onClick={() => setIsPublishModalOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" className="shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-                    Publicar Agora
+                  <Button type="submit" disabled={isPublishing} className="shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                    {isPublishing ? 'Publicando...' : 'Publicar Agora'}
                   </Button>
                 </div>
               </form>

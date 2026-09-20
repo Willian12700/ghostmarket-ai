@@ -10,6 +10,7 @@ import { Creator } from '@/pages/Creator'
 import { Library } from '@/pages/Library'
 import { PromptBuilder } from '@/pages/PromptBuilder'
 import { SiteBuilder } from '@/pages/SiteBuilder'
+import { SiteViewer } from '@/pages/SiteViewer'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
@@ -75,6 +76,7 @@ function App() {
               <Route path="/tiktok/ads" element={<AdCopy />} />
             </Route>
 
+            <Route path="/s/:siteId" element={<SiteViewer />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
