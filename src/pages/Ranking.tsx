@@ -11,6 +11,7 @@ interface RankedUser {
   email: string
   photoURL: string
   totalSales: number
+  isSuspended?: boolean
 }
 
 export const Ranking = () => {
@@ -38,7 +39,8 @@ export const Ranking = () => {
             name: data.name || email.split('@')[0] || 'Usuário Anônimo',
             email: data.email || '',
             photoURL: data.photoURL || '',
-            totalSales: 0
+            totalSales: 0,
+            isSuspended: data.isSuspended === true
           }
           
           if (email) usersMap[email] = userObj
@@ -122,7 +124,7 @@ export const Ranking = () => {
 
         // Filter out duplicate user objects that were added by both email and uid keys.
         // We can just take the unique user objects from the map values.
-        const uniqueUsers = Array.from(new Set(Object.values(usersMap)))
+        const uniqueUsers = Array.from(new Set(Object.values(usersMap))).filter(u => !u.isSuspended)
         
         // 4. Convert and Sort
         let userList = uniqueUsers
