@@ -1,17 +1,19 @@
 export const generateHtmlSite = async (prompt: string) => {
   const systemPrompt = `
-Você é um desenvolvedor Frontend Sênior e Web Designer Expert.
-Sua missão é criar uma Landing Page COMPLETA, LINDA e MODERNA em HTML único (Single File).
-O usuário vai pedir para criar um site sobre um tema.
+Você é um desenvolvedor Frontend e Web Designer Sênior. 
+Crie uma Landing Page COMPLETA e INCRÍVEL em um único arquivo HTML.
 
-Regras OBRIGATÓRIAS:
-1. Retorne APENAS o código HTML puro. SEM NENHUM MARKDOWN, SEM \`\`\`html. Comece direto com <!DOCTYPE html>.
-2. Use Tailwind CSS via CDN (<script src="https://cdn.tailwindcss.com"></script>).
-3. Inclua Font Awesome para ícones se precisar (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">).
-4. Crie uma página responsiva, com visual profissional, animações sutis, cores modernas e bom contraste.
-5. Inclua as seguintes seções (minímo): Header/Nav, Hero com Imagem (use Unsplash), Benefícios/Features, Depoimentos, Preços (se aplicável ao nicho) e Footer.
-6. Capriche no Copywriting e nos textos persuasivos. Use português do Brasil.
-7. O design deve parecer premium e altamente conversivo.
+INSTRUÇÕES OBRIGATÓRIAS:
+1. Retorne APENAS o código HTML puro, começando com <!DOCTYPE html>. Sem markdown, sem explicações.
+2. É OBRIGATÓRIO incluir o script do Tailwind no <head>: <script src="https://cdn.tailwindcss.com"></script>
+3. É OBRIGATÓRIO adicionar Tailwind Config no <head> para personalizar as cores primárias do nicho. Exemplo: <script>tailwind.config = { theme: { extend: { colors: { primary: '#3b82f6' } } } }</script>
+4. Faça o design ABSURDAMENTE lindo, usando Tailwind CSS para TUDO (Sombras grandes, gradientes, bordas arredondadas, hover effects, flexbox/grid).
+5. Se precisar de ícones, use FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">).
+6. Adicione Javascript nativo (<script>) no final do <body> para animações de scroll (IntersectionObserver), botões de menu mobile, ou faq expansível. TEM que ter interatividade!
+7. A página precisa ter: Header fixo, Hero Banner foda com imagem do Unsplash, Seção de Benefícios, Prova Social/Depoimentos, Tabela de Preços e Footer.
+8. As imagens devem ser pegas do Unsplash: https://source.unsplash.com/1200x800/?[niche] (Ex: /?fitness)
+
+Crie um site que pareça uma Landing Page de R$ 5.000,00!
 `
 
   try {
@@ -38,7 +40,29 @@ Regras OBRIGATÓRIAS:
     if (!text) throw new Error('Resposta vazia da IA')
 
     // Limpar o texto caso venha com blocos de markdown
-    text = text.replace(/```html/g, '').replace(/```/g, '').trim()
+    text = text.replace(/```html/gi, '').replace(/```/g, '').trim()
+
+    // Forçar a injeção do Tailwind se a IA esquecer
+    if (!text.includes('cdn.tailwindcss.com')) {
+      text = text.replace('</head>', '\n<script src="https://cdn.tailwindcss.com"></script>\n</head>')
+    }
+    
+    // Se a IA não gerou a tag html (gerou só divs), envelopar tudo
+    if (!text.toLowerCase().includes('<html')) {
+      text = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landing Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+    ${text}
+</body>
+</html>`
+    }
 
     return text
   } catch (error) {

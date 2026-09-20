@@ -166,7 +166,7 @@ export const SiteBuilder = () => {
                   srcDoc={rawHtml} 
                   className={`w-full bg-white ${activeView === 'mobile' ? 'h-[812px]' : 'flex-1 min-h-[800px]'}`} 
                   frameBorder="0"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
                 />
               )}
             </div>
