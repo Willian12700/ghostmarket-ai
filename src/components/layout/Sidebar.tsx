@@ -101,7 +101,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 z-50 h-screen w-72 bg-panel/90 backdrop-blur-2xl border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0",
+        "fixed top-0 left-0 z-50 h-screen w-72 bg-panel/90 backdrop-blur-2xl border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-20 flex items-center justify-between px-6 border-b border-white/5 flex-shrink-0 relative overflow-hidden">

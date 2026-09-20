@@ -67,7 +67,7 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
       <div className="flex items-center gap-4">
         <button 
           onClick={onMenuClick}
-          className="md:hidden text-textSecondary hover:text-white transition-colors"
+          className="text-textSecondary hover:text-white transition-colors"
         >
           <Menu className="w-6 h-6" />
         </button>

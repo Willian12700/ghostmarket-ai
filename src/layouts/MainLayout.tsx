@@ -27,7 +27,7 @@ export const MainLayout = () => {
   const { isAuthenticated, user } = useAuthStore()
   const { syncTheme } = useThemeStore()
   const location = useLocation()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
@@ -108,12 +108,12 @@ export const MainLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-      <div className="flex-1 flex flex-col md:ml-64 min-w-0">
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarOpen ? 'md:ml-72' : 'ml-0'}`}>
         <Topbar 
           title={info.title} 
           description={info.description} 
-          onMenuClick={() => setIsMobileMenuOpen(true)} 
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
         />
         <main className="flex-1 p-6 overflow-x-hidden">
           <Outlet />
