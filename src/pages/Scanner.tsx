@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert, Check, Plus, MessageSquare } from 'lucide-react'
+import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert, Check, Plus, MessageSquare, Globe as GlobeIcon, Star, Sparkles, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -8,6 +8,7 @@ import { useContractStore } from '@/store/contractStore'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
 import confetti from 'canvas-confetti'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Lead {
   id: string
@@ -16,6 +17,9 @@ interface Lead {
   city: string
   phone: string
   instagram: string
+  website: string
+  rating: number
+  userRatingsTotal: number
   status: 'Novo' | 'Contatado'
 }
 
@@ -40,33 +44,36 @@ export const Scanner = () => {
   const [selectedState, setSelectedState] = useState('SP')
   const [selectedCity, setSelectedCity] = useState('São Paulo')
   const [niche, setNiche] = useState('Barbearia')
+  const [onlyWithoutSite, setOnlyWithoutSite] = useState(false)
   
+  const [xrayLead, setXrayLead] = useState<Lead | null>(null)
+
   const placesLib = useMapsLibrary('places')
   
   const { addContract } = useContractStore()
   const { user } = useAuthStore()
   const { addToast } = useToastStore()
 
-  // Load States
   useEffect(() => {
-    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome')
-      .then(res => res.json())
-      .then(data => setStates(data))
-      .catch(console.error)
-  }, [])
-
-  // Load Cities when State changes
-  useEffect(() => {
-    if (!selectedState) return
-    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios?orderBy=nome`)
+    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
       .then(res => res.json())
       .then(data => {
-        setCities(data)
-        if (data.length > 0 && !data.find((c: City) => c.nome === selectedCity)) {
-          setSelectedCity(data[0].nome)
-        }
+        const sorted = data.sort((a: State, b: State) => a.nome.localeCompare(b.nome))
+        setStates(sorted)
       })
-      .catch(console.error)
+  }, [])
+
+  useEffect(() => {
+    if (selectedState) {
+      fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`)
+        .then(res => res.json())
+        .then(data => {
+          setCities(data)
+          if (!data.find((c: City) => c.nome === selectedCity)) {
+            setSelectedCity(data[0]?.nome || '')
+          }
+        })
+    }
   }, [selectedState])
 
   const handleScan = async () => {
@@ -85,7 +92,7 @@ export const Scanner = () => {
       
       const request = {
         textQuery: query,
-        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI'],
+        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount'],
         maxResultCount: 20
       };
       
@@ -102,17 +109,19 @@ export const Scanner = () => {
         phone = String(phone).replace(/\D/g, ''); 
         
         let insta = '';
-        if (place.websiteURI && place.websiteURI.includes('instagram.com/')) {
-          const match = place.websiteURI.match(/instagram\.com\/([^\/]+)/);
-          if (match && match[1]) {
-            insta = '@' + match[1].split('?')[0];
+        let website = '';
+
+        if (place.websiteURI) {
+          if (place.websiteURI.includes('instagram.com/')) {
+            const match = place.websiteURI.match(/instagram\\.com\/([^\/]+)/);
+            if (match && match[1]) {
+              insta = '@' + match[1].split('?')[0];
+            }
+          } else {
+            website = place.websiteURI;
           }
         }
         
-        if (!insta) {
-          insta = '@' + (place.displayName || niche).toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
-        }
-
         return {
           id: place.id,
           name: place.displayName || niche,
@@ -120,22 +129,21 @@ export const Scanner = () => {
           city: selectedCity,
           phone: phone,
           instagram: insta,
+          website: website,
+          rating: place.rating || 0,
+          userRatingsTotal: place.userRatingCount || 0,
           status: 'Novo'
-        };
+        }
       });
 
-      setLeads(realLeads);
-    } catch (error: any) {
-      console.error("Erro ao buscar leads reais no Google Maps:", error);
-      setLeads([{
-        id: 'error',
-        name: `Erro: ${error.message || String(error)}`,
-        category: 'Erro',
-        city: selectedCity,
-        phone: '',
-        instagram: '',
-        status: 'Novo'
-      }]);
+      if (onlyWithoutSite) {
+        setLeads(realLeads.filter(l => !l.website));
+      } else {
+        setLeads(realLeads);
+      }
+    } catch (error) {
+      console.error(error);
+      setLeads([{ id: 'error', name: 'Erro na Busca', category: 'Verifique a API', city: '', phone: '', instagram: '', website: '', rating: 0, userRatingsTotal: 0, status: 'Novo' }]);
     } finally {
       setIsScanning(false)
     }
@@ -147,17 +155,16 @@ export const Scanner = () => {
     } else if (phone.length === 10) {
       return `(${phone.substring(0, 2)}) ${phone.substring(2, 6)}-${phone.substring(6, 10)}`
     }
-    return phone;
+    return phone
   }
 
   const exportToCSV = () => {
     if (leads.length === 0) return;
     
-    const headers = ['Nome,Categoria,Cidade,Telefone,Instagram,Status'];
+    const headers = ['Nome,Categoria,Cidade,Telefone,Instagram,Website,Status'];
     const rows = leads.map(l => 
-      `"${l.name}","${l.category}","${l.city}","${l.phone}","${l.instagram}","${l.status}"`
+      `"${l.name}","${l.category}","${l.city}","${l.phone}","${l.instagram}","${l.website}","${l.status}"`
     );
-    
     const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -173,7 +180,6 @@ export const Scanner = () => {
       addToast('Erro: Usuário não logado.', 'error');
       return;
     }
-    
     try {
       await addContract(user.email, {
         client: lead.name,
@@ -181,44 +187,62 @@ export const Scanner = () => {
         date: new Date().toISOString().split('T')[0],
         status: 'Lead',
         phone: lead.phone,
-        instagram: lead.instagram,
-        city: lead.city
-      });
+        city: lead.city,
+        instagram: lead.instagram
+      })
       
-      setSavedLeads(prev => ({ ...prev, [lead.id]: true }));
-      addToast(`${lead.name} salvo no CRM!`, 'success');
+      setSavedLeads(prev => ({ ...prev, [lead.id]: true }))
       
-      // Estoura um micro confete pra dar dopamina
       confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.8 },
-        colors: ['#8B5CF6', '#A855F7', '#D946EF']
-      });
-
-    } catch (error) {
-      addToast('Erro ao salvar no CRM.', 'error');
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      })
+      
+      addToast('Lead adicionado ao CRM com sucesso!', 'success')
+    } catch (e) {
+      console.error(e)
+      addToast('Erro ao salvar no CRM.', 'error')
     }
   }
 
   const generateWhatsAppMessage = (lead: Lead) => {
-    return encodeURIComponent(`Olá, encontrei o perfil da *${lead.name}* e percebi um potencial gigantesco! Posso enviar um material rápido de como podemos escalar as vendas de vocês?`);
+    if (!lead.website && lead.rating >= 4.0) {
+      return encodeURIComponent(`Olá! Encontrei a *${lead.name}* no Google Maps. Vocês tem uma avaliação incrível de ${lead.rating} estrelas, parabéns pelo ótimo trabalho! 🚀\n\nPorém, notei que vocês ainda não possuem um catálogo ou site próprio no perfil. Muitas pessoas desistem de comprar/agendar porque buscam essa facilidade.\n\nPosso enviar um material rápido de como a gente resolve isso e atrai mais clientes para vocês?`);
+    }
+    return encodeURIComponent(`Olá, encontrei o perfil da *${lead.name}* e percebi um potencial gigantesco! Posso enviar um material rápido de como podemos escalar as vendas de vocês com automação e um sistema próprio?`);
+  }
+
+  const handleSearchInstagram = (lead: Lead) => {
+    const query = `site:instagram.com ${lead.name} ${lead.city}`;
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="space-y-6 max-w-7xl pb-10">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Search className="w-6 h-6 text-primary" /> Scanner de Leads
+        <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <Search className="w-8 h-8 text-primary" />
+          Scanner de Leads
         </h2>
-        <p className="text-textSecondary">Encontre oportunidades comerciais por localização e nicho e prospecte instantaneamente.</p>
+        <p className="text-textSecondary mt-2">Encontre oportunidades comerciais por localização e nicho e prospecte instantaneamente.</p>
       </div>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Filter className="w-5 h-5 text-primary" />
-            Filtros de Busca
+          <CardTitle className="flex items-center justify-between text-lg">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-primary" />
+              Filtros de Busca
+            </div>
+            
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer text-textSecondary hover:text-white transition-colors">
+              <div className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={onlyWithoutSite} onChange={(e) => setOnlyWithoutSite(e.target.checked)} />
+                <div className="w-9 h-5 bg-border rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-error"></div>
+              </div>
+              <span className={onlyWithoutSite ? 'text-error font-bold' : ''}>Apenas Sem Site</span>
+            </label>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -300,39 +324,60 @@ export const Scanner = () => {
       ) : leads.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {leads.map((lead) => (
-            <Card key={lead.id} className="hover:border-primary/50 transition-colors flex flex-col">
-              <CardContent className="p-5 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-4">
+            <Card key={lead.id} className="hover:border-primary/50 transition-colors flex flex-col relative overflow-hidden">
+              {!lead.website && lead.id !== 'error' && (
+                <div className="absolute top-0 right-0 bg-error text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-lg z-10 flex items-center gap-1">
+                  <ShieldAlert className="w-3 h-3" />
+                  SEM SITE
+                </div>
+              )}
+              
+              <CardContent className="p-5 pt-6 flex-1 flex flex-col">
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="font-bold text-white truncate pr-2" title={lead.name}>{lead.name}</h3>
-                    <p className="text-xs text-primary font-medium mt-1">{lead.category}</p>
+                    <h3 className="font-bold text-white pr-2 text-lg leading-tight" title={lead.name}>{lead.name}</h3>
+                    
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {lead.rating > 0 ? (
+                        <div className="flex items-center text-xs font-medium text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">
+                          <Star className="w-3 h-3 fill-current mr-1" />
+                          {lead.rating} ({lead.userRatingsTotal})
+                        </div>
+                      ) : (
+                        <div className="text-xs text-textSecondary bg-border px-2 py-0.5 rounded-full">Novo no Maps</div>
+                      )}
+                      <p className="text-xs text-primary font-medium">{lead.category}</p>
+                    </div>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full border ${
-                    savedLeads[lead.id]
-                      ? 'bg-success/10 text-success border-success/20' 
-                      : 'bg-panelHover text-textSecondary border-border'
-                  }`}>
-                    {savedLeads[lead.id] ? 'Salvo' : lead.status}
-                  </span>
                 </div>
                 
-                <div className="space-y-2 mb-6 flex-1">
+                <div className="space-y-2 mb-6 flex-1 mt-2">
                   <div className="flex items-center text-sm text-textSecondary">
-                    <MapPin className="w-4 h-4 mr-2 text-primary/70" />
+                    <MapPin className="w-4 h-4 mr-2 text-primary/70 shrink-0" />
                     <span className="truncate">{lead.city}</span>
                   </div>
                   <div className="flex items-center text-sm text-textSecondary">
-                    <Phone className="w-4 h-4 mr-2 text-primary/70" />
+                    <Phone className="w-4 h-4 mr-2 text-primary/70 shrink-0" />
                     {lead.phone ? formatPhone(lead.phone) : 'Não informado'}
                   </div>
-                  <div className="flex items-center text-sm text-textSecondary">
-                    <Smartphone className="w-4 h-4 mr-2 text-primary/70" />
-                    {lead.instagram || 'Não informado'}
-                  </div>
+                  {lead.website && (
+                    <div className="flex items-center text-sm text-textSecondary">
+                      <GlobeIcon className="w-4 h-4 mr-2 text-success/70 shrink-0" />
+                      <a href={lead.website} target="_blank" rel="noreferrer" className="truncate text-blue-400 hover:underline">{lead.website.replace('https://', '').replace('http://', '')}</a>
+                    </div>
+                  )}
                 </div>
 
                 {lead.id !== 'error' && (
                   <div className="flex flex-col gap-2 mt-auto">
+                    <Button 
+                      onClick={() => setXrayLead(lead)} 
+                      className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 font-bold mb-1"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Raio-X com IA (Argumentos)
+                    </Button>
+                    
                     {/* WhatsApp Botão Principal */}
                     {lead.phone ? (
                       <a 
@@ -343,7 +388,7 @@ export const Scanner = () => {
                       >
                         <Button className="w-full bg-[#25D366] hover:bg-[#1EBE5D] text-black font-bold">
                           <MessageSquare className="w-4 h-4 mr-2" />
-                          Chamar no WhatsApp
+                          Abordar no Whats
                         </Button>
                       </a>
                     ) : (
@@ -362,9 +407,9 @@ export const Scanner = () => {
                         disabled={savedLeads[lead.id]}
                       >
                         {savedLeads[lead.id] ? (
-                          <><Check className="w-4 h-4 mr-1" /> CRM</>
+                          <><Check className="w-4 h-4 mr-1" /> No CRM</>
                         ) : (
-                          <><Plus className="w-4 h-4 mr-1" /> CRM</>
+                          <><Plus className="w-4 h-4 mr-1" /> Add CRM</>
                         )}
                       </Button>
 
@@ -376,12 +421,12 @@ export const Scanner = () => {
                           className="flex-1"
                         >
                           <Button variant="secondary" className="w-full text-[#E1306C] hover:bg-[#E1306C]/10 border-[#E1306C]/20">
-                            Instagram
+                            <Smartphone className="w-4 h-4 mr-1" /> Ver Insta
                           </Button>
                         </a>
                       ) : (
-                        <Button variant="secondary" disabled className="flex-1 opacity-50 text-[#E1306C]">
-                          Insta (X)
+                        <Button variant="secondary" onClick={() => handleSearchInstagram(lead)} className="flex-1 text-[#E1306C] hover:bg-[#E1306C]/10 border-[#E1306C]/20">
+                          <Search className="w-3 h-3 mr-1" /> Buscar Insta
                         </Button>
                       )}
                     </div>
@@ -398,6 +443,78 @@ export const Scanner = () => {
           <p className="text-sm mt-1">Realize uma busca para encontrar oportunidades.</p>
         </div>
       )}
+
+      {/* RAIO-X MODAL */}
+      <AnimatePresence>
+        {xrayLead && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setXrayLead(null)} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-panel border border-border w-full max-w-lg rounded-2xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-4 border-b border-border flex justify-between items-center bg-background/50">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-accent" />
+                  <h3 className="font-bold text-white text-lg">Raio-X com IA</h3>
+                </div>
+                <button onClick={() => setXrayLead(null)} className="text-textSecondary hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto space-y-6">
+                <div>
+                  <h4 className="text-xl font-black text-white mb-1">{xrayLead.name}</h4>
+                  <p className="text-sm text-textSecondary">{xrayLead.category} em {xrayLead.city}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-background border border-border rounded-xl p-4 text-center">
+                    <p className="text-xs text-textSecondary mb-1 font-medium">Reputação (Google)</p>
+                    <div className="flex items-center justify-center gap-1">
+                      <Star className="w-5 h-5 text-yellow-500 fill-current" />
+                      <span className="text-xl font-bold text-white">{xrayLead.rating || 'N/A'}</span>
+                    </div>
+                    <p className="text-[10px] text-textSecondary mt-1">{xrayLead.userRatingsTotal} avaliações</p>
+                  </div>
+                  
+                  <div className="bg-background border border-border rounded-xl p-4 text-center">
+                    <p className="text-xs text-textSecondary mb-1 font-medium">Presença Digital</p>
+                    {xrayLead.website ? (
+                      <div className="text-success font-bold text-lg flex items-center justify-center gap-2">
+                        <GlobeIcon className="w-5 h-5" /> Tem Site
+                      </div>
+                    ) : (
+                      <div className="text-error font-bold text-lg flex items-center justify-center gap-2">
+                        <ShieldAlert className="w-5 h-5" /> Sem Site
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-5">
+                  <h5 className="font-bold text-primary flex items-center gap-2 mb-3">
+                    <MessageSquare className="w-4 h-4" />
+                    Argumento de Venda Sugerido:
+                  </h5>
+                  <p className="text-sm text-white leading-relaxed">
+                    {!xrayLead.website && xrayLead.rating >= 4 ? (
+                      <>`Olha só: a ${xrayLead.name}` tem uma nota altíssima no Google (${xrayLead.rating} estrelas)! Isso prova que o serviço/produto deles é excelente. A fraqueza? Eles não têm um site ou sistema de vendas online.\n\n**O seu Pitch:** "Oi! Vocês são muito bem avaliados, mas estão perdendo dinheiro no boca a boca digital porque os clientes procuram o site de vocês no Google para comprar/agendar e não acham nada. Deixa eu montar uma página focada em conversão pra vocês e dobrar essas avaliações!"</>
+                    ) : !xrayLead.website ? (
+                      <>`A ${xrayLead.name}` não tem site e a presença digital é fraca.\n\n**O seu Pitch:** "Oi! Percebi que vocês ainda dependem 100% de indicações ou do Instagram. Posso criar uma plataforma que funciona 24h vendendo por vocês, passando muito mais credibilidade e profissionalismo."</>
+                    ) : (
+                      <>`A ${xrayLead.name}` já tem um site. O objetivo aqui é vender um RE-DESIGN ou automação.\n\n**O seu Pitch:** "Oi! Vi o site de vocês e achei bacana, mas notei que a tecnologia é um pouco antiga. Com as IAs atuais, conseguimos fazer um sistema que atende os clientes sozinho, muito mais rápido. Topa uma avaliação gratuita?"</>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
