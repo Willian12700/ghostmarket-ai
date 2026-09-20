@@ -65,7 +65,7 @@ export const SiteViewer = () => {
       title="Site Publicado"
       srcDoc={html} 
       className="w-full h-screen border-none m-0 p-0 block"
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-top-navigation allow-top-navigation-by-user-activation"
     />
   )
 }
