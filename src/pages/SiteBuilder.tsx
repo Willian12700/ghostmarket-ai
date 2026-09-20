@@ -133,8 +133,8 @@ export const SiteBuilder = () => {
     fileInputRef.current?.click()
   }
 
-  const handlePublish = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handlePublish = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     if (!domainName.trim()) {
       addToast('Defina um domínio', 'error')
       return
@@ -143,11 +143,20 @@ export const SiteBuilder = () => {
     setIsPublishing(true)
     try {
       const siteId = domainName.toLowerCase().replace(/[^a-z0-9-]/g, '')
-      const fullDomain = domainType === 'subdomain' ? `${window.location.origin}/s/${siteId}` : `https://${siteId}`
       
+      // Check for domain collision
+      const docRef = doc(db, 'sites', siteId)
+      const snap = await getDoc(docRef)
+      if (snap.exists() && snap.data().userId !== (user?.uid || 'anonymous')) {
+        addToast('Este nome já está sendo usado por outra conta! Escolha outro.', 'error')
+        setIsPublishing(false)
+        return
+      }
+
+      const fullDomain = domainType === 'subdomain' ? `${window.location.origin}/s/${siteId}` : `https://${siteId}`
       const rawHtml = getCombinedHtml()
 
-      await setDoc(doc(db, 'sites', siteId), {
+      await setDoc(docRef, {
         id: siteId,
         rawHtml,
         htmlContent: steps[0].value,
@@ -161,7 +170,9 @@ export const SiteBuilder = () => {
       })
 
       addToast('Site hospedado com sucesso!', 'success')
-      setPublishedUrl(fullDomain)
+      if (!editId) {
+        setPublishedUrl(fullDomain)
+      }
     } catch (error) {
       console.error(error)
       addToast('Erro ao publicar', 'error')
