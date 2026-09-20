@@ -79,6 +79,8 @@ export const useAuthStore = create<AuthState>((set) => ({
           photoURL: photoURL !== undefined ? photoURL : state.user.photoURL
         } : null
       }))
+      
+      syncUserToFirestore(currentUser)
     }
   },
   updateUserPassword: async (newPassword) => {

@@ -73,9 +73,10 @@ export const AdminPanel = () => {
 
     try {
       const email = u.email
-      const uid = u.uid || email 
+      const uid = u.uid
+      const queryIds = uid && uid !== email ? [email, uid] : [email]
 
-      const sitesQuery = query(collection(db, 'sites'), where('userId', 'in', [email, uid]))
+      const sitesQuery = query(collection(db, 'sites'), where('userId', 'in', queryIds))
       const sitesSnap = await getDocs(sitesQuery)
       const sites: any[] = []
       sitesSnap.forEach(doc => sites.push({ id: doc.id, ...doc.data() }))
@@ -83,7 +84,7 @@ export const AdminPanel = () => {
 
       let totalValue = 0
 
-      const txsQuery = query(collection(db, 'transactions'), where('userId', 'in', [email, uid]))
+      const txsQuery = query(collection(db, 'transactions'), where('userId', 'in', queryIds))
       const txsSnap = await getDocs(txsQuery)
       txsSnap.forEach(doc => {
         const t = doc.data()
@@ -93,7 +94,7 @@ export const AdminPanel = () => {
         }
       })
 
-      const crmQuery = query(collection(db, 'crm_contracts'), where('userId', 'in', [email, uid]))
+      const crmQuery = query(collection(db, 'crm_contracts'), where('userId', 'in', queryIds))
       const crmSnap = await getDocs(crmQuery)
       crmSnap.forEach(doc => {
         const c = doc.data()
@@ -122,14 +123,25 @@ export const AdminPanel = () => {
     }
 
     setIsGrantingAccess(true)
+    const emailToGrant = freeAccessEmail.toLowerCase().trim()
     try {
-      await setDoc(doc(db, 'allowed_users', freeAccessEmail.toLowerCase().trim()), {
-        email: freeAccessEmail.toLowerCase().trim(),
+      await setDoc(doc(db, 'allowed_users', emailToGrant), {
+        email: emailToGrant,
         status: 'approved',
         plan: 'vitalicio',
         grantedByAdmin: true,
         grantedAt: new Date().toISOString()
       }, { merge: true })
+      
+      // Update UI optimistically
+      setUsers(prev => {
+        const existing = prev.find(u => u.email === emailToGrant)
+        if (existing) {
+          return prev.map(u => u.email === emailToGrant ? { ...u, isAllowed: true, plan: 'vitalicio' } : u)
+        } else {
+          return [{ email: emailToGrant, name: 'Desconhecido', isAllowed: true, plan: 'vitalicio' }, ...prev]
+        }
+      })
       
       addToast(`Acesso Vitalício liberado para ${freeAccessEmail}!`, 'success')
       setFreeAccessEmail('')
@@ -227,9 +239,13 @@ export const AdminPanel = () => {
                       <tr key={i} className="hover:bg-white/5 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
-                              {u.name?.charAt(0).toUpperCase() || u.email?.charAt(0).toUpperCase() || '?'}
-                            </div>
+                            {u.photoURL ? (
+                              <img src={u.photoURL} alt={u.name} className="w-10 h-10 rounded-full object-cover border border-white/10" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                                {u.name?.charAt(0).toUpperCase() || u.email?.charAt(0).toUpperCase() || '?'}
+                              </div>
+                            )}
                             <div>
                               <div className="font-medium text-white">{u.name || 'Sem Nome'}</div>
                               <div className="text-textSecondary text-xs">{u.email}</div>
@@ -277,9 +293,13 @@ export const AdminPanel = () => {
             >
               <div className="h-20 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-lg">
-                    {selectedUser.name?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase() || '?'}
-                  </div>
+                  {selectedUser.photoURL ? (
+                    <img src={selectedUser.photoURL} alt={selectedUser.name} className="w-10 h-10 rounded-full object-cover border border-white/10" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-lg">
+                      {selectedUser.name?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase() || '?'}
+                    </div>
+                  )}
                   <div>
                     <h3 className="font-bold text-white leading-tight">{selectedUser.name || 'Usuário'}</h3>
                     <p className="text-xs text-textSecondary">{selectedUser.email}</p>
