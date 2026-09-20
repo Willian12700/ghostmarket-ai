@@ -17,6 +17,11 @@ import { SiteViewer } from '@/pages/SiteViewer'
 import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
 import { Chatbots } from '@/pages/Chatbots'
+import { VslGenerator } from '@/pages/marketing/VslGenerator'
+import { PlrGenerator } from '@/pages/marketing/PlrGenerator'
+import { AdsGenerator } from '@/pages/marketing/AdsGenerator'
+import { EmailFunnel } from '@/pages/marketing/EmailFunnel'
+
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
 import { Affiliates } from '@/pages/Affiliates'
@@ -83,6 +88,12 @@ function App() {
               <Route path="/tiktok/persona-history" element={<PersonaHistory />} />
               <Route path="/tiktok/scripts" element={<ViralScripts />} />
               <Route path="/tiktok/ads" element={<AdCopy />} />
+              {/* Marketing Routes */}
+              <Route path="/marketing/vsl" element={<VslGenerator />} />
+              <Route path="/marketing/plr" element={<PlrGenerator />} />
+              <Route path="/marketing/ads" element={<AdsGenerator />} />
+              <Route path="/marketing/emails" element={<EmailFunnel />} />
+
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />
