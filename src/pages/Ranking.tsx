@@ -31,14 +31,19 @@ export const Ranking = () => {
         
         usersSnap.forEach(doc => {
           const data = doc.data()
-          const key = data.email || data.uid || doc.id
-          usersMap[key] = {
+          const email = (data.email || '').toLowerCase()
+          const uid = data.uid || ''
+          const userObj = {
             id: doc.id,
-            name: data.name || data.email?.split('@')[0] || 'Usuário Anônimo',
+            name: data.name || email.split('@')[0] || 'Usuário Anônimo',
             email: data.email || '',
             photoURL: data.photoURL || '',
             totalSales: 0
           }
+          
+          if (email) usersMap[email] = userObj
+          if (uid) usersMap[uid] = userObj
+          usersMap[doc.id] = userObj
         })
 
         // 2. Fetch SaaS Transactions
@@ -47,9 +52,32 @@ export const Ranking = () => {
           const t = doc.data()
           const status = (t.status || '').toLowerCase().trim()
           if (status === 'aprovado' || status === 'paid' || status === 'approved' || status === 'fechado') {
-            const timestampMs = t.createdAt?.toMillis ? t.createdAt.toMillis() : new Date(t.createdAt || t.date || 0).getTime()
+            
+            let timestampMs = Date.now()
+            if (t.timestamp && typeof t.timestamp.toMillis === 'function') {
+              timestampMs = t.timestamp.toMillis()
+            } else if (t.date_created) {
+              timestampMs = new Date(t.date_created).getTime()
+            } else if (t.date) {
+              if (typeof t.date === 'string' && t.date.includes('/')) {
+                const parts = t.date.split('/')
+                if (parts.length === 3) {
+                  timestampMs = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime()
+                }
+              } else if (typeof t.date === 'string' && t.date.includes('-')) {
+                 const parts = t.date.split('-')
+                 if (parts.length === 3) {
+                   timestampMs = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime()
+                 }
+              } else {
+                 timestampMs = new Date(t.date).getTime()
+              }
+            } else if (t.createdAt?.toMillis) {
+              timestampMs = t.createdAt.toMillis()
+            }
+
             if (timestampMs >= startOfMonthMs) {
-              const uKey = t.userId
+              const uKey = (t.userId || '').toLowerCase()
               if (uKey && usersMap[uKey]) {
                 usersMap[uKey].totalSales += Number(t.transaction_amount || t.amount || 0)
               }
@@ -63,16 +91,28 @@ export const Ranking = () => {
           const c = doc.data()
           const status = (c.status || '').toLowerCase().trim()
           if (status === 'fechado' || status === 'aprovado') {
-            let rawMs = 0
+            
+            let rawMs = Date.now()
             if (c.date) {
-              const parts = c.date.split('/')
-              if (parts.length === 3) rawMs = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`).getTime()
+              if (c.date.includes('/')) {
+                const parts = c.date.split('/')
+                if (parts.length === 3) {
+                  rawMs = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime()
+                }
+              } else if (c.date.includes('-')) {
+                const parts = c.date.split('-')
+                if (parts.length === 3) {
+                  rawMs = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime()
+                }
+              } else {
+                rawMs = new Date(c.date).getTime()
+              }
             } else if (c.createdAt?.toMillis) {
               rawMs = c.createdAt.toMillis()
             }
             
             if (rawMs >= startOfMonthMs) {
-              const uKey = c.userId
+              const uKey = (c.userId || '').toLowerCase()
               if (uKey && usersMap[uKey]) {
                 usersMap[uKey].totalSales += Number(c.amount || 0)
               }
@@ -80,8 +120,12 @@ export const Ranking = () => {
           }
         })
 
+        // Filter out duplicate user objects that were added by both email and uid keys.
+        // We can just take the unique user objects from the map values.
+        const uniqueUsers = Array.from(new Set(Object.values(usersMap)))
+        
         // 4. Convert and Sort
-        let userList = Object.values(usersMap)
+        let userList = uniqueUsers
         userList.sort((a, b) => {
           if (b.totalSales !== a.totalSales) {
             return b.totalSales - a.totalSales // descending sales
