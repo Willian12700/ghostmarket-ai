@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
@@ -17,10 +17,12 @@ const CASH_SOUND_URL = "https://www.soundjay.com/misc/sounds/cash-register-01.mp
 export const SalesNotifier = () => {
   const { user } = useAuthStore()
   const [sales, setSales] = useState<SaleNotification[]>([])
-  const isInitialLoad = useRef(true)
+  
 
-  useEffect(() => {
+    useEffect(() => {
     if (!user?.email) return
+
+    let isFirstSnapshot = true;
 
     const q = query(
       collection(db, 'transactions'),
@@ -28,12 +30,10 @@ export const SalesNotifier = () => {
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (isInitialLoad.current) {
-        // Ignora todas as transações que já existem quando o app carrega
-        isInitialLoad.current = false
+      if (isFirstSnapshot) {
+        isFirstSnapshot = false
         return
       }
-
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const data = change.doc.data()
