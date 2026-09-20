@@ -8,6 +8,7 @@ import { ShieldAlert, UserCheck, Search, Users, Circle, Calendar, DollarSign, Gl
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { NicheManager } from '@/components/admin/NicheManager'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export const AdminPanel = () => {
@@ -261,6 +262,8 @@ export const AdminPanel = () => {
           </div>
         </CardContent>
       </Card>
+
+        <NicheManager />
 
       <Card className="border-border bg-panel">
         <CardHeader>

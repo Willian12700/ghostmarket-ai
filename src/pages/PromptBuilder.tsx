@@ -1,5 +1,7 @@
-﻿import { useState } from 'react'
-import { Wand2, Copy, Check, Code, Video, Bot, Zap, MonitorSmartphone, Plus, Trash2, Tag } from 'lucide-react'
+﻿import { useState, useEffect } from 'react'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { db } from '@/config/firebase'
+import { Wand2, Copy, Check, Code, Video, Bot, Zap, Plus, Trash2, Tag } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -8,6 +10,26 @@ import { useToastStore } from '@/store/toastStore'
 export const PromptBuilder = () => {
   const { addToast } = useToastStore()
   
+  const [availableNiches, setAvailableNiches] = useState<string[]>([
+    'SaaS / Tecnologia',
+    'E-commerce / Lojas Virtuais',
+    'Saúde e Bem-estar (Médicos/Estética)',
+    'Finanças / Investimentos',
+    'Imobiliária / Corretores',
+    'Educação / Cursos Online (EAD)',
+    'Restaurante / Delivery',
+    'Agência de Marketing / Serviços'
+  ]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'global_settings', 'niches'), (snap) => {
+      if (snap.exists() && snap.data().list) {
+        setAvailableNiches(snap.data().list);
+      }
+    });
+    return () => unsub();
+  }, []);
+
   const [formData, setFormData] = useState({
     aiPlatform: 'Antigravity',
     systemType: 'Landing Page (Site Institucional)',
@@ -95,7 +117,7 @@ export const PromptBuilder = () => {
 Você atuará como um Senior Full-Stack Software Engineer.
 IA Escolhida: ${formData.aiPlatform}
 
-## 1. VISÁO GERAL DO PROJETO
+## 1. VISÃO GERAL DO PROJETO
 - **Tipo de Sistema**: ${finalSystemType || 'Não informado'}
 - **Nome**: ${formData.projectName.toUpperCase() || 'SISTEMA/SAAS'}
 - **Nicho**: ${finalNiche || 'Não informado'}
@@ -188,69 +210,13 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-textSecondary flex items-center gap-2"><Bot className="w-4 h-4"/> Qual IA você vai usar?</label>
                 <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  value={formData.aiPlatform}
-                  onChange={(e) => setFormData({ ...formData, aiPlatform: e.target.value })}
-                >
-                  <option>Antigravity</option>
-                  <option>Claude 3.5 Sonnet</option>
-                  <option>ChatGPT (OpenAI)</option>
-                  <option>Google AI Studio</option>
-                  <option>Gemini</option>
-                  <option>Lovable</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary flex items-center gap-2"><MonitorSmartphone className="w-4 h-4"/> Tipo de Sistema</label>
-                <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  value={formData.systemType}
-                  onChange={(e) => setFormData({ ...formData, systemType: e.target.value })}
-                >
-                  <option>Landing Page (Site Institucional / Vendas)</option>
-                  <option>Painel Administrativo (Dashboard)</option>
-                  <option>SaaS (Software as a Service) Completo</option>
-                  <option>E-commerce / Loja Virtual</option>
-                  <option>Blog / Portal de Notícias</option>
-                  <option>Aplicativo Web (PWA)</option>
-                  <option>Outro</option>
-                </select>
-              </div>
-              {formData.systemType === 'Outro' && (
-                <Input
-                  label="Especifique o Tipo de Sistema"
-                  placeholder="Ex: Sistema de Gestão Escolar"
-                  value={formData.customSystemType}
-                  onChange={(e) => setFormData({ ...formData, customSystemType: e.target.value })}
-                />
-              )}
-
-              <Input
-                label="Nome do projeto"
-                placeholder="Ex: GhostMarket AI"
-                value={formData.projectName}
-                onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-              />
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-textSecondary">Nicho de Mercado</label>
-                <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  value={formData.niche}
-                  onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
-                >
-                  <option>SaaS / Tecnologia</option>
-                  <option>E-commerce / Lojas Virtuais</option>
-                  <option>Saúde e Bem-estar (Médicos/Estética)</option>
-                  <option>Finanças / Investimentos</option>
-                  <option>Imobiliária / Corretores</option>
-                  <option>Educação / Cursos Online (EAD)</option>
-                  <option>Restaurante / Delivery</option>
-                  <option>Agência de Marketing / Serviços</option>
-                  <option>Advocacia / Jurídico</option>
-                  <option>Outro</option>
-                </select>
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    value={formData.niche}
+                    onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
+                  >
+                    {availableNiches.map(n => <option key={n} value={n}>{n}</option>)}
+                    <option value="Outro">Outro</option>
+                  </select>
               </div>
               {formData.niche === 'Outro' && (
                 <Input
