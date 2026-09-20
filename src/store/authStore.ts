@@ -67,10 +67,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateUserProfile: async (name, photoURL) => {
     const currentUser = auth.currentUser
     if (currentUser) {
+      const isBase64 = photoURL && photoURL.startsWith('data:image');
+      
       await updateProfile(currentUser, { 
         displayName: name,
-        ...(photoURL !== undefined && { photoURL })
+        ...(photoURL !== undefined && !isBase64 ? { photoURL } : {})
       })
+
+      if (isBase64) {
+        localStorage.setItem(`profile_pic_${currentUser.uid}`, photoURL);
+        try {
+          await setDoc(doc(db, 'users', currentUser.email || currentUser.uid), {
+            uid: currentUser.uid,
+            email: currentUser.email || '',
+            name: name,
+            photoURL: photoURL,
+            lastLogin: new Date().toISOString()
+          }, { merge: true });
+        } catch(e) {
+           console.error(e)
+        }
+      } else {
+         syncUserToFirestore(currentUser)
+      }
       
       set((state) => ({
         user: state.user ? { 
@@ -79,8 +98,6 @@ export const useAuthStore = create<AuthState>((set) => ({
           photoURL: photoURL !== undefined ? photoURL : state.user.photoURL
         } : null
       }))
-      
-      syncUserToFirestore(currentUser)
     }
   },
   updateUserPassword: async (newPassword) => {
