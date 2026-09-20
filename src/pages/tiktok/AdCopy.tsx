@@ -55,26 +55,24 @@ VARIAÇÃO [Número]
 `
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch('https://text.pollinations.ai/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.8 }
+          messages: [{ role: 'user', content: prompt }],
+          model: 'openai'
         })
       })
 
       if (!response.ok) throw new Error('API Error')
-      const data = await response.json()
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+      const text = await response.text()
       
       if (!text) throw new Error('Vazio')
       setGeneratedCopy(text)
       addToast('Copy gerada com sucesso!', 'success')
     } catch (error) {
       console.error(error)
-      setGeneratedCopy('Ops, a chave da API falhou. Certifique-se de que sua API Key está configurada corretamente no Vercel.')
+      setGeneratedCopy('Ops, o servidor de IA está sobrecarregado no momento. Tente novamente.')
       addToast('Erro ao gerar', 'error')
     } finally {
       setIsGenerating(false)
