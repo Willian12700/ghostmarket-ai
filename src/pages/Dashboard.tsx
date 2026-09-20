@@ -39,7 +39,7 @@ export const Dashboard = () => {
   // Combine CRM Contacts and Firebase Transactions that are PAID
   const allPaidTransactions = useMemo(() => {
     const closedContracts = contracts
-      .filter(c => c.status === 'Fechado')
+      .filter(c => (c.status || '').toLowerCase() === 'fechado' || (c.status || '').toLowerCase() === 'aprovado')
       .map(c => {
         let rawMs = Date.now()
         if (c.date) {
@@ -57,6 +57,10 @@ export const Dashboard = () => {
             rawMs = new Date(c.date).getTime()
           }
         }
+        
+        if (isNaN(rawMs)) {
+          rawMs = Date.now()
+        }
         return {
           id: c.id,
           amount: Number(c.amount || 0),
@@ -68,8 +72,8 @@ export const Dashboard = () => {
 
     const saasTxs = firebaseTransactions
       .filter(t => {
-        const s = (t.status || '').toLowerCase()
-        return s === 'aprovado' || s === 'paid' || s === 'approved'
+        const s = (t.status || '').toLowerCase().trim()
+        return s === 'aprovado' || s === 'paid' || s === 'approved' || s === 'fechado'
       })
       .map(t => {
         let timestampMs = Date.now()
@@ -77,6 +81,24 @@ export const Dashboard = () => {
           timestampMs = t.timestamp.toMillis()
         } else if (t.date_created) {
           timestampMs = new Date(t.date_created).getTime()
+        } else if (t.date) {
+          if (typeof t.date === 'string' && t.date.includes('/')) {
+            const parts = t.date.split('/')
+            if (parts.length === 3) {
+              timestampMs = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime()
+            }
+          } else if (typeof t.date === 'string' && t.date.includes('-')) {
+             const parts = t.date.split('-')
+             if (parts.length === 3) {
+               timestampMs = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime()
+             }
+          } else {
+             timestampMs = new Date(t.date).getTime()
+          }
+        }
+
+        if (isNaN(timestampMs)) {
+          timestampMs = Date.now()
         }
 
         return {
