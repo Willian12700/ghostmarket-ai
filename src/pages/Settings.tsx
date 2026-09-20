@@ -9,7 +9,7 @@ import { useToastStore } from '@/store/toastStore'
 import { updatePassword, getAuth } from 'firebase/auth'
 import { storage } from '@/config/firebase'
 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage'
 
 export const Settings = () => {
   const { user, updateUserProfile } = useAuthStore()
@@ -64,7 +64,7 @@ export const Settings = () => {
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !user?.uid) return
     
     if (!file.type.startsWith('image/')) {
       addToast('Por favor, selecione uma imagem válida.', 'error')
@@ -98,17 +98,19 @@ export const Settings = () => {
         const ctx = canvas.getContext('2d')
         ctx?.drawImage(img, 0, 0, width, height)
 
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8)
 
         try {
           setIsSavingProfile(true)
-          await updateUserProfile(name, compressedBase64)
+          const storageRef = ref(storage, `profile_pics/${user.uid}_${Date.now()}.jpg`)
+          await uploadString(storageRef, compressedBase64, 'data_url')
+          const downloadUrl = await getDownloadURL(storageRef)
+
+          await updateUserProfile(name, downloadUrl)
           addToast('Foto de perfil atualizada!', 'success')
         } catch (error: any) {
           console.error(error)
-          localStorage.setItem(`profile_pic_${user?.uid}`, compressedBase64)
-          await updateUserProfile(name, compressedBase64)
-          addToast('Foto de perfil salva localmente!', 'success')
+          addToast('Erro ao enviar foto.', 'error')
         } finally {
           setIsSavingProfile(false)
         }
