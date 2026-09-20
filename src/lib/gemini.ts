@@ -77,7 +77,7 @@ Regras:
     
     // Fallback genérico para não frustrar o usuário caso a API falhe
     return [
-      { id: Date.now().toString(), type: 'hero', content: { title: \`Site para: \${prompt}\`, subtitle: 'A chave da IA falhou, mas geramos esta base. Edite os textos clicando neles.', button: 'Saiba Mais', buttonLink: '', imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80' } },
+      { id: Date.now().toString(), type: 'hero', content: { title: 'Bem-vindo ao seu site de ' + prompt, subtitle: 'A IA está processando seu pedido, mas geramos esta base. Edite os textos clicando neles.', button: 'Saiba Mais', buttonLink: '', imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80' } },
       { id: (Date.now() + 1).toString(), type: 'features', content: { title: 'Nossos Serviços', f1: 'Qualidade Premium', f2: 'Atendimento 24h', f3: 'Garantia de Satisfação' } }
     ]
   }
