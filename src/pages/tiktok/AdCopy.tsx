@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Wand2, Copy, Check, TrendingUp, PenTool } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { useToastStore } from '@/store/toastStore'
 
 export const AdCopy = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedCopy, setGeneratedCopy] = useState('')
   const [copied, setCopied] = useState(false)
-  const { addToast } = useToast()
+  const { addToast } = useToastStore()
+  
 
   const [formData, setFormData] = useState({
     productName: '',
@@ -28,22 +29,22 @@ export const AdCopy = () => {
     setIsGenerating(true)
     addToast('A IA está analisando o ângulo e escrevendo as copys...', 'success')
 
-    const prompt = \`
+    const prompt = `
 Atue como o melhor Copywriter de TikTok Ads do Brasil. 
 Sua missão é criar 3 opções de textos persuasivos (Legendas) e textos de tela (Text Overlays) para uma campanha focada em conversão extrema.
 
 DADOS DA CAMPANHA:
-- Produto: \${formData.productName}
-- Oferta: \${formData.offer || 'Venda direta'}
-- Call to Action: \${formData.cta}
-- Ângulo da Abordagem: \${formData.approach}
-- Emoção Alvo: \${formData.emotion}
+- Produto: ${formData.productName}
+- Oferta: ${formData.offer || 'Venda direta'}
+- Call to Action: ${formData.cta}
+- Ângulo da Abordagem: ${formData.approach}
+- Emoção Alvo: ${formData.emotion}
 
 DIRETRIZES:
 1. Textos de Tela devem chamar atenção nos primeiros 3 segundos.
 2. A legenda deve complementar o vídeo e empurrar para o clique.
 3. Use Emojis.
-4. NUNCA gere markdown como \`\`\`html. Formate em texto puro com quebras de linha claras.
+4. NUNCA gere markdown como codigo. Formate em texto puro com quebras de linha claras.
 
 RETORNE 3 VARIAÇÕES no seguinte formato para cada uma:
 
@@ -51,11 +52,11 @@ VARIAÇÃO [Número]
 [Texto de Tela 3 Segundos]: ...
 [Legenda do Post]: ...
 [Hashtags]: ...
-\`
+`
 
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
-      const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

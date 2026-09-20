@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Wand2, Copy, Check, PlayCircle, FileText } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { useToastStore } from '@/store/toastStore'
 
 export const ViralScripts = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedScript, setGeneratedScript] = useState('')
   const [copied, setCopied] = useState(false)
-  const { addToast } = useToast()
+  const { addToast } = useToastStore()
+  
 
   const [formData, setFormData] = useState({
     productName: '',
@@ -27,26 +28,26 @@ export const ViralScripts = () => {
     setIsGenerating(true)
     addToast('A IA está roteirizando seu vídeo viral...', 'success')
 
-    const prompt = \`
+    const prompt = `
 Você é o maior especialista em TikTok Orgânico e TikTok Ads.
-Crie um roteiro de vídeo viral para o produto "\${formData.productName}".
-Público Alvo: \${formData.targetAudience || 'Geral'}
-Duração: \${formData.videoLength}
-Tipo de Gancho (Primeiros 3s): \${formData.hookType}
+Crie um roteiro de vídeo viral para o produto "${formData.productName}".
+Público Alvo: ${formData.targetAudience || 'Geral'}
+Duração: ${formData.videoLength}
+Tipo de Gancho (Primeiros 3s): ${formData.hookType}
 
 ESTRUTURA OBRIGATÓRIA DO ROTEIRO:
 1. HOOK (0-3s): [Fala + Ação visual impactante]
 2. RETENÇÃO (3-15s): [Desenvolvimento do problema + Solução com o produto]
 3. CTA (Fim): [Chamada para ação clara pro link da bio ou botão]
 
-Formate de forma limpa. Não use markdown como \`\`\`html.
+Formate de forma limpa. Não use markdown como codigo.
 Faça o texto dinâmico, rápido, estilo "UGC" (User Generated Content).
 Escreva a [CENA VISUAL] e o [ÁUDIO/FALA].
-\`
+`
 
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
-      const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

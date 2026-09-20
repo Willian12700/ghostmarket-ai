@@ -2,14 +2,15 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { Wand2, Copy, Check, Users, Target } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { Copy, Check, Users, Target } from 'lucide-react'
+import { useToastStore } from '@/store/toastStore'
 
 export const PersonaGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPersona, setGeneratedPersona] = useState('')
   const [copied, setCopied] = useState(false)
-  const { addToast } = useToast()
+  const { addToast } = useToastStore()
+  
 
   const [formData, setFormData] = useState({
     niche: '',
@@ -26,27 +27,27 @@ export const PersonaGenerator = () => {
     setIsGenerating(true)
     addToast('A IA está mapeando a mente do seu cliente ideal...', 'success')
 
-    const prompt = \`
+    const prompt = `
 Atue como um Especialista em Marketing e Psicologia do Consumidor de altíssimo nível.
 Crie a Persona perfeita (Cliente Ideal) para o seguinte cenário:
-- Nicho: \${formData.niche}
-- Produto: \${formData.product}
-- Dor Principal (Opcional): \${formData.painPoint || 'Não informada'}
+- Nicho: ${formData.niche}
+- Produto: ${formData.product}
+- Dor Principal (Opcional): ${formData.painPoint || 'Não informada'}
 
 Sua análise deve ser profunda e psicológica. Não quero apenas dados demográficos. 
 Preciso de:
 1. Nome, Idade, Profissão, Renda.
 2. Dores Ocultas (O que tira o sono dele à noite?).
 3. Desejos Inconfessáveis (O que ele realmente quer, mas tem vergonha de dizer?).
-4. Objeções Principais (Por que ele não compraria o \${formData.product} hoje?).
+4. Objeções Principais (Por que ele não compraria o ${formData.product} hoje?).
 5. Ângulos de Venda (3 ideias de como vender pra ele sem parecer vendedor).
 
-Retorne o texto formatado limpo, sem usar \`\`\`html ou markdown complexo.
-\`
+Retorne o texto formatado limpo, sem usar codigo ou markdown complexo.
+`
 
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
-      const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
