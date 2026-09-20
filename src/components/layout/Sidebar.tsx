@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, LayoutTemplate } from 'lucide-react'
+import { LayoutDashboard, Wand2, Search, FileText, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, LayoutTemplate, Globe } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -45,7 +45,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/creator', icon: Wand2, label: 'Creator IA' },
         { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
         { to: '/prompt-builder', icon: Code, label: 'Prompt Builder' },
-        { to: '/builder', icon: LayoutTemplate, label: 'Hospedagem de Sites' },
+        { to: '/builder', icon: LayoutTemplate, label: 'Hospedar Novo Site' },
+        { to: '/sites', icon: Globe, label: 'Meus Sites' },
         { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
       ]
     },

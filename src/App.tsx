@@ -10,6 +10,7 @@ import { Creator } from '@/pages/Creator'
 import { Library } from '@/pages/Library'
 import { PromptBuilder } from '@/pages/PromptBuilder'
 import { SiteBuilder } from '@/pages/SiteBuilder'
+import { HostedSites } from '@/pages/HostedSites'
 import { SiteViewer } from '@/pages/SiteViewer'
 import { Scanner } from '@/pages/Scanner'
 import { Contracts } from '@/pages/Contracts'
@@ -63,6 +64,7 @@ function App() {
               <Route path="/library" element={<Library />} />
               <Route path="/prompt-builder" element={<PromptBuilder />} />
               <Route path="/builder" element={<SiteBuilder />} />
+              <Route path="/sites" element={<HostedSites />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />

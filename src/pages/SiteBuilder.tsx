@@ -1,4 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { getDoc } from 'firebase/firestore'
+import { useAuthStore } from '@/store/authStore'
 import { Globe, UploadCloud, ChevronRight, ChevronLeft, CheckCircle2, FileCode2, Monitor, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -9,6 +12,9 @@ import { db } from '@/config/firebase'
 
 export const SiteBuilder = () => {
   const { addToast } = useToastStore()
+  const { user } = useAuthStore()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
   
   const [step, setStep] = useState(1)
   const [htmlContent, setHtmlContent] = useState('')
@@ -24,6 +30,28 @@ export const SiteBuilder = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadType, setUploadType] = useState<'html'|'css'|'js'>('html')
+
+  useEffect(() => {
+    if (editId) {
+      const fetchSite = async () => {
+        try {
+          const docSnap = await getDoc(doc(db, 'sites', editId));
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setHtmlContent(data.htmlContent || data.rawHtml || '');
+            setCssContent(data.cssContent || '');
+            setJsContent(data.jsContent || '');
+            setDomainName(data.id);
+            if (data.domainType) setDomainType(data.domainType);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      fetchSite();
+    }
+  }, [editId]);
+
 
   const getCombinedHtml = () => {
     let finalHtml = htmlContent || ''
@@ -97,8 +125,12 @@ export const SiteBuilder = () => {
       await setDoc(doc(db, 'sites', siteId), {
         id: siteId,
         rawHtml,
+        htmlContent: steps[0].value,
+        cssContent: steps[1].value,
+        jsContent: steps[2].value,
         domain: fullDomain,
         domainType,
+        userId: user?.uid || 'anonymous',
         publishedAt: new Date().toISOString()
       })
 
