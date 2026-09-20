@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { db } from '@/config/firebase'
+import { db, storage } from '@/config/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Wand2, Copy, Check, Code, Video, Bot, Zap, Plus, Trash2, Tag } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -58,13 +59,29 @@ export const PromptBuilder = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [copied, setCopied] = useState(false)
-  const [services, setServices] = useState<{name: string, price: string}[]>([])
-  const addService = () => setServices([...services, {name: '', price: ''}])
+  const [services, setServices] = useState<{name: string, price: string, imageUrl?: string, uploading?: boolean}[]>([])
+  const addService = () => setServices([...services, {name: '', price: '', imageUrl: '', uploading: false}])
   const removeService = (index: number) => setServices(services.filter((_, i) => i !== index))
-  const updateService = (index: number, field: 'name' | 'price', value: string) => {
-    const newS = [...services];
+  const updateService = (index: number, field: 'name' | 'price' | 'imageUrl' | 'uploading', value: any) => {
+    const newS = [...services] as any;
     newS[index][field] = value;
     setServices(newS);
+  }
+
+  const handleImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      updateService(index, 'uploading', true);
+      const storageRef = ref(storage, `products/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      updateService(index, 'imageUrl', url);
+    } catch (error) {
+      console.error('Erro no upload da imagem', error);
+    } finally {
+      updateService(index, 'uploading', false);
+    }
   }
 
   const handleFeatureToggle = (feature: keyof typeof formData.features) => {
@@ -141,7 +158,7 @@ IA Escolhida: ${formData.aiPlatform}
   
   ${services.length > 0 && services.some(s => s.name) ? `## 1.5. PRODUTOS / SERVIÇOS E PREÇOS OBRIGATÓRIOS
   O site DEVE listar os seguintes serviços/produtos com seus respectivos preços de forma atrativa:
-  ${services.filter(s => s.name).map(s => `- ${s.name}: ${s.price || 'A combinar'}`).join('\n  ')}` : ''}
+  ${services.filter(s => s.name).map(s => `- Produto: ${s.name} | Preço: ${s.price || 'A combinar'} ${s.imageUrl ? `| [USAR ESSA URL EXATA NA TAG <img>: ${s.imageUrl}]` : ''}`).join('\n  ')}` : ''}
 
 ## 2. STACK TECNOLÓGICA
 - **Linguagem/Framework**: ${formData.tech}
@@ -303,28 +320,48 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
                   Adicione os produtos ou serviços que você quer que a IA inclua na página com seus respectivos valores. Ex: "Corte de Cabelo" - "R$ 35".
                 </p>
                 {services.map((svc, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <Input 
-                      placeholder="Nome do Produto/Serviço" 
-                      value={svc.name} 
-                      onChange={(e) => updateService(idx, 'name', e.target.value)} 
-                      className="flex-1"
-                    />
-                    <Input 
-                      placeholder="Preço (ex: R$ 35)" 
-                      value={svc.price} 
-                      onChange={(e) => updateService(idx, 'price', e.target.value)} 
-                      className="w-32"
-                    />
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => removeService(idx)}
-                      className="text-red-500 hover:text-red-400 hover:bg-red-500/10 px-3"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
+                    <div key={idx} className="flex flex-col sm:flex-row items-center gap-2 mb-2 p-3 bg-background border border-border/50 rounded-xl relative">
+                      <Input 
+                        placeholder="Ex: Hambúrguer Artesanal..." 
+                        value={svc.name} 
+                        onChange={(e) => updateService(idx, 'name', e.target.value)} 
+                        className="flex-1 w-full"
+                      />
+                      <div className="flex w-full sm:w-auto items-center gap-2">
+                        <Input 
+                          placeholder="R$ 35,00" 
+                          value={svc.price} 
+                          onChange={(e) => updateService(idx, 'price', e.target.value)} 
+                          className="w-full sm:w-32"
+                        />
+                        
+                        <label className="cursor-pointer bg-panel hover:bg-panelHover border border-border rounded-lg h-10 px-3 flex items-center justify-center shrink-0" title="Anexar foto">
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => handleImageUpload(idx, e)}
+                            disabled={svc.uploading}
+                          />
+                          {svc.uploading ? (
+                            <span className="animate-spin text-primary">⌛</span>
+                          ) : svc.imageUrl ? (
+                            <img src={svc.imageUrl} alt="preview" className="w-6 h-6 object-cover rounded-md border border-border" />
+                          ) : (
+                            <span className="text-xl">📸</span>
+                          )}
+                        </label>
+
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => removeService(idx)}
+                          className="text-red-500 hover:text-red-400 hover:bg-red-500/10 px-3 shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 
                 <Button 
                   variant="ghost" 
