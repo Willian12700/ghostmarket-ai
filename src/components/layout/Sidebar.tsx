@@ -222,7 +222,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               </div>
             )}
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium text-white truncate">{user?.name || 'UsuÁƒÂ¡rio'}</p>
+              <p className="text-sm font-medium text-white truncate">{user?.name || 'Usuário'}</p>
               <p className="text-xs text-textSecondary truncate">{user?.email || 'email@exemplo.com'}</p>
             </div>
           </div>

@@ -361,7 +361,7 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
               <CardTitle>Etapa 2 â€” Recursos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {Object.keys(formData.features).map((feature) => {
                   const isHtmlMode = formData.tech === 'HTML + CSS + JS'
                   return (
@@ -383,7 +383,7 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Etapa 3 â€” Design</CardTitle>

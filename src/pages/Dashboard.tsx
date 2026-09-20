@@ -243,7 +243,7 @@ export const Dashboard = () => {
           </div>
           <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(hoje)}</div>
           <p className="text-xs text-success flex items-center mt-2 font-medium">
-            <ArrowUpRight className="w-3 h-3 mr-1" /> Faturamento diÃ¡rio
+            <ArrowUpRight className="w-3 h-3 mr-1" /> Faturamento diário
           </p>
         </motion.div>
 
@@ -258,15 +258,15 @@ export const Dashboard = () => {
           </div>
           <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(semana)}</div>
           <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
-            Acumulado nos Ãºltimos 7 dias
+            Acumulado nos últimos 7 dias
           </p>
         </motion.div>
 
-        {/* Card MÃªs */}
+        {/* Card Mês */}
         <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este MÃªs</h3>
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Mês</h3>
             <div className="p-2 rounded-lg bg-background border border-border">
               <ShoppingCart className="w-4 h-4 text-primary" />
             </div>
@@ -306,8 +306,8 @@ export const Dashboard = () => {
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10">
             <div>
-              <h3 className="text-xl font-extrabold text-white tracking-tight mb-1">VisÃ£o de Crescimento</h3>
-              <p className="text-sm text-textSecondary font-medium">Acompanhe a escalabilidade do seu negÃ³cio</p>
+              <h3 className="text-xl font-extrabold text-white tracking-tight mb-1">Visão de Crescimento</h3>
+              <p className="text-sm text-textSecondary font-medium">Acompanhe a escalabilidade do seu negócio</p>
             </div>
             
             <div className="flex items-center p-1 bg-background border border-border rounded-lg mt-4 sm:mt-0">
@@ -391,7 +391,7 @@ export const Dashboard = () => {
         {/* RECENT TRANSACTIONS BLOCK */}
         <div className="md:col-span-2 bg-panel border border-border rounded-3xl p-6 flex flex-col relative overflow-hidden group">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-extrabold text-white tracking-tight">NotificaÃ§Ãµes</h3>
+            <h3 className="text-lg font-extrabold text-white tracking-tight">Notificações</h3>
             <div className="bg-success/10 text-success text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-success/20">
               <span className="w-2 h-2 bg-success rounded-full animate-pulse shadow-[0_0_8px_#22C55E]"></span>
               Live
