@@ -1,6 +1,6 @@
 import { Megaphone, AlertOctagon } from 'lucide-react';
 import { useState, useEffect } from 'react'
-import { collection, doc, setDoc, getDocs, query, where, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, setDoc, getDocs, query, where, writeBatch, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -75,9 +75,9 @@ export const AdminPanel = () => {
     if (!selectedUser) return;
     try {
       const newStatus = !selectedUser.isSuspended;
-      await updateDoc(doc(db, 'users', selectedUser.id), { isSuspended: newStatus });
+      await setDoc(doc(db, 'users', selectedUser.email), { isSuspended: newStatus }, { merge: true });
       setSelectedUser({ ...selectedUser, isSuspended: newStatus });
-      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, isSuspended: newStatus } : u));
+      setUsers(users.map(u => u.email === selectedUser.email ? { ...u, isSuspended: newStatus } : u));
       addToast(newStatus ? 'Acesso suspenso com sucesso.' : 'Acesso restaurado.', 'success');
     } catch (e) {
       console.error(e);
