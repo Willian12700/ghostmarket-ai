@@ -1,24 +1,17 @@
-export const generateSiteBlocks = async (prompt: string) => {
+export const generateHtmlSite = async (prompt: string) => {
   const systemPrompt = `
-Voce e um expert em marketing digital, copywriter e designer de Landing Pages.
-O usuario vai pedir para criar um site sobre um tema.
-Sua missao e retornar um JSON array valido representando os blocos do site.
-NAO use markdown, nao adicione explicacoes, retorne APENAS o JSON puro.
+Você é um desenvolvedor Frontend Sênior e Web Designer Expert.
+Sua missão é criar uma Landing Page COMPLETA, LINDA e MODERNA em HTML único (Single File).
+O usuário vai pedir para criar um site sobre um tema.
 
-Os tipos de bloco disponiveis sao: 'hero', 'features', 'pricing', 'cta'.
-
-Estrutura esperada:
-[
-  { "id": "1", "type": "hero", "content": { "title": "...", "subtitle": "...", "button": "...", "buttonLink": "...", "imageUrl": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80" } },
-  { "id": "2", "type": "features", "content": { "title": "...", "f1": "...", "f2": "...", "f3": "..." } },
-  { "id": "3", "type": "pricing", "content": { "title": "...", "price": "R$ XX", "desc": "...", "button": "...", "buttonLink": "..." } },
-  { "id": "4", "type": "cta", "content": { "title": "...", "button": "...", "buttonLink": "..." } }
-]
-
-Regras:
-1. Crie uma landing page completa com 1 hero, 1 features, 1 pricing e 1 cta.
-2. Use textos altamente persuasivos (copywriting de alta conversao).
-3. Seja criativo nos textos de acordo com o nicho pedido.
+Regras OBRIGATÓRIAS:
+1. Retorne APENAS o código HTML puro. SEM NENHUM MARKDOWN, SEM \`\`\`html. Comece direto com <!DOCTYPE html>.
+2. Use Tailwind CSS via CDN (<script src="https://cdn.tailwindcss.com"></script>).
+3. Inclua Font Awesome para ícones se precisar (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">).
+4. Crie uma página responsiva, com visual profissional, animações sutis, cores modernas e bom contraste.
+5. Inclua as seguintes seções (minímo): Header/Nav, Hero com Imagem (use Unsplash), Benefícios/Features, Depoimentos, Preços (se aplicável ao nicho) e Footer.
+6. Capriche no Copywriting e nos textos persuasivos. Use português do Brasil.
+7. O design deve parecer premium e altamente conversivo.
 `
 
   try {
@@ -32,8 +25,7 @@ Regras:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ],
-        model: 'openai',
-        jsonMode: true
+        model: 'openai'
       })
     })
 
@@ -41,23 +33,31 @@ Regras:
       throw new Error(`API Error: ${response.status}`)
     }
 
-    const text = await response.text()
+    let text = await response.text()
     
     if (!text) throw new Error('Resposta vazia da IA')
 
     // Limpar o texto caso venha com blocos de markdown
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim()
+    text = text.replace(/```html/g, '').replace(/```/g, '').trim()
 
-    const blocks = JSON.parse(cleanText)
-    // Garantir IDs unicos
-    return blocks.map((b: any, i: number) => ({ ...b, id: Date.now().toString() + i }))
+    return text
   } catch (error) {
-    console.error('Erro ao gerar site:', error)
-    
-    // Fallback genǸrico de emergǦncia
-    return [
-      { id: Date.now().toString(), type: 'hero', content: { title: 'Site de ' + prompt, subtitle: 'Conecte-se com seu público usando uma mensagem poderosa. Nós entregamos resultados.', button: 'Saiba Mais', buttonLink: '', imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80' } },
-      { id: (Date.now() + 1).toString(), type: 'features', content: { title: 'Nossos Serviços', f1: 'Qualidade Premium', f2: 'Atendimento Rápido', f3: 'Satisfação Garantida' } }
-    ]
+    console.error('Erro ao gerar site html:', error)
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Gerado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+    <div class="text-center p-8 bg-gray-800 rounded-2xl shadow-2xl max-w-lg border border-purple-500/30">
+        <h1 class="text-4xl font-bold mb-4 text-purple-400">Servidor Ocupado</h1>
+        <p class="text-gray-300 mb-6">A IA está processando muitos sites agora. Por favor, tente novamente em alguns segundos.</p>
+        <button onclick="window.location.reload()" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-full font-bold transition-colors">Tentar Novamente</button>
+    </div>
+</body>
+</html>`
   }
 }
