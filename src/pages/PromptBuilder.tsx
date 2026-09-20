@@ -166,11 +166,16 @@ IA Escolhida: ${formData.aiPlatform}
 - **Ácones**: ${isHtmlMode ? 'FontAwesome' : 'lucide-react'}
 ${!isHtmlMode ? '- **Gerenciamento de Estado**: Zustand ou Context API' : ''}
 
-## 3. DESIGN E UI/UX
-- **Tema Visual**: ${formData.design}
-- **Experiência do Usuário (UX)**: A interface deve ser extremamente moderna, responsiva, com foco absoluto em usabilidade. Utilize componentes bem espaçados, efeitos de hover sutis e feedback visual para o usuário.
-
-## 4. FUNCIONALIDADES A IMPLEMENTAR
+  ## 3. DESIGN E UI/UX (ESTILO PREMIUM "AWARDS" E ALTA CONVERSÃO)
+  - **Tema Visual Base**: ${formData.design}
+  - **Nível Visual Exigido**: O site DEVE ter o aspecto visual impressionante, semelhante a sites feitos no Webflow, Framer ou por agências gringas de alto padrão. NADA de design amador.
+  - **Hero Section Épica**: Crie uma primeira dobra de tirar o fôlego. Use 'bg-gradient-to-r', títulos gigantes (text-5xl a text-7xl font-extrabold) com 'bg-clip-text text-transparent', botões grandes e chamativos, e coloque uma imagem incrível de fundo com um overlay escuro ('bg-black/50').
+  - **Glassmorphism**: Aplique o efeito de vidro ('backdrop-blur-md bg-white/10 border border-white/20') no Navbar (que deve ser 'sticky top-0 z-50') e nos Cards.
+  - **Animações e Vida**: O site NÃO PODE ser estático. Adicione classes Tailwind como 'hover:scale-[1.02] transition-all duration-300 ease-in-out hover:shadow-2xl' em TODOS os botões, cards de produto e imagens.
+  - **Injeção de Imagens**: O SITE DEVE SER VISUAL. Use imagens fotorrealistas de alta qualidade do Unsplash usando tags '<img>'. Para fotos, use links com seeds diferentes, ex: 'https://images.unsplash.com/photo-X?auto=format&fit=crop&w=800&q=80' simulando imagens reais do nicho "${finalNiche}".
+  - **Layout de Grade (Grids)**: Apresente serviços/produtos em 'grid-cols-1 md:grid-cols-3' com espaçamento generoso ('gap-8'), cards com bordas arredondadas ('rounded-2xl') e muito respiro ('p-8').
+  
+  ## 4. FUNCIONALIDADES A IMPLEMENTAR
 O sistema deve conter os seguintes módulos/features essenciais:
 ${activeFeatures || 'Apenas estrutura básica da Landing Page.'}
 
