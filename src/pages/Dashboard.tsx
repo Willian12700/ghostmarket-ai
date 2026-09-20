@@ -11,7 +11,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore'
 export const Dashboard = () => {
   const { contracts, syncContracts } = useContractStore()
   const { user } = useAuthStore()
-  const [dateFilter, setDateFilter] = useState<'semana' | 'mes' | 'ano'>('semana')
+  const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
   const [firebaseTransactions, setFirebaseTransactions] = useState<any[]>([])
 
   useEffect(() => {
@@ -117,19 +117,22 @@ export const Dashboard = () => {
     const now = new Date()
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
     
-    const startOfWeek = new Date(startOfToday)
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+    // Últimos 7 dias (Acumulado)
+    const startOfWeekTime = startOfToday - (6 * 24 * 60 * 60 * 1000);
     
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-    const startOfYear = new Date(now.getFullYear(), 0, 1).getTime()
+    // Últimos 30 dias (Performance Mensal)
+    const startOfMonthTime = startOfToday - (29 * 24 * 60 * 60 * 1000);
+    
+    // Este ano
+    const startOfYearTime = new Date(now.getFullYear(), 0, 1).getTime()
 
     let hoje = 0, semana = 0, mes = 0, ano = 0
 
     allPaidTransactions.forEach(tx => {
       if (tx.date >= startOfToday) hoje += tx.amount
-      if (tx.date >= startOfWeek.getTime()) semana += tx.amount
-      if (tx.date >= startOfMonth) mes += tx.amount
-      if (tx.date >= startOfYear) ano += tx.amount
+      if (tx.date >= startOfWeekTime) semana += tx.amount
+      if (tx.date >= startOfMonthTime) mes += tx.amount
+      if (tx.date >= startOfYearTime) ano += tx.amount
     })
 
     return { hoje, semana, mes, ano }
@@ -142,7 +145,7 @@ export const Dashboard = () => {
     const now = new Date()
     const data = []
     
-    let daysToSubtract = dateFilter === 'semana' ? 7 : dateFilter === 'mes' ? 30 : 365
+    let daysToSubtract = dateFilter === 'hoje' ? 1 : dateFilter === 'semana' ? 7 : dateFilter === 'mes' ? 30 : 365
     
     for (let i = daysToSubtract - 1; i >= 0; i--) {
       const d = new Date(now)
@@ -316,13 +319,13 @@ export const Dashboard = () => {
               </button>
               <button 
                 onClick={() => setDateFilter('mes')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'mes' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'mes' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
               >
                 30 Dias
               </button>
               <button 
                 onClick={() => setDateFilter('ano')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'ano' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'ano' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
               >
                 12 Meses
               </button>
