@@ -188,11 +188,28 @@ ${!isHtmlMode ? '- **Gerenciamento de Estado**: Zustand ou Context API' : ''}
   - **Injeção de Imagens**: O SITE DEVE SER VISUAL. Use imagens fotorrealistas de alta qualidade do Unsplash usando tags '<img>'. Para fotos, use links com seeds diferentes, ex: 'https://images.unsplash.com/photo-X?auto=format&fit=crop&w=800&q=80' simulando imagens reais do nicho "${finalNiche}".
   - **Layout de Grade (Grids)**: Apresente serviços/produtos em 'grid-cols-1 md:grid-cols-3' com espaçamento generoso ('gap-8'), cards com bordas arredondadas ('rounded-2xl') e muito respiro ('p-8').
   
-  ## 4. FUNCIONALIDADES A IMPLEMENTAR
-O sistema deve conter os seguintes módulos/features essenciais:
-${activeFeatures || 'Apenas estrutura básica da Landing Page.'}
+    ## 4. ESTRUTURA DA PÁGINA (SEÇÕES)
+  A página deve ser construída EXATAMENTE com as seguintes seções na ordem abaixo:
+  ${Object.entries(formData.sections).filter(([_, isActive]) => isActive).map(([key]) => {
+    const sectionPrompts: Record<string, string> = {
+      hero: "- **Hero Section**: Banner épico de primeira dobra com H1 chamativo, subtítulo persuasivo e botões de Call-to-Action.",
+      socialProof: "- **Social Proof**: Faixa horizontal com logotipos de parceiros ou 'Visto em'.",
+      about: "- **Sobre Nós**: Uma seção conectando a história da marca com o cliente.",
+      benefits: "- **Benefícios/Diferenciais**: Grid com ícones destacando as vantagens do negócio.",
+      catalog: "- **Catálogo/Menu**: Vitrine visual incrível dos produtos com imagem, título e descrição.",
+      testimonials: "- **Depoimentos**: Prova social com cards de clientes, estrelinhas e reviews.",
+      faq: "- **FAQ (Perguntas Frequentes)**: Accordion (sanfona) para matar objeções finais.",
+      cta: "- **CTA Final**: Um banner grandioso no fim da página para a última tentativa de conversão.",
+      footer: "- **Rodapé**: Footer profissional com links, endereço e direitos autorais."
+    };
+    return sectionPrompts[key];
+  }).join('\n  ')}
 
-## 5. REGRAS DE CÓDIGO (CRÁTICO)
+  ## 4.5 MÓDULOS DE SISTEMA (FUNCIONAIS)
+  O sistema deve conter as seguintes integrações funcionais:
+  ${activeFeatures || 'Apenas estrutura básica da Landing Page.'}
+  
+  ## 5. REGRAS DE CÓDIGO (CRÁTICO)
 1. Escreva o código completo, sem placeholders como "// código aqui".
 2. Separe componentes de forma modular.
 3. Se houver integração com APIs, crie serviços isolados.
@@ -257,7 +274,16 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
               <CardTitle>Etapa 1 â€” Projeto Base</CardTitle>
             </CardHeader>
                           <CardContent className="space-y-4">
-                <div className="space-y-1.5">
+                
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-textSecondary">Nome do Estabelecimento / Projeto</label>
+                    <Input
+                      placeholder="Ex: Hot Dog do Max"
+                      value={formData.projectName}
+                      onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
+                    />
+                  </div>
+        <div className="space-y-1.5">
                   <label className="text-sm font-medium text-textSecondary flex items-center gap-2"><Bot className="w-4 h-4"/> Qual IA você vai usar?</label>
                   <select
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -318,7 +344,22 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
                   />
                 )}
 
-<div className="space-y-1.5">
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-textSecondary">Tom de Voz da Marca</label>
+                    <select
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      value={formData.tone}
+                      onChange={(e) => setFormData({ ...formData, tone: e.target.value })}
+                    >
+                      <option>Moderno e Profissional</option>
+                      <option>Descontraído e Divertido</option>
+                      <option>Luxuoso e Exclusivo</option>
+                      <option>Agressivo (Focado em Vendas)</option>
+                      <option>Acolhedor e Amigável</option>
+                    </select>
+                  </div>
+        <div className="space-y-1.5">
                 <label className="text-sm font-medium text-textSecondary">Público-alvo Principal</label>
                 <select
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -438,7 +479,42 @@ AGORA, INICIE O DESENVOLVIMENTO DESSA APLICAÁ‡ÁO PASSO A PASSO.`
               <CardTitle>Etapa 2 â€” Recursos</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                
+                  <div>
+                    <label className="text-sm font-medium text-textSecondary mb-3 block">Estrutura da Página (Seções)</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                      {Object.keys(formData.sections).map((sectionKey) => {
+                        const sectionLabels: Record<string, string> = {
+                          hero: "Hero Section (Banner Principal)",
+                          socialProof: "Social Proof (Marcas/Mídia)",
+                          about: "Sobre Nós / Nossa História",
+                          benefits: "Vantagens / Diferenciais",
+                          catalog: "Catálogo / Cardápio",
+                          testimonials: "Depoimentos (Reviews)",
+                          faq: "Perguntas Frequentes (FAQ)",
+                          cta: "Banner Final de Vendas",
+                          footer: "Rodapé Completo"
+                        };
+                        return (
+                          <div key={sectionKey} className="flex items-center space-x-2 bg-background p-2 rounded-lg border border-border/50">
+                            <input
+                              type="checkbox"
+                              checked={formData.sections[sectionKey as keyof typeof formData.sections]}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                sections: { ...formData.sections, [sectionKey]: e.target.checked }
+                              })}
+                              className="w-4 h-4 rounded bg-background border-border text-primary focus:ring-primary/50"
+                            />
+                            <label className="text-sm text-textSecondary">{sectionLabels[sectionKey]}</label>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <hr className="border-border/30 mb-6" />
+                  <label className="text-sm font-medium text-textSecondary mb-3 block">Módulos de Sistema Mapeados</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {Object.keys(formData.features).map((feature) => {
                     const featureLabels: Record<string, string> = {
                       auth: "Autenticação",
