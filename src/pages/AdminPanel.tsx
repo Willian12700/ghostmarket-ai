@@ -1,5 +1,6 @@
+import { Megaphone, AlertOctagon } from 'lucide-react';
 import { useState, useEffect } from 'react'
-import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore'
+import { collection, doc, setDoc, getDocs, query, where, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -24,6 +25,10 @@ export const AdminPanel = () => {
   const [userSites, setUserSites] = useState<any[]>([])
   const [userDashboardValue, setUserDashboardValue] = useState(0)
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false)
+  const [broadcastTitle, setBroadcastTitle] = useState('')
+  const [broadcastText, setBroadcastText] = useState('')
+  const [isBroadcasting, setIsBroadcasting] = useState(false)
 
   useEffect(() => {
     if (user?.email !== 'willrandrier@gmail.com') return
@@ -64,6 +69,47 @@ export const AdminPanel = () => {
 
     fetchUsers()
   }, [user])
+
+  const handleToggleSuspend = async () => {
+    if (!selectedUser) return;
+    try {
+      const newStatus = !selectedUser.isSuspended;
+      await updateDoc(doc(db, 'users', selectedUser.id), { isSuspended: newStatus });
+      setSelectedUser({ ...selectedUser, isSuspended: newStatus });
+      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, isSuspended: newStatus } : u));
+      addToast(newStatus ? 'Acesso suspenso com sucesso.' : 'Acesso restaurado.', 'success');
+    } catch (e) {
+      console.error(e);
+      addToast('Erro ao suspender acesso.', 'error');
+    }
+  };
+
+  const handleBroadcast = async () => {
+    if (!broadcastTitle || !broadcastText) return;
+    setIsBroadcasting(true);
+    try {
+      const batch = writeBatch(db);
+      users.forEach(u => {
+        const notifRef = doc(collection(db, 'notifications'));
+        batch.set(notifRef, {
+          userId: u.email,
+          title: broadcastTitle,
+          text: broadcastText,
+          unread: true,
+          createdAt: serverTimestamp()
+        });
+      });
+      await batch.commit();
+      addToast(`Aviso enviado para ${users.length} usuários!`, 'success');
+      setBroadcastTitle('');
+      setBroadcastText('');
+      setShowBroadcastModal(false);
+    } catch(e) {
+      console.error(e);
+      addToast('Erro ao enviar aviso global.', 'error');
+    }
+    setIsBroadcasting(false);
+  };
 
   const loadUserDetails = async (u: any) => {
     setSelectedUser(u)
@@ -324,6 +370,15 @@ export const AdminPanel = () => {
                   </div>
                 </div>
 
+                <Button 
+                  variant={selectedUser.isSuspended ? "secondary" : "danger"} 
+                  className="w-full gap-2 font-bold" 
+                  onClick={handleToggleSuspend}
+                >
+                  <AlertOctagon className="w-4 h-4" />
+                  {selectedUser.isSuspended ? 'Restaurar Acesso' : 'Suspender Acesso'}
+                </Button>
+
                 {/* Saldo Financeiro */}
                 <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-6 relative overflow-hidden">
                   <DollarSign className="absolute -right-4 -bottom-4 w-24 h-24 text-green-500/10" />
@@ -369,6 +424,54 @@ export const AdminPanel = () => {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    
+      {showBroadcastModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowBroadcastModal(false)} />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-panel border border-border rounded-2xl p-6 w-full max-w-md relative z-10 shadow-2xl"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                <Megaphone className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-lg">Aviso Global</h3>
+                <p className="text-sm text-textSecondary">Todos os usuários vão receber</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-textSecondary mb-1 block">Título</label>
+                <Input 
+                  placeholder="Ex: Nova Atualização!" 
+                  value={broadcastTitle} 
+                  onChange={e => setBroadcastTitle(e.target.value)} 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-textSecondary mb-1 block">Mensagem</label>
+                <textarea 
+                  className="w-full bg-background border border-border rounded-lg p-3 text-white text-sm focus:border-primary focus:outline-none min-h-[100px]"
+                  placeholder="Digite o aviso que aparecerá para os clientes..."
+                  value={broadcastText}
+                  onChange={e => setBroadcastText(e.target.value)}
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                <Button variant="secondary" className="flex-1" onClick={() => setShowBroadcastModal(false)}>Cancelar</Button>
+                <Button className="flex-1 gap-2" onClick={handleBroadcast} disabled={isBroadcasting || !broadcastTitle || !broadcastText}>
+                  {isBroadcasting ? 'Enviando...' : 'Disparar Aviso'}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+</div>
   )
 }

@@ -1,9 +1,18 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/pages/PromptBuilder.tsx', 'utf8');
+let admin = fs.readFileSync('src/pages/AdminPanel.tsx', 'utf8');
 
-content = content.replace(
-  "import { Wand2, Copy, Check, Code, Video, Bot, Zap, MonitorSmartphone } from 'lucide-react'",
-  "import { Wand2, Copy, Check, Code, Video, Bot, Zap, MonitorSmartphone, Plus, Trash2, Tag } from 'lucide-react'"
+admin = admin.replace(
+  "import { Search, ShieldAlert, Circle, Calendar, X, Globe, LayoutTemplate, Copy } from 'lucide-react'",
+  "import { Search, ShieldAlert, Circle, Calendar, X, Globe, LayoutTemplate, Copy, Megaphone, AlertOctagon } from 'lucide-react'"
 );
 
-fs.writeFileSync('src/pages/PromptBuilder.tsx', content);
+// Fallback if the string had different formatting
+if (!admin.includes('AlertOctagon')) {
+  admin = admin.replace(
+    "from 'lucide-react'",
+    ", Megaphone, AlertOctagon } from 'lucide-react'"
+  );
+}
+
+fs.writeFileSync('src/pages/AdminPanel.tsx', admin, 'utf8');
+console.log('Fixed imports');
