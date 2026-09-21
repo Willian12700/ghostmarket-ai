@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe , ShieldAlert, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe , ShieldAlert, MessageCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -38,6 +38,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       items: [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
           { to: '/ranking', icon: Trophy, label: 'Top Global' }
+      ]
+    },
+    {
+      label: 'Inteligência de Mercado',
+      items: [
+        { to: '/offers', icon: BellRing, label: 'Tracker de Ofertas' }
       ]
     },
     {
