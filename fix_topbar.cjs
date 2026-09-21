@@ -1,8 +1,7 @@
 const fs = require('fs');
+let content = fs.readFileSync('src/components/layout/Topbar.tsx', 'utf8');
 
-let topbar = fs.readFileSync('src/components/layout/Topbar.tsx', 'utf8');
-topbar = topbar.replace(/notifica[^\x00-\x7F]+es/g, 'notificações');
-topbar = topbar.replace(/notifica[^\x00-\x7F]+o/g, 'notificação');
-fs.writeFileSync('src/components/layout/Topbar.tsx', topbar, 'utf8');
+content = content.replace("where('userId', '==', user.email)", "where('userId', '==', user.uid)");
+content = content.replace("if (!user?.email) {", "if (!user?.uid) {");
 
-console.log("Fixed Topbar!");
+fs.writeFileSync('src/components/layout/Topbar.tsx', content, 'utf8');

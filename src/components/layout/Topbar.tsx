@@ -19,7 +19,7 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user?.email) {
+    if (!user?.uid) {
       setLoading(false)
       return
     }
@@ -28,7 +28,7 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
     // Ordenamos no front-end.
     const q = query(
       collection(db, 'notifications'),
-      where('userId', '==', user.email)
+      where('userId', '==', user.uid)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

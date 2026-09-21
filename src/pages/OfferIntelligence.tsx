@@ -286,7 +286,43 @@ export const OfferIntelligence = () => {
 
       {/* Lista de Monitoramento */}
       <div>
-        <h3 className="text-xl font-bold text-white mb-6">Meus Produtos Monitorados</h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-white">Meus Produtos Monitorados</h3>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-primary/50 text-primary hover:bg-primary/10"
+            onClick={async () => {
+              if (products.length === 0) {
+                addToast('Adicione pelo menos um produto primeiro!', 'error');
+                return;
+              }
+              const p = products[0];
+              const newPrice = Number(p.targetPrice) - 5.00; // Force it to hit the target
+              
+              // Create notification in DB
+              await addDoc(collection(db, 'notifications'), {
+                userId: user?.uid,
+                title: '🤑 Alerta de Preço Atingido!',
+                text: `O produto "${p.title}" caiu para R$ ${newPrice.toFixed(2)} e atingiu sua meta!`,
+                unread: true,
+                createdAt: serverTimestamp(),
+                link: p.permalink
+              });
+              
+              addToast('Motor de varredura executado! Verifique suas notificações (Sininho)', 'success');
+              
+              // Simulate Email
+              console.log('--- ENVIANDO E-MAIL ---');
+              console.log(`Para: ${user?.email}`);
+              console.log('Assunto: Preço Caiu! ' + p.title);
+              console.log(`O preço caiu para ${newPrice.toFixed(2)}!`);
+            }}
+          >
+            <Bell className="w-4 h-4 mr-2" />
+            Simular Robô (Cron Job)
+          </Button>
+        </div>
         
         {products.length === 0 ? (
           <div className="text-center py-16 bg-panel/30 border border-border/30 rounded-2xl">
