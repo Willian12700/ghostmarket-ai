@@ -6,7 +6,7 @@ import { Search, TrendingDown, ExternalLink, Trash2, Bell } from 'lucide-react'
 import { useToastStore } from '@/store/toastStore'
 import { useAuthStore } from '@/store/authStore'
 import { db } from '@/config/firebase'
-import { collection, addDoc, query, where, getDocs, deleteDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore'
+import { collection, addDoc, query, where, getDocs, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 
 interface TrackedProduct {
   id?: string;
@@ -44,11 +44,11 @@ export const OfferIntelligence = () => {
     try {
       const q = query(
         collection(db, 'offer_tracking'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.uid)
       )
       const snapshot = await getDocs(q)
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TrackedProduct[]
+      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TrackedProduct[]
+      items.sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis())
       setProducts(items)
     } catch (error) {
       console.error('Error loading products', error)
