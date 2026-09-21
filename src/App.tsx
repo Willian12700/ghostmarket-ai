@@ -92,7 +92,7 @@ function App() {
               {/* Marketing Routes */}
               <Route path="/marketing/vsl" element={<VslGenerator />} />
               <Route path="/marketing/plr" element={<PlrGenerator />} />
-              <Route path="/marketing/ads" element={<AdsGenerator />} />
+              <Route path="/marketing/ads" element={<AdsGenerator />} />\n              <Route path="/offers" element={<OfferIntelligence />} />
               <Route path="/marketing/emails" element={<EmailFunnel />} />
 
             </Route>
