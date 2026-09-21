@@ -77,7 +77,7 @@ export const OfferIntelligence = () => {
 
     const mlbId = extractMlbId(url)
     if (!mlbId) {
-      addToast('Link inválido. No momento suportamos apenas Mercado Livre.', 'error')
+      addToast('ERRO EXTRAÇÃO: ' + url, 'error')
       return
     }
 
@@ -111,9 +111,9 @@ export const OfferIntelligence = () => {
       setUrl('')
       addToast('Produto encontrado!', 'success')
       
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      addToast('Erro ao buscar produto. Verifique o link.', 'error')
+      addToast('ERRO CRÍTICO: ' + (error?.message || String(error)), 'error')
     } finally {
       setIsLoading(false)
     }
@@ -203,6 +203,27 @@ export const OfferIntelligence = () => {
               disabled={isLoading || !url}
             >
               {isLoading && !previewProduct ? 'Buscando...' : 'Encontrar Oferta'}
+            </Button>
+            <Button 
+              variant="outline"
+              className="h-12 px-6 font-bold border-dashed border-primary/50 text-primary hover:bg-primary/10" 
+              onClick={() => {
+                const randomId = Math.floor(Math.random() * 1000000000);
+                setPreviewProduct({
+                  mlbId: 'MLB' + randomId,
+                  title: 'Apple AirPods Pro (2ª Geração) - Simulação',
+                  price: 1899.00,
+                  originalPrice: 2599.00,
+                  image: 'https://http2.mlstatic.com/D_NQ_NP_2X_910793-MLA51475711656_092022-F.webp',
+                  permalink: 'https://www.mercadolivre.com.br/p/MLB19941168',
+                  platform: 'Mercado Livre'
+                });
+                setTargetPrice('1700.00');
+                setUrl('');
+                addToast('Produto de teste gerado com sucesso!', 'success');
+              }}
+            >
+              Simular Produto
             </Button>
           </div>
         </CardContent>
