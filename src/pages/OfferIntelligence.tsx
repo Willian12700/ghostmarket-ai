@@ -58,7 +58,7 @@ export const OfferIntelligence = () => {
 
   const extractMlbId = (link: string) => {
     // Mercado Livre URLs often contain MLB123456789 or MLB-123456789
-    const match = link.match(/MLB-?(\\d+)/i)
+    const match = link.match(/MLB-?(\d+)/i)
     if (match) return `MLB${match[1]}`
     return null
   }

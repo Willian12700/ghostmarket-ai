@@ -1,10 +1,7 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/pages/marketing/PlrGenerator.tsx', 'utf8');
+let content = fs.readFileSync('src/pages/OfferIntelligence.tsx', 'utf8');
 
-content = content.split('.replace(/\\\\*\\\\*(.*?)\\\\*\\\\*/gim').join('.replace(/\\*\\*(.*?)\\*\\*/gim');
-content = content.split('.replace(/\\\\*(.*?)\\\\*/gim').join('.replace(/\\*(.*?)\\*/gim');
-content = content.split('.replace(/^\\\\s*-\\\\s+(.*$)/gim').join('.replace(/^\\s*-\\s+(.*$)/gim');
-content = content.split('.replace(/\\\\n/g').join('.replace(/\\n/g');
+content = content.replace(/link\.match\(\/MLB-\?\(\\\\\\\\d\+\)\/i\)/, 'link.match(/MLB-?(\\\\d+)/i)');
 
-fs.writeFileSync('src/pages/marketing/PlrGenerator.tsx', content, 'utf8');
-console.log('Fixed');
+fs.writeFileSync('src/pages/OfferIntelligence.tsx', content, 'utf8');
+console.log('Regex fixed');
