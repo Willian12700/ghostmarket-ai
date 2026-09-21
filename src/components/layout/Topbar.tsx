@@ -42,7 +42,7 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
       setNotifications(notifs)
       setLoading(false)
     }, (error) => {
-      console.error("Erro ao buscar notificações:", error)
+      console.error("Erro", error); alert("Firebase bloqueou o Sininho! Motivo: " + error.message)
       setLoading(false)
     })
 

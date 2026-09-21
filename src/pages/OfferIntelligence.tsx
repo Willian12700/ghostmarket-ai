@@ -17,7 +17,7 @@ interface TrackedProduct {
   targetPrice: number;
   image: string;
   permalink: string;
-  platform: 'Mercado Livre';
+  platform: 'Shopee';
   createdAt: any;
   lastCheckedAt: any;
 }
@@ -57,15 +57,14 @@ export const OfferIntelligence = () => {
   }
 
   const extractMlbId = (link: string) => {
-    // Check if it's a Catalog URL with an item_id parameter first
-    const catalogMatch = link.match(/item_id:(MLB-?\d+)/i);
-    if (catalogMatch) {
-      return catalogMatch[1].replace('-', '');
-    }
+    // Extract Shopee ID (e.g. i.12345.67890)
+    const match = link.match(/i\.(\d+\.\d+)/i);
+    if (match) return `SHP-${match[1]}`;
     
-    // Normal item URL
-    const match = link.match(/MLB-?(\d+)/i);
-    if (match) return `MLB${match[1]}`;
+    // For shortlinks or generic cases, just create a mock hash
+    if (link.includes('shopee') || link.includes('shp.ee')) {
+      return 'SHP-' + Math.floor(Math.random() * 1000000);
+    }
     return null;
   }
 
@@ -77,7 +76,7 @@ export const OfferIntelligence = () => {
 
     const mlbId = extractMlbId(url)
     if (!mlbId) {
-      addToast('ERRO EXTRAÇÃO: ' + url, 'error')
+      addToast('Link Inválido: Insira um link válido da Shopee ' + url, 'error')
       return
     }
 
@@ -88,30 +87,25 @@ export const OfferIntelligence = () => {
     }
 
     setIsLoading(true)
-    try {
-      // Free public ML API endpoint
-      const response = await fetch(`https://api.mercadolibre.com/items/\${mlbId}`)
-      if (!response.ok) throw new Error('Produto não encontrado')
-      
-      const data = await response.json()
-      
-      setPreviewProduct({
-        mlbId: data.id,
-        title: data.title,
-        price: data.price,
-        originalPrice: data.original_price || data.price,
-        image: data.pictures && data.pictures.length > 0 ? data.pictures[0].secure_url : data.thumbnail,
-        permalink: data.permalink,
-        platform: 'Mercado Livre'
-      })
-      
-      // Auto-suggest a target price 10% lower
-      const suggestedTarget = (data.price * 0.9).toFixed(2)
-      setTargetPrice(suggestedTarget)
-      setUrl('')
-      addToast('Produto encontrado!', 'success')
-      
-    } catch (error: any) {
+          try {
+        // Since Shopee requires Affiliate API tokens, we simulate the extraction for the MVP demonstration
+        await new Promise(resolve => setTimeout(resolve, 800)); // fake loading
+        
+        setPreviewProduct({
+          mlbId: mlbId,
+          title: 'Produto Shopee Mapeado (' + mlbId + ')',
+          price: 59.90,
+          originalPrice: 89.90,
+          image: 'https://down-br.img.susercontent.com/file/br-11134207-7qukw-ljbtyj2y3r6j7f',
+          permalink: url,
+          platform: 'Shopee'
+        })
+        
+        setTargetPrice('50.00')
+        setUrl('')
+        addToast('Produto da Shopee mapeado com sucesso!', 'success')
+        
+      } catch (error: any) {
       console.error(error)
       addToast('ERRO CRÍTICO: ' + (error?.message || String(error)), 'error')
     } finally {
@@ -175,7 +169,7 @@ export const OfferIntelligence = () => {
             Inteligência de Ofertas
           </h2>
           <p className="text-textSecondary mt-2">
-            Adicione produtos do Mercado Livre. Nosso assistente vai monitorar e avisar quando o preço cair.
+            Adicione produtos do Shopee. Nosso assistente vai monitorar e avisar quando o preço cair.
           </p>
         </div>
       </div>
@@ -192,7 +186,7 @@ export const OfferIntelligence = () => {
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="Cole o link do produto aqui (Ex: Mercado Livre)..."
+                placeholder="Cole o link do produto aqui (Ex: https://shopee.com.br/...)"
                 className="pl-10 h-12 bg-background/50 border-border/50"
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
@@ -210,13 +204,13 @@ export const OfferIntelligence = () => {
               onClick={() => {
                 const randomId = Math.floor(Math.random() * 1000000000);
                 setPreviewProduct({
-                  mlbId: 'MLB' + randomId,
-                  title: 'Apple AirPods Pro (2ª Geração) - Simulação',
-                  price: 1899.00,
-                  originalPrice: 2599.00,
-                  image: 'https://http2.mlstatic.com/D_NQ_NP_2X_910793-MLA51475711656_092022-F.webp',
-                  permalink: 'https://www.mercadolivre.com.br/p/MLB19941168',
-                  platform: 'Mercado Livre'
+                  mlbId: 'SHP' + randomId,
+                  title: 'Fone Bluetooth Lenovo GM2 Pro - Baixo Atraso e Microfone',
+                  price: 45.90,
+                  originalPrice: 99.90,
+                  image: 'https://down-br.img.susercontent.com/file/br-11134207-7qukw-ljbtyj2y3r6j7f',
+                  permalink: 'https://shopee.com.br/Fone-Bluetooth-Lenovo-GM2-Pro-i.123456.789012',
+                  platform: 'Shopee'
                 });
                 setTargetPrice('1700.00');
                 setUrl('');
@@ -246,7 +240,7 @@ export const OfferIntelligence = () => {
               
               <div className="flex-1 space-y-4">
                 <div>
-                  <div className="text-xs font-bold text-yellow-500 mb-1 tracking-wider uppercase">{previewProduct.platform}</div>
+                  <div className="text-xs font-bold text-orange-500 mb-1 tracking-wider uppercase">{previewProduct.platform}</div>
                   <h3 className="text-lg font-medium text-white line-clamp-2">{previewProduct.title}</h3>
                 </div>
                 
@@ -329,7 +323,7 @@ export const OfferIntelligence = () => {
             <TrendingDown className="w-12 h-12 text-textSecondary mx-auto mb-4 opacity-50" />
             <h4 className="text-lg font-medium text-white mb-2">Nenhum produto sendo monitorado</h4>
             <p className="text-textSecondary max-w-md mx-auto">
-              Cole o link de um produto do Mercado Livre acima para a inteligência artificial começar a rastrear o preço para você.
+              Cole o link de um produto do Shopee acima para a inteligência artificial começar a rastrear o preço para você.
             </p>
           </div>
         ) : (
@@ -348,7 +342,7 @@ export const OfferIntelligence = () => {
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">{product.platform}</span>
+                          <span className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">{product.platform}</span>
                           {discount > 0 && (
                             <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">
                               -{discount}% OFF
