@@ -13,48 +13,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     runCronJob();
     sendResponse({ status: "started" });
   }
-  
-  if (request.action === "scrape_now") {
-    chrome.tabs.create({ url: request.url, active: true }, (tab) => {
-      chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
-        if (tabId === tab.id && info.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener);
-          setTimeout(() => {
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              func: () => {
-                const title = document.title;
-                const priceMatch = document.body.innerText.match(/R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/);
-                let image = 'https://cf.shopee.com.br/file/b9195b0583bafefcf5ab2292eb63c0b3';
-                const imgTag = document.querySelector('div[style*="background-image"]');
-                if (imgTag) {
-                   const bg = imgTag.style.backgroundImage;
-                   if (bg && bg.includes('url(')) {
-                       image = bg.replace('url("', '').replace('url(', '').replace('")', '').replace(')', '');
-                   }
-                }
-                return { title: title, priceStr: priceMatch ? priceMatch[0] : null, image: image };
-              }
-            }, (results) => {
-               chrome.tabs.remove(tab.id);
-               if (results && results[0] && results[0].result) {
-                 const data = results[0].result;
-                 let finalPrice = 0;
-                 if (data.priceStr) {
-                    const cleanStr = data.priceStr.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                    finalPrice = parseFloat(cleanStr);
-                 }
-                 sendResponse({ success: true, title: data.title, price: finalPrice, image: data.image });
-               } else {
-                 sendResponse({ success: false });
-               }
-            });
-          }, 3500);
-        }
-      });
-    });
-    return true;
-  }
 });
 
 function getFirestoreValue(field) {
@@ -87,7 +45,7 @@ async function runCronJob() {
       }
       
       const userId = getFirestoreValue(fields.userId);
-      const title = getFirestoreValue(fields.title);
+      const title = getFirestoreValue(fields.title) || 'Produto';
       
       await checkSingleProduct(url, targetPrice, userId, title);
     }
@@ -121,6 +79,15 @@ function checkSingleProduct(url, targetPrice, userId, title) {
                   const currentPrice = parseFloat(priceStr);
                   
                   if (currentPrice > 0 && currentPrice <= targetPrice) {
+                    
+                    // Mostra a notificação direto no Windows!
+                    chrome.notifications.create({
+                      type: 'basic',
+                      iconUrl: 'icon.png',
+                      title: 'META ATINGIDA! 🤑',
+                      message: `O produto "${title}" caiu para R$ ${currentPrice.toFixed(2)}!`
+                    });
+                    
                     await createNotificationInDB(userId, title, currentPrice, url);
                   }
                }
@@ -137,7 +104,7 @@ async function createNotificationInDB(userId, title, currentPrice, url) {
   const docData = {
     fields: {
       userId: { stringValue: userId },
-      title: { stringValue: "🤑 Alerta de Preço Atingido!" },
+      title: { stringValue: "Alerta de Preço Atingido!" },
       text: { stringValue: `O produto "${title}" caiu para R$ ${currentPrice.toFixed(2)} e atingiu sua meta!` },
       unread: { booleanValue: true },
       link: { stringValue: url },
