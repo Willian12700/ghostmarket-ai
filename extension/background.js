@@ -24,14 +24,14 @@ function getFirestoreValue(field) {
 }
 
 async function runCronJob() {
-  console.log("Iniciando varredura no banco de dados Firebase...");
+  console.log("Iniciando varredura...");
   
   try {
     const response = await fetch(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/offer_tracking`);
     const data = await response.json();
     
     if (!data.documents || data.documents.length === 0) {
-      chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Nenhum produto sendo monitorado no banco de dados.' });
+      chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Nenhum produto sendo monitorado.' });
       return;
     }
 
@@ -45,7 +45,7 @@ async function runCronJob() {
       }
       
       const userId = getFirestoreValue(fields.userId);
-      const title = getFirestoreValue(fields.title) || 'Produto';
+      const title = getFirestoreValue(fields.title) || 'Produto Shopee';
       
       await checkSingleProduct(url, targetPrice, userId, title);
     }
@@ -54,7 +54,7 @@ async function runCronJob() {
     
   } catch (err) {
     console.error("Erro no motor:", err);
-    chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Erro no Motor', message: err.message });
+    chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Erro Crítico no Motor', message: err.message });
   }
 }
 
@@ -64,36 +64,56 @@ function checkSingleProduct(url, targetPrice, userId, title) {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
+          
           setTimeout(() => {
             chrome.scripting.executeScript({
               target: { tabId: tab.id },
               func: () => {
-                const priceMatch = document.body.innerText.match(/R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/);
-                return priceMatch ? priceMatch[0] : null;
+                try {
+                  const matches = document.body.innerText.match(/R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/g);
+                  if (matches && matches.length > 0) {
+                     return matches[0];
+                  }
+                  return null;
+                } catch(e) {
+                  return null;
+                }
               }
             }, async (results) => {
                chrome.tabs.remove(tab.id);
                
                if (results && results[0] && results[0].result) {
-                  const priceStr = results[0].result.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                  const currentPrice = parseFloat(priceStr);
+                  const rawPrice = results[0].result;
+                  const cleanStr = rawPrice.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                  const currentPrice = parseFloat(cleanStr);
                   
                   if (currentPrice > 0 && currentPrice <= targetPrice) {
-                    
-                    // Mostra a notificação direto no Windows!
                     chrome.notifications.create({
                       type: 'basic',
                       iconUrl: 'icon.png',
                       title: 'META ATINGIDA! 🤑',
                       message: `O produto "${title}" caiu para R$ ${currentPrice.toFixed(2)}!`
                     });
-                    
                     await createNotificationInDB(userId, title, currentPrice, url);
+                  } else {
+                    chrome.notifications.create({
+                      type: 'basic',
+                      iconUrl: 'icon.png',
+                      title: 'Preço Verificado',
+                      message: `Shopee: R$ ${currentPrice.toFixed(2)} | Sua Meta: R$ ${targetPrice.toFixed(2)}`
+                    });
                   }
+               } else {
+                  chrome.notifications.create({
+                      type: 'basic',
+                      iconUrl: 'icon.png',
+                      title: 'Falha na Extração ❌',
+                      message: `A Shopee bloqueou a leitura ou carregou devagar: ${title}`
+                  });
                }
                resolve();
             });
-          }, 4000);
+          }, 8000); // 8 SEGUNDOS PARA A SHOPEE CARREGAR
         }
       });
     });
