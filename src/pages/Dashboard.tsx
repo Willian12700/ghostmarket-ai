@@ -206,7 +206,7 @@ export const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-[1400px] w-full mx-auto space-y-6">
       
       {/* HEADER SECTION */}
       <motion.div 
@@ -231,75 +231,6 @@ export const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* TOP METRICS GRID (4 CARDS) */}
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        {/* Card Hoje */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Hoje</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
-              <Calendar className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(hoje)}</div>
-          <p className="text-xs text-success flex items-center mt-2 font-medium">
-            <ArrowUpRight className="w-3 h-3 mr-1" /> Faturamento diário
-          </p>
-        </motion.div>
-
-        {/* Card Semana */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Esta Semana</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
-              <TrendingUp className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(semana)}</div>
-          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
-            Acumulado nos últimos 7 dias
-          </p>
-        </motion.div>
-
-        {/* Card Mês */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Mês</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
-              <ShoppingCart className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(mes)}</div>
-          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
-            Performance mensal
-          </p>
-        </motion.div>
-
-        {/* Card Ano */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Ano</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
-              <DollarSign className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(ano)}</div>
-          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
-            Receita anual bruta
-          </p>
-        </motion.div>
-      </motion.div>
-
-      
       {/* GHOST GOAL AUTO-TRACKING */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
@@ -368,13 +299,83 @@ export const Dashboard = () => {
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
         transition={{ delay: 0.3 }}
-        className="grid gap-6 md:grid-cols-7"
+        className="grid gap-6 grid-cols-1 lg:grid-cols-12"
       >
+        {/* TOP METRICS GRID (4 CARDS) */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="flex flex-col gap-4 lg:col-span-3"
+      >
+        {/* Card Hoje */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Hoje</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <Calendar className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(hoje)}</div>
+          <p className="text-xs text-success flex items-center mt-2 font-medium">
+            <ArrowUpRight className="w-3 h-3 mr-1" /> Faturamento diário
+          </p>
+        </motion.div>
+
+        {/* Card Semana */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Esta Semana</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <TrendingUp className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(semana)}</div>
+          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
+            Acumulado nos últimos 7 dias
+          </p>
+        </motion.div>
+
+        {/* Card Mês */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Mês</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <ShoppingCart className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(mes)}</div>
+          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
+            Performance mensal
+          </p>
+        </motion.div>
+
+        {/* Card Ano */}
+        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Ano</h3>
+            <div className="p-2 rounded-lg bg-background border border-border">
+              <DollarSign className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(ano)}</div>
+          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
+            Receita anual bruta
+          </p>
+        </motion.div>
+      </motion.div>
+
+      
+      
         {/* CHART BLOCK */}
-        <div className="md:col-span-5 bg-panel border border-border rounded-3xl p-6 lg:p-8 relative overflow-hidden group">
+        <div className="lg:col-span-6 bg-panel border border-border rounded-3xl p-6 lg:p-8 relative overflow-hidden group flex flex-col min-h-[400px]">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
           
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10 shrink-0">
             <div>
               <h3 className="text-xl font-extrabold text-white tracking-tight mb-1">Visão de Crescimento</h3>
               <p className="text-sm text-textSecondary font-medium">Acompanhe a escalabilidade do seu negócio</p>
@@ -402,7 +403,7 @@ export const Dashboard = () => {
             </div>
           </div>
           
-          <div className="h-[300px] w-full relative z-10">
+          <div className="flex-1 w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={salesData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
@@ -459,7 +460,7 @@ export const Dashboard = () => {
         </div>
 
         {/* RECENT TRANSACTIONS BLOCK */}
-        <div className="md:col-span-2 bg-panel border border-border rounded-3xl p-6 flex flex-col relative overflow-hidden group">
+        <div className="lg:col-span-3 bg-panel border border-border rounded-3xl p-6 flex flex-col relative overflow-hidden group">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-extrabold text-white tracking-tight">Notificações</h3>
             <div className="bg-success/10 text-success text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-success/20">
