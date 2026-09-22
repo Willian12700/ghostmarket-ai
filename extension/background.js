@@ -78,7 +78,6 @@ async function runCronJob() {
     }
 
     for (const doc of data.documents) {
-      const docId = doc.name.split('/').pop();
       const fields = doc.fields;
       const url = getFirestoreValue(fields.permalink);
       let targetPrice = getFirestoreValue(fields.targetPrice);
@@ -90,7 +89,7 @@ async function runCronJob() {
       const userId = getFirestoreValue(fields.userId);
       const title = getFirestoreValue(fields.title);
       
-      await checkSingleProduct(url, targetPrice, userId, title, docId);
+      await checkSingleProduct(url, targetPrice, userId, title);
     }
     
     chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Todos os produtos foram verificados na Shopee!' });
@@ -101,7 +100,7 @@ async function runCronJob() {
   }
 }
 
-function checkSingleProduct(url, targetPrice, userId, title, docId) {
+function checkSingleProduct(url, targetPrice, userId, title) {
   return new Promise((resolve) => {
     chrome.tabs.create({ url: url, active: true }, (tab) => {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
@@ -111,36 +110,18 @@ function checkSingleProduct(url, targetPrice, userId, title, docId) {
             chrome.scripting.executeScript({
               target: { tabId: tab.id },
               func: () => {
-                const title = document.title;
                 const priceMatch = document.body.innerText.match(/R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/);
-                let image = 'https://cf.shopee.com.br/file/b9195b0583bafefcf5ab2292eb63c0b3';
-                const imgTag = document.querySelector('div[style*="background-image"]');
-                if (imgTag) {
-                   const bg = imgTag.style.backgroundImage;
-                   if (bg && bg.includes('url(')) {
-                       image = bg.replace('url("', '').replace('url(', '').replace('")', '').replace(')', '');
-                   }
-                }
-                return { title: title, priceStr: priceMatch ? priceMatch[0] : null, image: image };
+                return priceMatch ? priceMatch[0] : null;
               }
             }, async (results) => {
                chrome.tabs.remove(tab.id);
                
                if (results && results[0] && results[0].result) {
-                  const data = results[0].result;
-                  let currentPrice = 0;
-                  if (data.priceStr) {
-                    const priceStr = data.priceStr.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                    currentPrice = parseFloat(priceStr);
-                  }
-                  
-                  // Se o titulo no banco ta generico, atualiza no banco com o titulo/imagem real!
-                  if (title.includes('ERRO') || title.includes('Link Salvo') || title.includes('Carregando')) {
-                     await updateProductInDB(docId, data.title, data.image, currentPrice);
-                  }
+                  const priceStr = results[0].result.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                  const currentPrice = parseFloat(priceStr);
                   
                   if (currentPrice > 0 && currentPrice <= targetPrice) {
-                    await createNotificationInDB(userId, data.title, currentPrice, url);
+                    await createNotificationInDB(userId, title, currentPrice, url);
                   }
                }
                resolve();
@@ -149,21 +130,6 @@ function checkSingleProduct(url, targetPrice, userId, title, docId) {
         }
       });
     });
-  });
-}
-
-async function updateProductInDB(docId, newTitle, newImage, currentPrice) {
-  const updateData = {
-    fields: {
-      title: { stringValue: newTitle },
-      image: { stringValue: newImage },
-      price: { doubleValue: currentPrice }
-    }
-  };
-  
-  await fetch(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/offer_tracking/${docId}?updateMask.fieldPaths=title&updateMask.fieldPaths=image&updateMask.fieldPaths=price`, {
-    method: 'PATCH',
-    body: JSON.stringify(updateData)
   });
 }
 
