@@ -169,14 +169,15 @@ export const Settings = () => {
     }
   }
 
-  const handleSaveTheme = async () => {
+    const handleSaveTheme = async () => {
     if (!user?.uid) return
     setIsSavingTheme(true)
     try {
-      await updateTheme(user.uid, { agencyName, primaryColor, appTheme })
-      addToast('Aparência atualizada com sucesso', 'success')
-    } catch (error) {
-      addToast('Erro ao atualizar aparência', 'error')
+      await updateTheme(user.uid, { agencyName, primaryColor, appTheme: appTheme || 'default' })
+      addToast('Configurações atualizadas com sucesso!', 'success')
+    } catch (error: any) {
+      console.error(error)
+      addToast('Erro: ' + error.message, 'error')
     } finally {
       setIsSavingTheme(false)
     }
