@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { Search, TrendingDown, ExternalLink, Trash2, Bell } from 'lucide-react'
+import { Search, TrendingDown, ExternalLink, Trash2, Bell, Smartphone, Shirt, Home, Dumbbell, Package } from 'lucide-react'
 import { useToastStore } from '@/store/toastStore'
 import { useAuthStore } from '@/store/authStore'
 import { db } from '@/config/firebase'
@@ -68,7 +68,7 @@ export const OfferIntelligence = () => {
     return null;
   }
 
-  const handleSearch = async () => {
+    const handleSearch = async () => {
     if (!url) {
       addToast('Cole o link do produto primeiro.', 'error')
       return
@@ -87,70 +87,36 @@ export const OfferIntelligence = () => {
     }
 
     setIsLoading(true)
-          try {
-        // Since Shopee requires Affiliate API tokens, we simulate the extraction for the MVP demonstration
-                  // Tenta comunicar com a Extensao
-          let title = 'Carregando dados da Shopee...';
-          let price = 0;
-          let originalPrice = 0;
-          let image = 'https://cf.shopee.com.br/file/b9195b0583bafefcf5ab2292eb63c0b3'; // Fallback
-          
-          try {
-            window.dispatchEvent(new CustomEvent('GHOST_SCRAPE_REQUEST', { detail: { url: url } }));
-            
-            const scrapeData = await new Promise<any>((resolve) => {
-              const timeout = setTimeout(() => resolve({ success: false, reason: 'timeout' }), 8000);
-              const listener = (event: any) => {
-                clearTimeout(timeout);
-                window.removeEventListener('GHOST_SCRAPE_RESPONSE', listener);
-                resolve(event.detail);
-              };
-              window.addEventListener('GHOST_SCRAPE_RESPONSE', listener as EventListener);
-            });
-            
-            if (scrapeData && scrapeData.success) {
-              title = scrapeData.title || title;
-              price = scrapeData.price || price;
-              originalPrice = price > 0 ? price * 1.3 : 0;
-              image = scrapeData.image || image;
-            } else {
-              title = scrapeData?.reason === 'timeout' ? 'ERRO: Extensão não respondeu (Timeout)' : 'ERRO: Aba abriu mas falhou ao extrair';
-              price = 99.90;
-              originalPrice = 149.90;
-            }
-          } catch(e) {
-             console.error(e);
-             title = 'ERRO GERAL';
-             price = 99.90;
-          }
-
-          setPreviewProduct({
-            mlbId: mlbId || ('SHP-' + Math.floor(Math.random() * 1000000)),
-            title: title,
-            price: price,
-            originalPrice: originalPrice,
-            image: image,
-            permalink: url,
-            platform: 'Shopee'
-          })
-        
-        setTargetPrice('50.00')
-        setUrl('')
-        addToast('Produto da Shopee mapeado com sucesso!', 'success')
-        
-      } catch (error: any) {
-      console.error(error)
-      addToast('ERRO CRÍTICO: ' + (error?.message || String(error)), 'error')
-    } finally {
+    setTimeout(() => {
+      setPreviewProduct({
+        mlbId: mlbId || ('SHP-' + Math.floor(Math.random() * 1000000)),
+        title: '',
+        price: '',
+        originalPrice: 0,
+        image: 'tech',
+        permalink: url,
+        platform: 'Shopee'
+      })
+      setTargetPrice('')
       setIsLoading(false)
-    }
+    }, 500)
   }
 
   const handleStartTracking = async () => {
     if (!user || !previewProduct) return
     const numPrice = parseFloat(targetPrice)
+    const currentPrice = parseFloat(previewProduct.price)
+    
     if (isNaN(numPrice) || numPrice <= 0) {
       addToast('Digite um preço alvo válido.', 'error')
+      return
+    }
+    if (!previewProduct.title || previewProduct.title.trim() === '') {
+      addToast('Digite o nome do produto.', 'error')
+      return
+    }
+    if (isNaN(currentPrice) || currentPrice <= 0) {
+      addToast('Digite o preço atual válido.', 'error')
       return
     }
     
@@ -159,6 +125,7 @@ export const OfferIntelligence = () => {
       const newDoc = {
         userId: user.uid,
         ...previewProduct,
+        price: currentPrice,
         targetPrice: numPrice,
         createdAt: serverTimestamp(),
         lastCheckedAt: serverTimestamp()
@@ -247,20 +214,50 @@ export const OfferIntelligence = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row gap-6 items-start">
-              <div className="w-32 h-32 bg-white rounded-lg p-2 flex-shrink-0 flex items-center justify-center">
-                <img src={previewProduct.image} alt="Product" className="max-w-full max-h-full object-contain" />
+              <div className="w-32 h-32 bg-background border border-primary/20 rounded-lg p-2 flex-shrink-0 flex flex-col items-center justify-center gap-2">
+                {previewProduct.image === 'tech' && <Smartphone className="w-10 h-10 text-primary" />}
+                {previewProduct.image === 'clothes' && <Shirt className="w-10 h-10 text-primary" />}
+                {previewProduct.image === 'home' && <Home className="w-10 h-10 text-primary" />}
+                {previewProduct.image === 'sports' && <Dumbbell className="w-10 h-10 text-primary" />}
+                {previewProduct.image === 'generic' && <Package className="w-10 h-10 text-primary" />}
+                <select 
+                  value={previewProduct.image}
+                  onChange={(e) => setPreviewProduct({...previewProduct, image: e.target.value})}
+                  className="w-full text-xs bg-panel border border-border rounded p-1 text-white outline-none"
+                >
+                  <option value="tech">Tecnologia</option>
+                  <option value="clothes">Roupa</option>
+                  <option value="home">Casa</option>
+                  <option value="sports">Esportes</option>
+                  <option value="generic">Outros</option>
+                </select>
               </div>
               
               <div className="flex-1 space-y-4">
                 <div>
                   <div className="text-xs font-bold text-orange-500 mb-1 tracking-wider uppercase">{previewProduct.platform}</div>
-                  <h3 className="text-lg font-medium text-white line-clamp-2">{previewProduct.title}</h3>
+                  <input 
+                    type="text"
+                    placeholder="Nome do Produto..."
+                    value={previewProduct.title}
+                    onChange={(e) => setPreviewProduct({...previewProduct, title: e.target.value})}
+                    className="w-full bg-background border border-border rounded p-2 text-white font-medium outline-none focus:border-primary"
+                  />
                 </div>
                 
-                <div className="flex gap-6 items-center">
-                  <div>
-                    <span className="text-sm text-textSecondary block">Preço Atual</span>
-                    <span className="text-2xl font-bold text-white">{formatPrice(previewProduct.price)}</span>
+                <div className="flex gap-4 items-end">
+                  <div className="w-1/3">
+                    <span className="text-sm text-textSecondary block mb-1">Preço Atual</span>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textSecondary font-medium">R$</span>
+                      <Input 
+                        type="number"
+                        placeholder="0.00"
+                        value={previewProduct.price}
+                        onChange={(e) => setPreviewProduct({...previewProduct, price: e.target.value})}
+                        className="pl-9 h-11 border-border bg-background"
+                      />
+                    </div>
                   </div>
                   
                   <div className="w-px h-12 bg-border/50 hidden sm:block"></div>
@@ -331,7 +328,12 @@ export const OfferIntelligence = () => {
                   <CardContent className="p-5 flex-1 flex flex-col">
                     <div className="flex gap-4 mb-4">
                       <div className="w-20 h-20 bg-white rounded-lg p-1.5 flex-shrink-0 flex items-center justify-center">
-                        <img src={product.image} alt="" className="max-w-full max-h-full object-contain" />
+                        {product.image === 'tech' ? <Smartphone className="w-10 h-10 text-primary" /> : 
+   product.image === 'clothes' ? <Shirt className="w-10 h-10 text-primary" /> : 
+   product.image === 'home' ? <Home className="w-10 h-10 text-primary" /> : 
+   product.image === 'sports' ? <Dumbbell className="w-10 h-10 text-primary" /> : 
+   product.image === 'generic' ? <Package className="w-10 h-10 text-primary" /> : 
+   <img src={product.image} alt="" className="max-w-full max-h-full object-contain" />}
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <div className="flex items-center justify-between gap-2 mb-1">
