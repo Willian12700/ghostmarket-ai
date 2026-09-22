@@ -15,19 +15,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === "scrape_now") {
-    console.log("Abrindo aba fantasma para extração via SaaS...");
     chrome.tabs.create({ url: request.url, active: true }, (tab) => {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
-          
           setTimeout(() => {
             chrome.scripting.executeScript({
               target: { tabId: tab.id },
               func: () => {
                 const title = document.title;
                 const priceMatch = document.body.innerText.match(/R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/);
-                
                 let image = 'https://cf.shopee.com.br/file/b9195b0583bafefcf5ab2292eb63c0b3';
                 const imgTag = document.querySelector('div[style*="background-image"]');
                 if (imgTag) {
@@ -36,15 +33,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                        image = bg.replace('url("', '').replace('url(', '').replace('")', '').replace(')', '');
                    }
                 }
-                
-                return {
-                  title: title,
-                  priceStr: priceMatch ? priceMatch[0] : null,
-                  image: image
-                };
+                return { title: title, priceStr: priceMatch ? priceMatch[0] : null, image: image };
               }
             }, (results) => {
-               chrome.tabs.remove(tab.id); // Fecha a aba
+               chrome.tabs.remove(tab.id);
                if (results && results[0] && results[0].result) {
                  const data = results[0].result;
                  let finalPrice = 0;
@@ -61,7 +53,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       });
     });
-    return true; // Mantem a conexao aberta para resposta assincrona
+    return true;
   }
 });
 
@@ -81,16 +73,12 @@ async function runCronJob() {
     const data = await response.json();
     
     if (!data.documents || data.documents.length === 0) {
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon.png',
-        title: 'Motor Finalizado',
-        message: 'Nenhum produto sendo monitorado no banco de dados.'
-      });
+      chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Nenhum produto sendo monitorado no banco de dados.' });
       return;
     }
 
     for (const doc of data.documents) {
+      const docId = doc.name.split('/').pop();
       const fields = doc.fields;
       const url = getFirestoreValue(fields.permalink);
       let targetPrice = getFirestoreValue(fields.targetPrice);
@@ -102,50 +90,57 @@ async function runCronJob() {
       const userId = getFirestoreValue(fields.userId);
       const title = getFirestoreValue(fields.title);
       
-      await checkSingleProduct(url, targetPrice, userId, title);
+      await checkSingleProduct(url, targetPrice, userId, title, docId);
     }
     
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icon.png',
-      title: 'Motor Finalizado',
-      message: 'Todos os produtos foram verificados na Shopee!'
-    });
+    chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Todos os produtos foram verificados na Shopee!' });
     
   } catch (err) {
     console.error("Erro no motor:", err);
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon.png',
-        title: 'Erro no Motor',
-        message: err.message
-      });
+    chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Erro no Motor', message: err.message });
   }
 }
 
-function checkSingleProduct(url, targetPrice, userId, title) {
+function checkSingleProduct(url, targetPrice, userId, title, docId) {
   return new Promise((resolve) => {
     chrome.tabs.create({ url: url, active: true }, (tab) => {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
-          
           setTimeout(() => {
             chrome.scripting.executeScript({
               target: { tabId: tab.id },
               func: () => {
+                const title = document.title;
                 const priceMatch = document.body.innerText.match(/R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/);
-                return priceMatch ? priceMatch[0] : null;
+                let image = 'https://cf.shopee.com.br/file/b9195b0583bafefcf5ab2292eb63c0b3';
+                const imgTag = document.querySelector('div[style*="background-image"]');
+                if (imgTag) {
+                   const bg = imgTag.style.backgroundImage;
+                   if (bg && bg.includes('url(')) {
+                       image = bg.replace('url("', '').replace('url(', '').replace('")', '').replace(')', '');
+                   }
+                }
+                return { title: title, priceStr: priceMatch ? priceMatch[0] : null, image: image };
               }
             }, async (results) => {
                chrome.tabs.remove(tab.id);
                
                if (results && results[0] && results[0].result) {
-                  const priceStr = results[0].result.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                  const currentPrice = parseFloat(priceStr);
+                  const data = results[0].result;
+                  let currentPrice = 0;
+                  if (data.priceStr) {
+                    const priceStr = data.priceStr.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                    currentPrice = parseFloat(priceStr);
+                  }
                   
-                  if (currentPrice <= targetPrice) {
-                    await createNotificationInDB(userId, title, currentPrice, url);
+                  // Se o titulo no banco ta generico, atualiza no banco com o titulo/imagem real!
+                  if (title.includes('ERRO') || title.includes('Link Salvo') || title.includes('Carregando')) {
+                     await updateProductInDB(docId, data.title, data.image, currentPrice);
+                  }
+                  
+                  if (currentPrice > 0 && currentPrice <= targetPrice) {
+                    await createNotificationInDB(userId, data.title, currentPrice, url);
                   }
                }
                resolve();
@@ -154,6 +149,21 @@ function checkSingleProduct(url, targetPrice, userId, title) {
         }
       });
     });
+  });
+}
+
+async function updateProductInDB(docId, newTitle, newImage, currentPrice) {
+  const updateData = {
+    fields: {
+      title: { stringValue: newTitle },
+      image: { stringValue: newImage },
+      price: { doubleValue: currentPrice }
+    }
+  };
+  
+  await fetch(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/offer_tracking/${docId}?updateMask.fieldPaths=title&updateMask.fieldPaths=image&updateMask.fieldPaths=price`, {
+    method: 'PATCH',
+    body: JSON.stringify(updateData)
   });
 }
 
