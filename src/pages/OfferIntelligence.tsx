@@ -98,14 +98,14 @@ export const OfferIntelligence = () => {
           try {
             window.dispatchEvent(new CustomEvent('GHOST_SCRAPE_REQUEST', { detail: { url: url } }));
             
-            const scrapeData = await new Promise((resolve) => {
+            const scrapeData = await new Promise<any>((resolve) => {
               const timeout = setTimeout(() => resolve({ success: false, reason: 'timeout' }), 8000);
-              const listener = (event) => {
+              const listener = (event: any) => {
                 clearTimeout(timeout);
                 window.removeEventListener('GHOST_SCRAPE_RESPONSE', listener);
                 resolve(event.detail);
               };
-              window.addEventListener('GHOST_SCRAPE_RESPONSE', listener);
+              window.addEventListener('GHOST_SCRAPE_RESPONSE', listener as EventListener);
             });
             
             if (scrapeData && scrapeData.success) {
