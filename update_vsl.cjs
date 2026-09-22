@@ -1,4 +1,6 @@
-import { useState } from 'react'
+const fs = require('fs');
+
+const fileContent = `import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -37,10 +39,10 @@ export const VslGenerator = () => {
     setIsGenerating(true)
     addToast('A IA está analisando a psicologia do cliente...', 'success')
 
-    const prompt = `Você é o Copywriter mais caro do Brasil, especialista em VSLs (Video Sales Letters) de múltiplos 8 dígitos.
-Crie um roteiro de VSL completo para o produto "${formData.productName}" (Nicho: ${formData.niche}).
-A dor principal do cliente é: "${formData.pain}".
-O Mecanismo Único (o segredo da solução) é: "${formData.mechanism}".
+    const prompt = \`Você é o Copywriter mais caro do Brasil, especialista em VSLs (Video Sales Letters) de múltiplos 8 dígitos.
+Crie um roteiro de VSL completo para o produto "\${formData.productName}" (Nicho: \${formData.niche}).
+A dor principal do cliente é: "\${formData.pain}".
+O Mecanismo Único (o segredo da solução) é: "\${formData.mechanism}".
 
 ESTRUTURA DO ROTEIRO:
 1. THE LEAD (O Gancho/Promessa): Chame atenção nos primeiros 10 segundos. Prometa a solução para a dor.
@@ -50,7 +52,7 @@ ESTRUTURA DO ROTEIRO:
 5. ANCORAGEM DE PREÇO & CTA: Diga o preço original (caro) e o preço atual (irresistível), com chamada pra ação clara.
 6. GARANTIA & ESCASSEZ.
 
-Formate o texto em Markdown (use negritos, títulos).`
+Formate o texto em Markdown (use negritos, títulos).\`
 
     try {
       const response = await fetch('https://text.pollinations.ai/', {
@@ -184,7 +186,7 @@ Formate o texto em Markdown (use negritos, títulos).`
                         contentStyle={{ backgroundColor: 'rgba(10,10,10,0.9)', borderColor: 'var(--color-primary)', borderRadius: '8px' }}
                         itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                         labelStyle={{ color: 'var(--color-primary)', fontWeight: 'bold', marginBottom: '4px' }}
-                        formatter={(value, _name, props) => [`Nível ${value}/10 - ${props.payload.desc}`, 'Intensidade']}
+                        formatter={(value, name, props) => [\`Nível \${value}/10 - \${props.payload.desc}\`, 'Intensidade']}
                       />
                       <Area 
                         type="monotone" 
@@ -238,3 +240,6 @@ Formate o texto em Markdown (use negritos, títulos).`
     </div>
   )
 }
+`;
+
+fs.writeFileSync('src/pages/marketing/VslGenerator.tsx', fileContent, 'utf8');
