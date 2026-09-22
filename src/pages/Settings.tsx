@@ -178,6 +178,7 @@ export const Settings = () => {
     } catch (error: any) {
       console.error(error)
       addToast('Erro: ' + error.message, 'error')
+      alert("ERRO AO SALVAR! Se for erro de permissão, libere o agency_settings no Firebase Rules. " + error.message);
     } finally {
       setIsSavingTheme(false)
     }
@@ -397,7 +398,7 @@ export const Settings = () => {
           </div>
 
           <div className="pt-2">
-            <Button onClick={handleSaveTheme} disabled={isSavingTheme || (agencyName === theme.agencyName && primaryColor === theme.primaryColor && appTheme === theme.appTheme)}>
+            <Button onClick={handleSaveTheme} disabled={isSavingTheme}>
               {isSavingTheme ? 'Salvando...' : 'Salvar Personalização'}
             </Button>
           </div>
