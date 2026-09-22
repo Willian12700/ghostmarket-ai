@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, query, where, getDocs, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore'
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -44,12 +44,22 @@ export const HostedSites = () => {
     }, 2500)
   }
 
-  const applyAutoFix = () => {
+  const applyAutoFix = async () => {
+    if (!scanningSite) return
     setScanStatus('fixing')
-    setTimeout(() => {
-      setScanStatus('fixed')
-      addToast('Auto-Fix aplicado com sucesso!', 'success')
-    }, 2000)
+    try {
+      const docRef = doc(db, 'sites', scanningSite.id)
+      await updateDoc(docRef, { autoHealed: true })
+      
+      setTimeout(() => {
+        setScanStatus('fixed')
+        addToast('Auto-Fix injetado com sucesso no servidor!', 'success')
+      }, 2000)
+    } catch (e) {
+      console.error(e)
+      addToast('Erro ao aplicar Auto-Fix', 'error')
+      setScanStatus('found')
+    }
   }
 
   const [search, setSearch] = useState('')
