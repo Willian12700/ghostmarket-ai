@@ -32,8 +32,8 @@ export const MainLayout = () => {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated && user?.email) {
-      const unsubscribe = syncTheme(user.email)
+    if (isAuthenticated && user?.uid) {
+      const unsubscribe = syncTheme(user.uid)
       return () => unsubscribe()
     }
   }, [isAuthenticated, user])
