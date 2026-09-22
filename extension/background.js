@@ -1,6 +1,6 @@
 const PROJECT_ID = "ghostmarket-ai-2cc26";
 
-chrome.alarms.create("checkPrices", { periodInMinutes: 60 });
+chrome.alarms.create("checkPrices", { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "checkPrices") {
@@ -65,7 +65,7 @@ async function runCronJob(isManual = false) {
 function checkSingleProduct(url, targetPrice, userId, title, isManual) {
   return new Promise((resolve) => {
     // Abre a aba em background (sem focar)
-    chrome.tabs.create({ url: url, active: false }, (tab) => {
+    chrome.tabs.create({ url: url, active: true }, (tab) => {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
