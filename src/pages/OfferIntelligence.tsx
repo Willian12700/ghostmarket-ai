@@ -92,11 +92,11 @@ export const OfferIntelligence = () => {
         await new Promise(resolve => setTimeout(resolve, 800)); // fake loading
         
         setPreviewProduct({
-          mlbId: mlbId,
-          title: 'Produto Shopee Mapeado (' + mlbId + ')',
-          price: 59.90,
-          originalPrice: 89.90,
-          image: 'https://down-br.img.susercontent.com/file/br-11134207-7qukw-ljbtyj2y3r6j7f',
+          mlbId: mlbId || ('SHP-' + Math.floor(Math.random() * 1000000)),
+          title: 'Produto Shopee em Monitoramento Fantasma',
+          price: 99.90,
+          originalPrice: 149.90,
+          image: 'https://cf.shopee.com.br/file/b9195b0583bafefcf5ab2292eb63c0b3',
           permalink: url,
           platform: 'Shopee'
         })
@@ -198,27 +198,7 @@ export const OfferIntelligence = () => {
             >
               {isLoading && !previewProduct ? 'Buscando...' : 'Encontrar Oferta'}
             </Button>
-            <Button 
-              variant="outline"
-              className="h-12 px-6 font-bold border-dashed border-primary/50 text-primary hover:bg-primary/10" 
-              onClick={() => {
-                const randomId = Math.floor(Math.random() * 1000000000);
-                setPreviewProduct({
-                  mlbId: 'SHP' + randomId,
-                  title: 'Fone Bluetooth Lenovo GM2 Pro - Baixo Atraso e Microfone',
-                  price: 45.90,
-                  originalPrice: 99.90,
-                  image: 'https://down-br.img.susercontent.com/file/br-11134207-7qukw-ljbtyj2y3r6j7f',
-                  permalink: 'https://shopee.com.br/Fone-Bluetooth-Lenovo-GM2-Pro-i.123456.789012',
-                  platform: 'Shopee'
-                });
-                setTargetPrice('1700.00');
-                setUrl('');
-                addToast('Produto de teste gerado com sucesso!', 'success');
-              }}
-            >
-              Simular Produto
-            </Button>
+            
           </div>
         </CardContent>
       </Card>
@@ -280,42 +260,22 @@ export const OfferIntelligence = () => {
 
       {/* Lista de Monitoramento */}
       <div>
+        <div className="bg-gradient-to-r from-orange-500/20 to-orange-600/10 border border-orange-500/30 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div>
+            <h4 className="text-orange-500 font-bold mb-1 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Potencialize seu Rastreamento
+            </h4>
+            <p className="text-sm text-textSecondary">Instale nossa extensão oficial para o Google Chrome e garanta que o robô monitore os preços sem interrupções em tempo real.</p>
+          </div>
+          <Button className="bg-orange-500 hover:bg-orange-600 text-white border-none shrink-0" onClick={() => addToast('Em breve na Chrome Web Store!', 'info')}>
+            Baixar Extensão
+          </Button>
+        </div>
+        
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-white">Meus Produtos Monitorados</h3>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="border-primary/50 text-primary hover:bg-primary/10"
-            onClick={async () => {
-              if (products.length === 0) {
-                addToast('Adicione pelo menos um produto primeiro!', 'error');
-                return;
-              }
-              const p = products[0];
-              const newPrice = Number(p.targetPrice) - 5.00; // Force it to hit the target
-              
-              // Create notification in DB
-              await addDoc(collection(db, 'notifications'), {
-                userId: user?.uid,
-                title: '🤑 Alerta de Preço Atingido!',
-                text: `O produto "${p.title}" caiu para R$ ${newPrice.toFixed(2)} e atingiu sua meta!`,
-                unread: true,
-                createdAt: serverTimestamp(),
-                link: p.permalink
-              });
-              
-              addToast('Motor de varredura executado! Verifique suas notificações (Sininho)', 'success');
-              
-              // Simulate Email
-              console.log('--- ENVIANDO E-MAIL ---');
-              console.log(`Para: ${user?.email}`);
-              console.log('Assunto: Preço Caiu! ' + p.title);
-              console.log(`O preço caiu para ${newPrice.toFixed(2)}!`);
-            }}
-          >
-            <Bell className="w-4 h-4 mr-2" />
-            Simular Robô (Cron Job)
-          </Button>
+          
         </div>
         
         {products.length === 0 ? (

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "GhostMarket AI - Tracker",
+  "version": "1.0",
+  "description": "Rastreie produtos da Shopee e seja avisado quando o preço cair!",
+  "permissions": [
+    "alarms",
+    "storage",
+    "notifications",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.shopee.com.br/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
