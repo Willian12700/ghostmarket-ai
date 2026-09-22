@@ -1,22 +1,35 @@
 {
   "manifest_version": 3,
-  "name": "GhostMarket AI - Tracker",
+  "name": "GhostMarket AI",
   "version": "1.0",
-  "description": "Rastreie produtos da Shopee e seja avisado quando o preço cair!",
+  "description": "Motor de rastreamento invisível da GhostMarket AI",
   "permissions": [
+    "tabs",
+    "scripting",
     "alarms",
     "storage",
-    "notifications",
-    "tabs",
-    "scripting"
+    "notifications"
   ],
   "host_permissions": [
-    "*://*.shopee.com.br/*"
+    "*://*.shopee.com.br/*",
+    "*://firestore.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:5173/*", "https://*.vercel.app/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
   }
 }
