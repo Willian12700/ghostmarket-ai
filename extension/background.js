@@ -1,6 +1,6 @@
 const PROJECT_ID = "ghostmarket-ai-2cc26";
 
-chrome.alarms.create("checkPrices", { periodInMinutes: 1 });
+chrome.alarms.create("checkPrices", { periodInMinutes: 60 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "checkPrices") {
