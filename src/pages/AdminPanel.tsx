@@ -4,7 +4,7 @@ import { collection, doc, setDoc, getDocs, query, where, writeBatch, serverTimes
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { ShieldAlert, UserCheck, Search, Users, Circle, Calendar, DollarSign, Globe, X, ExternalLink } from 'lucide-react'
+import { ShieldAlert, UserCheck, MessageSquare, Eye, Search, Users, Circle, Calendar, DollarSign, Globe, X, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -378,6 +378,36 @@ export const AdminPanel = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+
+                  {/* AÇÕES MASTERS */}
+                  <div className="flex flex-col gap-2">
+                    <Button onClick={() => {
+                        useAuthStore.getState().setUser({
+                          uid: selectedUser.uid || selectedUser.email,
+                          email: selectedUser.email,
+                          name: selectedUser.name || 'Usuário',
+                          photoURL: selectedUser.photoURL || ''
+                        });
+                        window.location.href = '/';
+                      }} 
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]"
+                    >
+                      <Eye className="w-4 h-4 mr-2" /> Modo God-Eye (Entrar como Cliente)
+                    </Button>
+                  </div>
+
+                  {/* PREDICTIVE CHURN AI */}
+                  {(!selectedUser.lastLogin || (new Date().getTime() - new Date(selectedUser.lastLogin).getTime() > 7 * 24 * 60 * 60 * 1000)) && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex flex-col gap-2">
+                      <h4 className="text-red-400 font-bold flex items-center gap-2"><ShieldAlert className="w-4 h-4"/> Risco de Churn (Cancelamento)</h4>
+                      <p className="text-sm text-red-200">A IA detectou que este usuário não faz login há mais de 7 dias. Grande risco de não renovar a assinatura!</p>
+                      <a href={`https://wa.me/5584996162332?text=Oi ${selectedUser.name}, vi que você não acessa o sistema há um tempo, precisa de ajuda?`} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white mt-2">
+                          <MessageSquare className="w-4 h-4 mr-2" /> Recuperar no WhatsApp
+                        </Button>
+                      </a>
+                    </div>
+                  )}
                 
                 {/* Status Geral */}
                 <div className="grid grid-cols-2 gap-4">

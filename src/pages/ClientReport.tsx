@@ -72,6 +72,7 @@ export const ClientReport = () => {
     }
   }
 
+  
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
@@ -79,6 +80,19 @@ export const ClientReport = () => {
 
   return (
     <div className="min-h-screen bg-[#0f0c29] text-white p-4 sm:p-8 font-sans" style={{ '--report-primary': primaryColor } as any}>
+      {/* Print Styles */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          body { background: white !important; color: black !important; }
+          .bg-[#0f0c29] { background: white !important; }
+          .text-white { color: black !important; }
+          .text-gray-400 { color: #666 !important; }
+          .border-white/10 { border-color: #ddd !important; }
+          button, .hide-on-print { display: none !important; }
+          header { border-bottom: 2px solid #eee !important; padding-bottom: 20px !important; }
+        }
+      `}} />
+
       {/* Header White-label */}
       <header className="max-w-5xl mx-auto flex items-center justify-between mb-12 border-b border-white/10 pb-6">
         <div className="flex items-center gap-4">
@@ -94,9 +108,14 @@ export const ClientReport = () => {
             <p className="text-sm text-gray-400">Relatório de Performance Analítica</p>
           </div>
         </div>
-        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-400 rounded-full border border-green-500/20">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium">Sistema Online</span>
+        <div className="hidden sm:flex items-center gap-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-400 rounded-full border border-green-500/20">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium">Sistema Online</span>
+          </div>
+          <button onClick={() => window.print()} className="px-4 py-2 bg-[var(--report-primary)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(var(--report-primary),0.5)]">
+            Baixar PDF (White-Label)
+          </button>
         </div>
       </header>
 
