@@ -1,4 +1,5 @@
 import { Megaphone, AlertOctagon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react'
 import { collection, doc, setDoc, getDocs, query, where, writeBatch, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/config/firebase'
@@ -12,6 +13,7 @@ import { NicheManager } from '@/components/admin/NicheManager'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export const AdminPanel = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore()
   const { addToast } = useToastStore()
   
@@ -388,7 +390,7 @@ export const AdminPanel = () => {
                           name: selectedUser.name || 'Usuário',
                           photoURL: selectedUser.photoURL || ''
                         });
-                        window.location.href = '/';
+                        navigate('/');
                       }} 
                       className="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]"
                     >
