@@ -10,7 +10,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "run_cron_now") {
-    runCronJob();
+    runCronJob(true); // true = force verbose mode if triggered manually
     sendResponse({ status: "started" });
   }
 });
@@ -23,7 +23,8 @@ function getFirestoreValue(field) {
   return null;
 }
 
-async function runCronJob() {
+// isManual: se o usuario clicou no botao verde da extensao, mandamos notificacoes extras.
+async function runCronJob(isManual = false) {
   console.log("Iniciando varredura...");
   
   try {
@@ -31,7 +32,9 @@ async function runCronJob() {
     const data = await response.json();
     
     if (!data.documents || data.documents.length === 0) {
-      chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Nenhum produto sendo monitorado.' });
+      if (isManual) {
+        chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Aviso', message: 'Nenhum produto sendo monitorado.' });
+      }
       return;
     }
 
@@ -47,20 +50,22 @@ async function runCronJob() {
       const userId = getFirestoreValue(fields.userId);
       const title = getFirestoreValue(fields.title) || 'Produto Shopee';
       
-      await checkSingleProduct(url, targetPrice, userId, title);
+      await checkSingleProduct(url, targetPrice, userId, title, isManual);
     }
     
-    chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Todos os produtos foram verificados na Shopee!' });
+    if (isManual) {
+      chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Motor Finalizado', message: 'Todos os produtos foram verificados na Shopee!' });
+    }
     
   } catch (err) {
     console.error("Erro no motor:", err);
-    chrome.notifications.create({ type: 'basic', iconUrl: 'icon.png', title: 'Erro Crítico no Motor', message: err.message });
   }
 }
 
-function checkSingleProduct(url, targetPrice, userId, title) {
+function checkSingleProduct(url, targetPrice, userId, title, isManual) {
   return new Promise((resolve) => {
-    chrome.tabs.create({ url: url, active: true }, (tab) => {
+    // Abre a aba em background (sem focar)
+    chrome.tabs.create({ url: url, active: false }, (tab) => {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
@@ -95,7 +100,8 @@ function checkSingleProduct(url, targetPrice, userId, title) {
                       message: `O produto "${title}" caiu para R$ ${currentPrice.toFixed(2)}!`
                     });
                     await createNotificationInDB(userId, title, currentPrice, url);
-                  } else {
+                  } else if (isManual) {
+                    // Só notifica que leu o preço e n bateu a meta se for teste manual
                     chrome.notifications.create({
                       type: 'basic',
                       iconUrl: 'icon.png',
@@ -103,7 +109,7 @@ function checkSingleProduct(url, targetPrice, userId, title) {
                       message: `Shopee: R$ ${currentPrice.toFixed(2)} | Sua Meta: R$ ${targetPrice.toFixed(2)}`
                     });
                   }
-               } else {
+               } else if (isManual) {
                   chrome.notifications.create({
                       type: 'basic',
                       iconUrl: 'icon.png',
