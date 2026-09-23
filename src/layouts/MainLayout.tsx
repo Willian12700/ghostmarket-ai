@@ -114,7 +114,7 @@ export const MainLayout = () => {
             Sua conta foi suspensa pela equipe GhostMarket por violação dos termos de uso.
           </p>
           <div className="flex gap-4">
-            <Button size="lg" variant="secondary" onClick={() => window.location.href = 'mailto:suporte@ghostmarket.ai'}>
+            <Button size="lg" variant="secondary" onClick={() => window.open('https://wa.me/5584996162332?text=Olá,%20minha%20conta%20na%20GhostMarket%20foi%20suspensa%20e%20gostaria%20de%20ajuda.', '_blank')}>
               Entrar em Contato
             </Button>
           </div>
