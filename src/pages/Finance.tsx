@@ -1,0 +1,223 @@
+import { motion } from 'framer-motion'
+import { Wallet, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, Download, Building, ArrowRight, TrendingUp, RefreshCcw } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
+const revenueData = [
+  { name: '01/09', amount: 1200 },
+  { name: '05/09', amount: 2100 },
+  { name: '10/09', amount: 1800 },
+  { name: '15/09', amount: 3200 },
+  { name: '20/09', amount: 2900 },
+  { name: '25/09', amount: 4500 },
+  { name: '30/09', amount: 5100 },
+]
+
+const recentTransactions = [
+  { id: 'TX-9981', type: 'Pix', customer: 'João Silva', date: 'Hoje, 14:32', amount: 197.00, status: 'approved' },
+  { id: 'TX-9980', type: 'Cartão (12x)', customer: 'Maria Eduarda', date: 'Hoje, 11:15', amount: 497.50, status: 'approved' },
+  { id: 'TX-9979', type: 'Saque', customer: 'Banco Inter (***392)', date: 'Ontem', amount: -1500.00, status: 'processing' },
+  { id: 'TX-9978', type: 'Pix', customer: 'Carlos A.', date: 'Ontem', amount: 97.00, status: 'refunded' },
+  { id: 'TX-9977', type: 'Cartão (1x)', customer: 'Ana Clara', date: '20 Set', amount: 297.00, status: 'approved' },
+]
+
+export const Finance = () => {
+  
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
+
+  return (
+    <div className="max-w-[1400px] w-full mx-auto space-y-6">
+      
+      {/* HEADER SECTION */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
+      >
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">Financeiro</h1>
+          <p className="text-textSecondary">Gerencie seus recebíveis, saques e infraestrutura de pagamentos.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="secondary" className="border-border text-white bg-panel hover:bg-background">
+            <Download className="w-4 h-4 mr-2" /> Exportar Relatório
+          </Button>
+          <Button className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] font-bold">
+            <Building className="w-4 h-4 mr-2" /> Solicitar Saque
+          </Button>
+        </div>
+      </motion.div>
+
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* LEFT COLUMN: BALANCE CARDS */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          {/* MAIN BALANCE CARD */}
+          <motion.div variants={itemVariants} className="bg-gradient-to-br from-panel to-background border border-primary/20 rounded-3xl p-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none" />
+            
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
+                <Wallet className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-sm font-bold text-textSecondary uppercase tracking-widest">Saldo Disponível</h3>
+            </div>
+            
+            <div className="relative z-10 mb-2">
+              <span className="text-sm text-textSecondary mr-1 font-bold">R$</span>
+              <span className="text-5xl font-black text-white tracking-tighter">12.450,00</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm mt-6 relative z-10 p-3 bg-panel border border-border rounded-xl">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-textSecondary font-medium">Pronto para transferência via PIX.</span>
+            </div>
+          </motion.div>
+
+          {/* SECONDARY BALANCE CARDS */}
+          <div className="grid grid-cols-2 gap-4">
+            <motion.div variants={itemVariants} className="bg-panel border border-border rounded-2xl p-5 relative overflow-hidden">
+              <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest mb-2">A Receber (D+30)</h3>
+              <div className="text-2xl font-black text-white">{formatCurrency(4800.50)}</div>
+              <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
+                <Clock className="w-3 h-3 mr-1" /> Liberando...
+              </p>
+            </motion.div>
+            
+            <motion.div variants={itemVariants} className="bg-panel border border-border rounded-2xl p-5 relative overflow-hidden">
+              <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest mb-2">Total Movimentado</h3>
+              <div className="text-2xl font-black text-white">{formatCurrency(45900.00)}</div>
+              <p className="text-xs text-success flex items-center mt-2 font-medium">
+                <TrendingUp className="w-3 h-3 mr-1" /> +12% este mês
+              </p>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: CHART & TRANSACTIONS */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          {/* CHART BLOCK */}
+          <motion.div variants={itemVariants} className="bg-panel border border-border rounded-3xl p-6 lg:p-8 flex flex-col min-h-[300px] relative overflow-hidden">
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <div>
+                <h3 className="text-xl font-extrabold text-white tracking-tight">Receita Líquida</h3>
+                <p className="text-sm text-textSecondary font-medium mt-1">Acompanhe suas vendas processadas pelo Gateway GhostMarket.</p>
+              </div>
+              <div className="flex items-center p-1 bg-background border border-border rounded-lg">
+                <button className="px-3 py-1 rounded-md text-xs font-bold bg-primary text-white shadow-md">30 Dias</button>
+                <button className="px-3 py-1 rounded-md text-xs font-bold text-textSecondary hover:text-white transition-colors">6 Meses</button>
+              </div>
+            </div>
+            
+            <div className="flex-1 w-full h-[250px] relative z-10">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorFinance" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" stroke="#52525B" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                  <YAxis stroke="#52525B" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `R$ ${value}`} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#18181B', borderColor: '#27272A', borderRadius: '12px', color: '#fff', fontWeight: 'bold' }}
+                    itemStyle={{ color: '#A78BFA' }}
+                    formatter={(value: any) => [formatCurrency(value), 'Receita']}
+                  />
+                  <Area type="monotone" dataKey="amount" stroke="var(--color-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorFinance)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          {/* TRANSACTIONS BLOCK */}
+          <motion.div variants={itemVariants} className="bg-panel border border-border rounded-3xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-background/50">
+              <h3 className="text-lg font-extrabold text-white tracking-tight">Movimentações Recentes</h3>
+              <button className="text-sm font-bold text-primary hover:text-primary-light flex items-center gap-1 transition-colors">
+                Ver extrato completo <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-background border-b border-border text-xs font-bold text-textSecondary uppercase tracking-widest">
+                    <th className="p-4 pl-6 font-medium">Transação</th>
+                    <th className="p-4 font-medium">Cliente/Origem</th>
+                    <th className="p-4 font-medium">Data</th>
+                    <th className="p-4 font-medium text-right">Valor</th>
+                    <th className="p-4 pr-6 font-medium text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {recentTransactions.map((tx, idx) => (
+                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="p-4 pl-6">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.amount < 0 ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary'}`}>
+                            {tx.amount < 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white">{tx.type}</p>
+                            <p className="text-xs text-textSecondary">{tx.id}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm font-bold text-white">{tx.customer}</p>
+                      </td>
+                      <td className="p-4 text-sm text-textSecondary font-medium">
+                        {tx.date}
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className={`text-sm font-bold ${tx.amount < 0 ? 'text-white' : 'text-success'}`}>
+                          {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
+                        </span>
+                      </td>
+                      <td className="p-4 pr-6 text-right">
+                        {tx.status === 'approved' && (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-success/10 border border-success/20 text-success text-xs font-bold">
+                            <CheckCircle className="w-3 h-3" /> Aprovado
+                          </div>
+                        )}
+                        {tx.status === 'processing' && (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-warning/10 border border-warning/20 text-warning text-xs font-bold">
+                            <Clock className="w-3 h-3" /> Em Processamento
+                          </div>
+                        )}
+                        {tx.status === 'refunded' && (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs font-bold">
+                            <RefreshCcw className="w-3 h-3" /> Reembolsado
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}

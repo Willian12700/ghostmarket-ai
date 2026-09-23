@@ -13,6 +13,7 @@ import { Library } from '@/pages/Library'
 import { PromptBuilder } from '@/pages/PromptBuilder'
 import { SiteBuilder } from '@/pages/SiteBuilder'
 import { HostedSites } from '@/pages/HostedSites'
+import { Finance } from '@/pages/Finance'
 import { SiteViewer } from '@/pages/SiteViewer'
 import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
@@ -76,6 +77,7 @@ function App() {
               <Route path="/prompt-builder" element={<PromptBuilder />} />
               <Route path="/builder" element={<SiteBuilder />} />
               <Route path="/sites" element={<HostedSites />} />
+              <Route path="/finance" element={<Finance />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/chatbots" element={<Chatbots />} />
               <Route path="/contracts" element={<Contracts />} />
