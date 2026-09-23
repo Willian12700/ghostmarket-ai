@@ -3,7 +3,7 @@ import { collection, query, where, getDocs, deleteDoc, doc, setDoc, getDoc, upda
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { Globe, Trash2, Edit, ExternalLink, Plus, Search, Eye, TrendingUp, Link2, BarChart, ShieldCheck, Wand2, Activity } from 'lucide-react'
+import { Globe, Trash2, Edit, ExternalLink, Plus, Search, Eye, TrendingUp, Link2, BarChart, ShieldCheck, Wand2, Activity, Power } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,6 +16,7 @@ type Site = {
   domainType: string;
   views?: number;
   isRedirect?: boolean;
+  isActive?: boolean;
   redirectUrl?: string;
 }
 
@@ -127,6 +128,19 @@ export const HostedSites = () => {
   }
 
 
+
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const newStatus = !currentStatus;
+      await updateDoc(doc(db, 'sites', id), { isActive: newStatus });
+      setSites(sites.map(s => s.id === id ? { ...s, isActive: newStatus } : s));
+      addToast(newStatus ? 'Site ativado com sucesso!' : 'Site desativado.', 'success');
+    } catch (e) {
+      console.error(e);
+      addToast('Erro ao alterar status do site', 'error');
+    }
+  }
+
   const handleDelete = async (id: string) => {
     if (!window.confirm('Tem certeza que deseja apagar este site? Ele sairá do ar imediatamente.')) return
     try {
@@ -226,8 +240,9 @@ export const HostedSites = () => {
                   >
                     <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
                         {site.isRedirect ? (
                           <div className="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-500" title="Link Camuflado">
                             <Link2 className="w-6 h-6" />
@@ -242,7 +257,17 @@ export const HostedSites = () => {
                           <span className="text-xs font-bold text-white">{site.views || 0}</span>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${site.isActive !== false ? 'bg-success/10 text-success border-success/20' : 'bg-danger/10 text-danger border-danger/20'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${site.isActive !== false ? 'bg-success animate-pulse' : 'bg-danger'}`}></span>
+                          {site.isActive !== false ? 'Site Ativado' : 'Site Desativado'}
+                        </div>
+                      </div>
+                    </div>
                       <div className="flex gap-2">
+                        <button onClick={() => handleToggleStatus(site.id, site.isActive !== false)} className={`p-2 bg-background border border-border rounded-lg transition-colors ${site.isActive !== false ? 'text-success hover:border-danger hover:text-danger' : 'text-danger hover:border-success hover:text-success'}`} title={site.isActive !== false ? "Desativar Site" : "Ativar Site"}>
+                          <Power className="w-4 h-4" />
+                        </button>
                         <button onClick={() => {
                             const url = `${window.location.origin}/report/${site.id}`;
                             navigator.clipboard.writeText(url);
