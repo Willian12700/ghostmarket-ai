@@ -78,6 +78,11 @@ export const AdminPanel = () => {
     try {
       const newStatus = !selectedUser.isSuspended;
       await setDoc(doc(db, 'users', selectedUser.email), { isSuspended: newStatus }, { merge: true });
+      if (selectedUser.docId) {
+        await setDoc(doc(db, 'allowed_users', selectedUser.docId), { status: newStatus ? 'suspended' : 'approved' }, { merge: true });
+      } else {
+        await setDoc(doc(db, 'allowed_users', selectedUser.email), { status: newStatus ? 'suspended' : 'approved' }, { merge: true });
+      }
       setSelectedUser({ ...selectedUser, isSuspended: newStatus });
       setUsers(users.map(u => u.email === selectedUser.email ? { ...u, isSuspended: newStatus } : u));
       addToast(newStatus ? 'Acesso suspenso com sucesso.' : 'Acesso restaurado.', 'success');

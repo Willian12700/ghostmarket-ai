@@ -9,7 +9,7 @@ import { useThemeStore } from '@/store/themeStore'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { SalesNotifier } from '@/components/ui/SalesNotifier'
 import { db } from '@/config/firebase'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 
@@ -29,6 +29,7 @@ export const MainLayout = () => {
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
+  const [isSuspended, setIsSuspended] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
@@ -39,31 +40,53 @@ export const MainLayout = () => {
   }, [isAuthenticated, user])
 
   useEffect(() => {
-    const checkSubscription = async () => {
-      if (!user?.email) return
+    let unsubscribe: () => void;
+
+    const checkSubscription = () => {
+      if (!user?.email) return;
       
       try {
-        const docRef = doc(db, 'allowed_users', user.email)
-        const docSnap = await getDoc(docRef)
+        const docRef = doc(db, 'allowed_users', user.email);
         
-        if (docSnap.exists() && docSnap.data().status === 'approved') {
-          setHasSubscription(true)
-          // Se used for false ou undefined (contas antigas ou criadas manualmente sem o campo), exibe o modal
-          if (docSnap.data().used !== true) {
-            setShowOnboarding(true)
+        // Listen in real-time
+        unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const status = docSnap.data().status;
+            if (status === 'approved') {
+              setHasSubscription(true);
+              setIsSuspended(false);
+              if (docSnap.data().used !== true) {
+                setShowOnboarding(true);
+              }
+            } else if (status === 'suspended') {
+              setHasSubscription(false);
+              setIsSuspended(true);
+            } else {
+              setHasSubscription(false);
+              setIsSuspended(false);
+            }
+          } else {
+            setHasSubscription(false);
+            setIsSuspended(false);
           }
-        } else {
-          setHasSubscription(false)
-        }
+        }, (error) => {
+          console.error("Error listening to subscription:", error);
+          setHasSubscription(false);
+        });
+
       } catch (error) {
-        console.error("Error checking subscription:", error)
-        setHasSubscription(false)
+        console.error("Error setting up subscription listener:", error);
+        setHasSubscription(false);
       }
     }
 
     if (isAuthenticated) {
-      checkSubscription()
+      checkSubscription();
     }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user, isAuthenticated])
 
   if (!isAuthenticated) {
@@ -80,6 +103,25 @@ export const MainLayout = () => {
   }
 
   if (hasSubscription === false) {
+    if (isSuspended) {
+      return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-24 h-24 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(239,68,68,0.2)]">
+            <Lock className="w-12 h-12" />
+          </div>
+          <h2 className="text-4xl font-bold text-white mb-4">Conta Suspensa</h2>
+          <p className="text-textSecondary max-w-lg mx-auto mb-8 text-xl">
+            Sua conta foi suspensa pela equipe GhostMarket por violação dos termos de uso.
+          </p>
+          <div className="flex gap-4">
+            <Button size="lg" variant="secondary" onClick={() => window.location.href = 'mailto:suporte@ghostmarket.ai'}>
+              Entrar em Contato
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <div className="w-24 h-24 bg-error/10 text-error rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(239,68,68,0.2)]">
