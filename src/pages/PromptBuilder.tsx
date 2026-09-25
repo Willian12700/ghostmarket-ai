@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft } from 'lucide-react'
@@ -40,6 +41,7 @@ const FEATURE_OPTIONS = [
 
 export const PromptBuilder = () => {
   const { addToast } = useToastStore()
+  const navigate = useNavigate()
   
   const [step, setStep] = useState(1)
   const totalSteps = 5
@@ -285,7 +287,7 @@ Instruções para a IA (Antigravity):
       </div>
 
       {/* ÁREA DOS STEPS */}
-      <div className="flex-1 flex flex-col justify-center max-w-4xl mx-auto w-full px-6 pb-12 overflow-hidden">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-6 pb-12 overflow-y-auto overflow-x-hidden custom-scrollbar pt-6">
         <AnimatePresence mode="wait">
           
           {/* PASSO 1: O Básico */}
@@ -405,7 +407,7 @@ Instruções para a IA (Antigravity):
 
           {/* PASSO 5: Resultado / Código */}
           {step === 5 && (
-            <motion.div key="step5" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-6 py-6 h-[600px] flex flex-col relative z-10">
+            <motion.div key="step5" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-6 py-6 flex flex-col relative z-10" style={{ minHeight: "500px", height: "60vh" }}>
               <div className="text-center mb-6">
                 <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Code className="w-7 h-7 text-primary" /> Seu Prompt Inteligente</h2>
                 <p className="text-textSecondary text-lg">Copiando este código e colando na IA, seu sistema nasce perfeito em segundos.</p>
@@ -481,12 +483,20 @@ Instruções para a IA (Antigravity):
           )}
 
           {step === 5 && (
-            <Button 
-              onClick={() => setStep(1)} 
-              className="h-14 px-10 text-lg font-black bg-panel border-2 border-border text-white hover:border-primary rounded-2xl transition-all"
-            >
-              Criar Novo Site
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center gap-4 ml-auto">
+              <Button 
+                onClick={() => setStep(1)} 
+                className="h-14 px-8 text-lg font-black bg-panel border-2 border-border text-textSecondary hover:text-white hover:border-white/20 rounded-2xl transition-all"
+              >
+                Refazer Prompt
+              </Button>
+              <Button 
+                onClick={() => navigate('/builder')} 
+                className="h-14 px-10 text-lg font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-105 transition-all flex items-center gap-2"
+              >
+                <Zap className="w-5 h-5" /> Hospedar Sistema
+              </Button>
+            </div>
           )}
         </div>
 

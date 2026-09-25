@@ -384,11 +384,19 @@ document.addEventListener('keydown', e => {
   ]
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0b0416]">
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#09090b] text-white selection:bg-primary/30 relative overflow-hidden">
+        {/* ANIMATED BACKGROUND BLOBS */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <motion.div animate={{ x: [0, 50, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-primary/20 blur-[150px] rounded-full mix-blend-screen" />
+          <motion.div animate={{ x: [0, -50, 0], y: [0, 50, 0], scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 20, ease: "linear" }} className="absolute top-[20%] right-[-10%] w-[50vw] h-[50vw] bg-fuchsia-600/10 blur-[150px] rounded-full mix-blend-screen" />
+          <motion.div animate={{ x: [0, 100, 0], y: [0, 100, 0], scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 25, ease: "linear" }} className="absolute bottom-[-20%] left-[20%] w-[60vw] h-[60vw] bg-indigo-600/10 blur-[150px] rounded-full mix-blend-screen" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_1px,transparent_1px)]" style={{ backgroundSize: '24px 24px' }}></div>
+        </div>
+
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept={steps.find(s => s.id === step)?.accept} className="hidden" />
       
       {/* HEADER WIZARD */}
-      <div className="h-20 border-b border-border bg-panel flex items-center justify-between px-8 shrink-0 z-10">
+      <div className="h-24 border-b border-white/5 bg-[#050505]/60 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <UploadCloud className="w-5 h-5 text-primary" />
@@ -475,11 +483,11 @@ document.addEventListener('keydown', e => {
           </AnimatePresence>
 
           <div className="mt-6 flex justify-between items-center">
-            <Button variant="ghost" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="text-textSecondary hover:text-white">
+            <Button variant="ghost" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className={`h-12 px-6 text-base font-bold transition-all ${step === 1 ? 'opacity-0' : 'text-textSecondary hover:text-white hover:bg-white/5 rounded-xl'}`}>
               <ChevronLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
             {step < 5 ? (
-              <Button onClick={() => setStep(step + 1)} className="shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+              <Button onClick={() => setStep(step + 1)} className="h-12 px-8 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:scale-105 transition-all">
                 Próximo Passo <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : null}
