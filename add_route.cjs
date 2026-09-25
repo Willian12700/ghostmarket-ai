@@ -1,16 +1,18 @@
 const fs = require('fs');
-let app = fs.readFileSync('src/App.tsx', 'utf8');
+let content = fs.readFileSync('src/App.tsx', 'utf8');
 
-if (!app.includes('ClientReport')) {
-  app = app.replace(
-    "import { SiteViewer } from '@/pages/SiteViewer'",
-    "import { SiteViewer } from '@/pages/SiteViewer'\nimport { ClientReport } from '@/pages/ClientReport'"
+if (!content.includes("import { Products }")) {
+  content = content.replace(
+    "import { Finance } from '@/pages/Finance'",
+    "import { Finance } from '@/pages/Finance'\nimport { Products } from '@/pages/Products'"
   );
-  
-  app = app.replace(
-    "<Route path=\"/s/:siteId\" element={<SiteViewer />} />",
-    "<Route path=\"/s/:siteId\" element={<SiteViewer />} />\n            <Route path=\"/report/:siteId\" element={<ClientReport />} />"
-  );
-  
-  fs.writeFileSync('src/App.tsx', app);
 }
+
+if (!content.includes('<Route path="/products"')) {
+  content = content.replace(
+    '<Route path="/finance" element={<Finance />} />',
+    '<Route path="/finance" element={<Finance />} />\n              <Route path="/products" element={<Products />} />'
+  );
+}
+
+fs.writeFileSync('src/App.tsx', content, 'utf8');

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe , ShieldAlert, MessageCircle, Wallet } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe , ShieldAlert, MessageCircle, Wallet, Package } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -79,7 +79,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     {
         label: 'Financeiro e Pagamentos',
         items: [
-          { to: '/finance', icon: Wallet, label: 'Meu Saldo' }
+          { to: '/finance', icon: Wallet, label: 'Meu Saldo' },
+          { to: '/products', icon: Package, label: 'Meus Produtos' }
         ]
       },
       {
