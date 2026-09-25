@@ -5,6 +5,7 @@ import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, Moni
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const SYSTEM_TYPES = ['Landing Page', 'SaaS', 'E-commerce', 'Dashboard Administrativo', 'Aplicativo Web', 'Portfólio', 'Sistema Interno']
 const TONES = ['Moderno', 'Minimalista', 'Clássico', 'Elegante', 'Rústico', 'Aconchegante', 'Premium', 'Corporativo', 'Divertido']
@@ -134,40 +135,92 @@ Instruções para a IA (Antigravity):
   }
 
   // Generic Pill Selector Component
-  const PillSelector = ({ options, value, onChange }: { options: string[], value: string, onChange: (val: string) => void }) => (
-    <div className="flex flex-wrap gap-2">
-      {options.map(opt => (
-        <button 
-          key={opt}
-          type="button"
-          onClick={() => onChange(opt)}
-          className={`px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center ${value === opt 
-            ? 'bg-primary/20 border-primary text-primary border-2 shadow-[0_0_15px_rgba(139,92,246,0.3)]' 
-            : 'bg-panel border-2 border-border text-textSecondary hover:border-textSecondary hover:text-white'}`}
-        >
-          {value === opt && <Check className="w-4 h-4 mr-1.5" />}
-          {opt}
-        </button>
-      ))}
+  const PillSelector = ({ id, options, value, onChange }: { id: string, options: string[], value: string, onChange: (val: string) => void }) => (
+    <div className="flex flex-wrap gap-3">
+      <AnimatePresence>
+        {options.map(opt => {
+          const isActive = value === opt;
+          return (
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              key={opt}
+              type="button"
+              onClick={() => onChange(opt)}
+              className={`px-5 py-2.5 rounded-full text-sm font-black transition-all flex items-center gap-2 border-2 relative overflow-hidden group ${
+                isActive 
+                ? 'border-transparent text-white shadow-[0_0_25px_rgba(139,92,246,0.6)]' 
+                : 'bg-panel border-border text-textSecondary hover:border-primary/50 hover:text-white hover:bg-primary/5'
+              }`}
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId={`activePill-${id}`}
+                  className="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-indigo-600 -z-10"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+              {isActive && (
+                <motion.div 
+                  initial={{ scale: 0 }} 
+                  animate={{ scale: 1 }} 
+                  className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm"
+                >
+                  <Check className="w-3.5 h-3.5 text-white" />
+                </motion.div>
+              )}
+              <span className="relative z-10">{opt}</span>
+            </motion.button>
+          )
+        })}
+      </AnimatePresence>
     </div>
   )
 
   const MultiPillSelector = ({ options, stateObj, onToggle, disabled = false }: { options: any[], stateObj: any, onToggle: (id: string) => void, disabled?: boolean }) => (
-    <div className="flex flex-wrap gap-2">
-      {options.map(opt => (
-        <button 
-          key={opt.id}
-          type="button"
-          disabled={disabled}
-          onClick={() => onToggle(opt.id)}
-          className={`px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${stateObj[opt.id] 
-            ? 'bg-primary/20 border-primary text-primary border-2 shadow-[0_0_15px_rgba(139,92,246,0.3)]' 
-            : 'bg-panel border-2 border-border text-textSecondary hover:border-textSecondary hover:text-white'}`}
-        >
-          {stateObj[opt.id] && <Check className="w-4 h-4 mr-1.5" />}
-          {opt.label}
-        </button>
-      ))}
+    <div className="flex flex-wrap gap-3">
+      <AnimatePresence>
+        {options.map(opt => {
+          const isActive = stateObj[opt.id];
+          return (
+            <motion.button 
+              whileHover={disabled ? {} : { scale: 1.05 }}
+              whileTap={disabled ? {} : { scale: 0.95 }}
+              key={opt.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => onToggle(opt.id)}
+              className={`px-5 py-2.5 rounded-full text-sm font-black transition-all flex items-center gap-2 border-2 relative overflow-hidden group ${disabled ? 'opacity-40 cursor-not-allowed grayscale' : ''} ${
+                isActive 
+                ? 'border-transparent text-white shadow-[0_0_25px_rgba(139,92,246,0.6)]' 
+                : 'bg-panel border-border text-textSecondary hover:border-primary/50 hover:text-white hover:bg-primary/5'
+              }`}
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId={`activeMultiPill-${opt.id}`}
+                  className="absolute inset-0 bg-gradient-to-r from-primary to-fuchsia-600 -z-10"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                />
+              )}
+              {isActive && (
+                <motion.div 
+                  initial={{ scale: 0, rotate: -90 }} 
+                  animate={{ scale: 1, rotate: 0 }} 
+                  className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm"
+                >
+                  <Check className="w-3.5 h-3.5 text-white" />
+                </motion.div>
+              )}
+              <span className="relative z-10">{opt.label}</span>
+            </motion.button>
+          )
+        })}
+      </AnimatePresence>
     </div>
   )
 
@@ -193,17 +246,17 @@ Instruções para a IA (Antigravity):
             
             <div className="space-y-3">
               <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Qual o seu Nicho?</label>
-              <PillSelector options={availableNiches} value={formData.niche} onChange={v => setFormData({...formData, niche: v})} />
+              <PillSelector id="niches" options={availableNiches} value={formData.niche} onChange={v => setFormData({...formData, niche: v})} />
             </div>
 
             <div className="space-y-3">
               <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">O que você quer criar?</label>
-              <PillSelector options={SYSTEM_TYPES} value={formData.systemType} onChange={v => setFormData({...formData, systemType: v})} />
+              <PillSelector id="systemTypes" options={SYSTEM_TYPES} value={formData.systemType} onChange={v => setFormData({...formData, systemType: v})} />
             </div>
 
             <div className="space-y-3">
               <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Público-Alvo principal</label>
-              <PillSelector options={TARGET_AUDIENCES} value={formData.targetAudience} onChange={v => setFormData({...formData, targetAudience: v})} />
+              <PillSelector id="audiences" options={TARGET_AUDIENCES} value={formData.targetAudience} onChange={v => setFormData({...formData, targetAudience: v})} />
             </div>
             
             <div className="space-y-3 pt-4">
@@ -219,12 +272,12 @@ Instruções para a IA (Antigravity):
             
             <div className="space-y-3">
               <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Estilo Visual</label>
-              <PillSelector options={TONES} value={formData.tone} onChange={v => setFormData({...formData, tone: v})} />
+              <PillSelector id="tones" options={TONES} value={formData.tone} onChange={v => setFormData({...formData, tone: v})} />
             </div>
 
             <div className="space-y-3">
               <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Cores / Aparência</label>
-              <PillSelector options={DESIGNS} value={formData.design} onChange={v => setFormData({...formData, design: v})} />
+              <PillSelector id="designs" options={DESIGNS} value={formData.design} onChange={v => setFormData({...formData, design: v})} />
             </div>
           </div>
 
@@ -249,7 +302,7 @@ Instruções para a IA (Antigravity):
             <h2 className="text-xl font-bold text-white flex items-center gap-2 border-b border-border/50 pb-4">
               <MonitorSmartphone className="w-5 h-5 text-primary" /> Tecnologia
             </h2>
-            <PillSelector options={TECHS} value={formData.tech} onChange={v => setFormData({...formData, tech: v})} />
+            <PillSelector id="techs" options={TECHS} value={formData.tech} onChange={v => setFormData({...formData, tech: v})} />
           </div>
 
           <Button 
