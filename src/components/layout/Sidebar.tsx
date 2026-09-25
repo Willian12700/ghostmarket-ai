@@ -77,6 +77,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       ]
     },
     {
+        label: 'Financeiro e Pagamentos',
+        items: [
+          { to: '/finance', icon: Wallet, label: 'Meu Saldo' }
+        ]
+      },
+      {
       label: 'Organização',
       items: [
         { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
