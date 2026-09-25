@@ -175,7 +175,7 @@ export const Scanner = () => {
       
       const request = {
         textQuery: query,
-        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount'],
+        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'internationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount'],
         maxResultCount: 20
       };
       
@@ -187,10 +187,15 @@ export const Scanner = () => {
         return;
       }
       
+      const actualCity = selectedCountry === 'Brasil' ? selectedCity : selectedIntlCity;
+      
       const realLeads: Lead[] = places.map((place: any) => {
-        let phone = place.nationalPhoneNumber || '';
-        phone = String(phone).replace(/\D/g, ''); 
-        
+        let phone = place.internationalPhoneNumber || place.nationalPhoneNumber || '';
+        phone = String(phone).replace(/\D/g, '');
+        // fallback para o Brasil se por acaso só vier o national:
+        if (selectedCountry === 'Brasil' && phone.length <= 11) {
+            phone = '55' + phone;
+        }
         let insta = '';
         let website = '';
 
@@ -209,7 +214,7 @@ export const Scanner = () => {
           id: place.id,
           name: place.displayName || niche,
           category: niche,
-          city: selectedCity,
+          city: actualCity,
           phone: phone,
           instagram: insta,
           website: website,
@@ -525,7 +530,7 @@ export const Scanner = () => {
                     {/* WhatsApp Botão Principal */}
                     {lead.phone ? (
                       <a 
-                        href={`https://wa.me/55${lead.phone}?text=${generateWhatsAppMessage(lead)}`} 
+                        href={`https://wa.me/${lead.phone}?text=${generateWhatsAppMessage(lead)}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="w-full"
