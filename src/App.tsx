@@ -15,6 +15,7 @@ import { SiteBuilder } from '@/pages/SiteBuilder'
 import { HostedSites } from '@/pages/HostedSites'
 import { Finance } from '@/pages/Finance'
 import { Products } from '@/pages/Products'
+import { Checkout } from '@/pages/Checkout'
 import { SiteViewer } from '@/pages/SiteViewer'
 import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
@@ -67,6 +68,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+        <Route path="/pay/:productId" element={<Checkout />} />
             <Route path="/register" element={<Register />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             
