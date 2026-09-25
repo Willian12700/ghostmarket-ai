@@ -3,23 +3,8 @@ import { Wallet, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, Download, Bui
 import { Button } from '@/components/ui/Button'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
-const revenueData = [
-  { name: '01/09', amount: 1200 },
-  { name: '05/09', amount: 2100 },
-  { name: '10/09', amount: 1800 },
-  { name: '15/09', amount: 3200 },
-  { name: '20/09', amount: 2900 },
-  { name: '25/09', amount: 4500 },
-  { name: '30/09', amount: 5100 },
-]
-
-const recentTransactions = [
-  { id: 'TX-9981', type: 'Pix', customer: 'João Silva', date: 'Hoje, 14:32', amount: 197.00, status: 'approved' },
-  { id: 'TX-9980', type: 'Cartão (12x)', customer: 'Maria Eduarda', date: 'Hoje, 11:15', amount: 497.50, status: 'approved' },
-  { id: 'TX-9979', type: 'Saque', customer: 'Banco Inter (***392)', date: 'Ontem', amount: -1500.00, status: 'processing' },
-  { id: 'TX-9978', type: 'Pix', customer: 'Carlos A.', date: 'Ontem', amount: 97.00, status: 'refunded' },
-  { id: 'TX-9977', type: 'Cartão (1x)', customer: 'Ana Clara', date: '20 Set', amount: 297.00, status: 'approved' },
-]
+const revenueData: any[] = []
+const recentTransactions: any[] = []
 
 export const Finance = () => {
   
@@ -81,7 +66,7 @@ export const Finance = () => {
             
             <div className="relative z-10 mb-2">
               <span className="text-sm text-textSecondary mr-1 font-bold">R$</span>
-              <span className="text-5xl font-black text-white tracking-tighter">12.450,00</span>
+              <span className="text-5xl font-black text-white tracking-tighter">0,00</span>
             </div>
             
             <div className="flex items-center gap-2 text-sm mt-6 relative z-10 p-3 bg-panel border border-border rounded-xl">
@@ -94,7 +79,7 @@ export const Finance = () => {
           <div className="grid grid-cols-2 gap-4">
             <motion.div variants={itemVariants} className="bg-panel border border-border rounded-2xl p-5 relative overflow-hidden">
               <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest mb-2">A Receber (D+30)</h3>
-              <div className="text-2xl font-black text-white">{formatCurrency(4800.50)}</div>
+              <div className="text-2xl font-black text-white">{formatCurrency(0)}</div>
               <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
                 <Clock className="w-3 h-3 mr-1" /> Liberando...
               </p>
@@ -102,7 +87,7 @@ export const Finance = () => {
             
             <motion.div variants={itemVariants} className="bg-panel border border-border rounded-2xl p-5 relative overflow-hidden">
               <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest mb-2">Total Movimentado</h3>
-              <div className="text-2xl font-black text-white">{formatCurrency(45900.00)}</div>
+              <div className="text-2xl font-black text-white">{formatCurrency(0)}</div>
               <p className="text-xs text-success flex items-center mt-2 font-medium">
                 <TrendingUp className="w-3 h-3 mr-1" /> +12% este mês
               </p>
@@ -127,6 +112,12 @@ export const Finance = () => {
             
             <div className="flex-1 w-full h-[250px] relative z-10">
               <ResponsiveContainer width="100%" height="100%">
+                {revenueData.length === 0 ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-textSecondary">
+                  <TrendingUp className="w-10 h-10 mb-3 opacity-20" />
+                  <p>Sem dados de receita no período.</p>
+                </div>
+              ) : (
                 <AreaChart data={revenueData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorFinance" x1="0" y1="0" x2="0" y2="1">
@@ -136,7 +127,7 @@ export const Finance = () => {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="name" stroke="#52525B" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis stroke="#52525B" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `R$ ${value}`} />
+                  <YAxis stroke="#52525B" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value: any) => `R$ ${value}`} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#18181B', borderColor: '#27272A', borderRadius: '12px', color: '#fff', fontWeight: 'bold' }}
                     itemStyle={{ color: '#A78BFA' }}
@@ -144,6 +135,7 @@ export const Finance = () => {
                   />
                   <Area type="monotone" dataKey="amount" stroke="var(--color-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorFinance)" />
                 </AreaChart>
+              )}
               </ResponsiveContainer>
             </div>
           </motion.div>
@@ -169,49 +161,60 @@ export const Finance = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {recentTransactions.map((tx, idx) => (
-                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="p-4 pl-6">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.amount < 0 ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary'}`}>
-                            {tx.amount < 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-white">{tx.type}</p>
-                            <p className="text-xs text-textSecondary">{tx.id}</p>
-                          </div>
+                  {recentTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-textSecondary">
+                        <div className="flex flex-col items-center justify-center">
+                          <Wallet className="w-10 h-10 mb-3 opacity-20" />
+                          <p>Nenhuma movimentação encontrada.</p>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <p className="text-sm font-bold text-white">{tx.customer}</p>
-                      </td>
-                      <td className="p-4 text-sm text-textSecondary font-medium">
-                        {tx.date}
-                      </td>
-                      <td className="p-4 text-right">
-                        <span className={`text-sm font-bold ${tx.amount < 0 ? 'text-white' : 'text-success'}`}>
-                          {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
-                        </span>
-                      </td>
-                      <td className="p-4 pr-6 text-right">
-                        {tx.status === 'approved' && (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-success/10 border border-success/20 text-success text-xs font-bold">
-                            <CheckCircle className="w-3 h-3" /> Aprovado
-                          </div>
-                        )}
-                        {tx.status === 'processing' && (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-warning/10 border border-warning/20 text-warning text-xs font-bold">
-                            <Clock className="w-3 h-3" /> Em Processamento
-                          </div>
-                        )}
-                        {tx.status === 'refunded' && (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs font-bold">
-                            <RefreshCcw className="w-3 h-3" /> Reembolsado
-                          </div>
-                        )}
-                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    recentTransactions.map((tx, idx) => (
+                      <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
+                        <td className="p-4 pl-6">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.amount < 0 ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary'}`}>
+                              {tx.amount < 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-white">{tx.type}</p>
+                              <p className="text-xs text-textSecondary">{tx.id}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <p className="text-sm font-bold text-white">{tx.customer}</p>
+                        </td>
+                        <td className="p-4 text-sm text-textSecondary font-medium">
+                          {tx.date}
+                        </td>
+                        <td className="p-4 text-right">
+                          <span className={`text-sm font-bold ${tx.amount < 0 ? 'text-white' : 'text-success'}`}>
+                            {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
+                          </span>
+                        </td>
+                        <td className="p-4 pr-6 text-right">
+                          {tx.status === 'approved' && (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-success/10 border border-success/20 text-success text-xs font-bold">
+                              <CheckCircle className="w-3 h-3" /> Aprovado
+                            </div>
+                          )}
+                          {tx.status === 'processing' && (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-warning/10 border border-warning/20 text-warning text-xs font-bold">
+                              <Clock className="w-3 h-3" /> Em Processamento
+                            </div>
+                          )}
+                          {tx.status === 'refunded' && (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs font-bold">
+                              <RefreshCcw className="w-3 h-3" /> Reembolsado
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
