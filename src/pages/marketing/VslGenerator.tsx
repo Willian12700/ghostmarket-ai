@@ -1,3 +1,5 @@
+import { GlassTerminal } from '@/components/ui/GlassTerminal'
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -87,7 +89,9 @@ Formate o texto em Markdown (use negritos, títulos).`
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="max-w-7xl mx-auto space-y-6 pb-20 relative z-10 min-h-screen pb-20">
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-3">
           <Brain className="w-3 h-3 fill-primary" /> Neuromarketing Ativado
@@ -220,7 +224,7 @@ Formate o texto em Markdown (use negritos, títulos).`
             <CardContent className="flex-1 flex flex-col">
               {generatedResult ? (
                 <div className="bg-background rounded-lg p-6 border border-border flex-1 overflow-y-auto custom-scrollbar prose prose-invert max-w-none">
-                  <div className="whitespace-pre-wrap">{generatedResult}</div>
+                  <div className="mt-8 h-[500px] w-full"><GlassTerminal content={generatedResult || ''} /></div>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-xl p-8 bg-background/50">
@@ -235,6 +239,7 @@ Formate o texto em Markdown (use negritos, títulos).`
           </Card>
         </div>
       </div>
+    </div>
     </div>
   )
 }

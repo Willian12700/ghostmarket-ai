@@ -1,3 +1,5 @@
+import { GlassTerminal } from '@/components/ui/GlassTerminal'
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -74,7 +76,9 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="max-w-4xl mx-auto space-y-6 pb-20 relative z-10 min-h-screen pb-20">
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-white">Funil de E-mail Marketing</h2>
         <p className="text-textSecondary mt-2">Gere sequências automáticas de e-mails para Boas-vindas, Recuperação e Vendas.</p>
@@ -140,7 +144,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
           <CardContent className="flex-1">
             {generatedResult ? (
               <div className="bg-background rounded-lg p-6 border border-border/50 h-[500px] overflow-y-auto custom-scrollbar prose prose-invert max-w-none">
-                <div className="whitespace-pre-wrap">{generatedResult}</div>
+                <div className="mt-8 h-[500px] w-full"><GlassTerminal content={generatedResult || ''} /></div>
               </div>
             ) : (
               <div className="h-[500px] flex items-center justify-center border-2 border-dashed border-border/50 rounded-lg">
@@ -152,6 +156,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   )
 }

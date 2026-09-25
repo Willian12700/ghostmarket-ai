@@ -1,3 +1,5 @@
+import { GlassTerminal } from '@/components/ui/GlassTerminal'
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState } from 'react'
 import { Wand2, Copy, Check, MessageSquare } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
@@ -86,7 +88,9 @@ export const Creator = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="space-y-6 max-w-5xl mx-auto relative z-10 min-h-screen pb-20">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Creator IA - Scripts de Venda</h2>
         <p className="text-textSecondary">Gere mensagens de WhatsApp de alta conversão para seus leads.</p>
@@ -216,9 +220,7 @@ export const Creator = () => {
             <CardContent className="flex-1">
               {generatedScript ? (
                 <div className="bg-panelHover rounded-lg border border-border p-5 h-full min-h-[400px] overflow-auto">
-                  <pre className="text-[15px] leading-relaxed text-textPrimary whitespace-pre-wrap font-sans">
-                    {generatedScript}
-                  </pre>
+                  <div className="mt-8 h-[500px] w-full"><GlassTerminal content={generatedScript || ''} /></div>
                 </div>
               ) : (
                 <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-textSecondary border-2 border-dashed border-border rounded-lg bg-background/50">
@@ -230,6 +232,7 @@ export const Creator = () => {
           </Card>
         </div>
       </div>
+    </div>
     </div>
   )
 }

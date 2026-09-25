@@ -1,3 +1,5 @@
+import { GlassTerminal } from '@/components/ui/GlassTerminal'
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -87,7 +89,9 @@ VARIAÇÃO [Número]
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="space-y-6 max-w-5xl mx-auto pb-10 relative z-10 min-h-screen pb-20">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
           <TrendingUp className="w-6 h-6 text-primary" /> Ghost Writer AI (TikTok Ads)
@@ -197,9 +201,7 @@ VARIAÇÃO [Número]
             <CardContent className="flex-1">
               {generatedCopy ? (
                 <div className="bg-panelHover rounded-lg border border-border p-5 h-full min-h-[500px] overflow-auto custom-scrollbar">
-                  <div className="text-sm text-white whitespace-pre-wrap leading-relaxed">
-                    {generatedCopy}
-                  </div>
+                  <div className="mt-8 h-[500px] w-full"><GlassTerminal content={generatedCopy || ''} /></div>
                 </div>
               ) : (
                 <div className="h-full min-h-[500px] flex items-center justify-center text-textSecondary text-sm border border-dashed border-border rounded-lg bg-background/50 text-center p-8">
@@ -210,6 +212,7 @@ VARIAÇÃO [Número]
           </Card>
         </div>
       </div>
+    </div>
     </div>
   )
 }

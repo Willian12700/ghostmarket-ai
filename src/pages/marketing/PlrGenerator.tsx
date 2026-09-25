@@ -1,3 +1,4 @@
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -122,7 +123,9 @@ Formate tudo com Markdown (H1 para Título, H2 para Capítulos, etc).`
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="max-w-4xl mx-auto space-y-6 pb-20 relative z-10 min-h-screen pb-20">
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
           Máquina de PLR / E-books
@@ -215,6 +218,7 @@ Formate tudo com Markdown (H1 para Título, H2 para Capítulos, etc).`
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   )
 }

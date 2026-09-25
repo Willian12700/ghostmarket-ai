@@ -1,18 +1,20 @@
 const fs = require('fs');
 
-// 1. Fix Sidebar Package import
-let sidebar = fs.readFileSync('src/components/layout/Sidebar.tsx', 'utf8');
-sidebar = sidebar.replace("import { LayoutDashboard, Package", "import { LayoutDashboard, Package } from 'lucide-react'\n// ");
-sidebar = sidebar.replace(/import \{ LayoutDashboard, Package[\s\S]*?\n\/\//, "import { LayoutDashboard, Package");
-
-if (!sidebar.includes('Package,')) {
-    sidebar = sidebar.replace("import { LayoutDashboard,", "import { LayoutDashboard, Package,");
+const fixGlass = () => {
+  let file = 'src/components/ui/GlassTerminal.tsx';
+  let c = fs.readFileSync(file, 'utf8');
+  c = c.replace(/,\s*language\s*=\s*"text"/, '');
+  c = c.replace(/language\?: string;/, '');
+  fs.writeFileSync(file, c);
 }
-fs.writeFileSync('src/components/layout/Sidebar.tsx', sidebar, 'utf8');
 
-// 2. Fix Products imports
-let products = fs.readFileSync('src/pages/Products.tsx', 'utf8');
-products = products.replace("ExternalLink, ", "");
-products = products.replace("ArrowRight, ", "");
-products = products.replace(", ArrowRight", "");
-fs.writeFileSync('src/pages/Products.tsx', products, 'utf8');
+const fixImports = (file) => {
+  let c = fs.readFileSync(file, 'utf8');
+  c = c.replace("import { GlassTerminal } from '@/components/ui/GlassTerminal'\n", '');
+  fs.writeFileSync(file, c);
+}
+
+fixGlass();
+fixImports('src/pages/Chatbots.tsx');
+fixImports('src/pages/Scanner.tsx');
+fixImports('src/pages/marketing/PlrGenerator.tsx');

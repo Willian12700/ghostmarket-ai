@@ -1,3 +1,5 @@
+import { GlassTerminal } from '@/components/ui/GlassTerminal'
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -78,7 +80,9 @@ Escreva a [CENA VISUAL] e o [ÁUDIO/FALA].
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="space-y-6 max-w-5xl mx-auto pb-10 relative z-10 min-h-screen pb-20">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
           <PlayCircle className="w-6 h-6 text-primary" /> Roteiros Virais (UGC)
@@ -172,9 +176,7 @@ Escreva a [CENA VISUAL] e o [ÁUDIO/FALA].
             <CardContent className="flex-1">
               {generatedScript ? (
                 <div className="bg-panelHover rounded-lg border border-border p-5 h-full min-h-[500px] overflow-auto custom-scrollbar">
-                  <div className="text-sm text-white whitespace-pre-wrap leading-relaxed font-sans">
-                    {generatedScript}
-                  </div>
+                  <div className="mt-8 h-[500px] w-full"><GlassTerminal content={generatedScript || ''} /></div>
                 </div>
               ) : (
                 <div className="h-full min-h-[500px] flex flex-col items-center justify-center text-textSecondary text-sm border border-dashed border-border rounded-lg bg-background/50 text-center p-8 gap-4">
@@ -186,6 +188,7 @@ Escreva a [CENA VISUAL] e o [ÁUDIO/FALA].
           </Card>
         </div>
       </div>
+    </div>
     </div>
   )
 }

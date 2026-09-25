@@ -1,3 +1,4 @@
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState, useEffect } from 'react'
 import { Plus, MessageSquare, Edit2, Trash2, Save, X, Bot, Palette } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -128,7 +129,9 @@ export const Chatbots = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl pb-10">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="space-y-6 max-w-7xl pb-10 relative z-10 min-h-screen pb-20">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
@@ -259,6 +262,7 @@ export const Chatbots = () => {
           </div>
         )}
       </AnimatePresence>
+    </div>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState, useEffect } from 'react'
 import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert, Check, Plus, MessageSquare, Globe as GlobeIcon, Star, Sparkles, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -219,7 +220,9 @@ export const Scanner = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl pb-10">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <AnimatedBackground />
+      <div className="space-y-6 max-w-7xl pb-10 relative z-10 min-h-screen pb-20">
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
           <Search className="w-8 h-8 text-primary" />
@@ -515,6 +518,7 @@ export const Scanner = () => {
           </div>
         )}
       </AnimatePresence>
+    </div>
     </div>
   )
 }
