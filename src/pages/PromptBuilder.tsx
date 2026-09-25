@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase'
-import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone } from 'lucide-react'
+import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
@@ -41,6 +41,9 @@ const FEATURE_OPTIONS = [
 export const PromptBuilder = () => {
   const { addToast } = useToastStore()
   
+  const [step, setStep] = useState(1)
+  const totalSteps = 5
+
   const [availableNiches, setAvailableNiches] = useState<string[]>([
     'SaaS / Tecnologia',
     'E-commerce',
@@ -79,13 +82,9 @@ export const PromptBuilder = () => {
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [copied, setCopied] = useState(false)
 
-  // Handlers
-  const toggleSection = (id: string) => {
-    setFormData(prev => ({ ...prev, sections: { ...prev.sections, [id]: !prev.sections[id] } }))
-  }
-
+  const toggleSection = (id: string) => setFormData(prev => ({ ...prev, sections: { ...prev.sections, [id]: !prev.sections[id] } }))
   const toggleFeature = (id: string) => {
-    if (formData.tech === 'HTML + CSS + JS') return; // Bloquear funcionalidades dinâmicas se for HTML puro
+    if (formData.tech === 'HTML + CSS + JS') return;
     setFormData(prev => ({ ...prev, features: { ...prev.features, [id]: !prev.features[id] } }))
   }
 
@@ -94,7 +93,7 @@ export const PromptBuilder = () => {
     
     setTimeout(() => {
       const activeSections = SECTION_OPTIONS.filter(s => formData.sections[s.id]).map(s => s.label).join(', ')
-      const activeFeatures = FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => f.label).join(', ')
+      const activeFeatures = formData.tech === 'HTML + CSS + JS' ? '' : FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => f.label).join(', ')
       
       const prompt = `Contexto do Projeto:
 Estou desenvolvendo um(a) ${formData.systemType} para o nicho de ${formData.niche}.
@@ -124,6 +123,7 @@ Instruções para a IA (Antigravity):
 `
       setGeneratedPrompt(prompt)
       setIsGenerating(false)
+      setStep(5)
     }, 1500)
   }
 
@@ -134,7 +134,10 @@ Instruções para a IA (Antigravity):
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Generic Pill Selector Component
+  const nextStep = () => setStep(s => Math.min(totalSteps, s + 1))
+  const prevStep = () => setStep(s => Math.max(1, s - 1))
+
+  // Componentes de Seleção (Pills)
   const PillSelector = ({ id, options, value, onChange }: { id: string, options: string[], value: string, onChange: (val: string) => void }) => (
     <div className="flex flex-wrap gap-3">
       <AnimatePresence>
@@ -192,7 +195,7 @@ Instruções para a IA (Antigravity):
               type="button"
               disabled={disabled}
               onClick={() => onToggle(opt.id)}
-              className={`px-5 py-2.5 rounded-full text-sm font-black transition-all flex items-center gap-2 border-2 relative overflow-hidden group ${disabled ? 'opacity-40 cursor-not-allowed grayscale' : ''} ${
+              className={`px-5 py-2.5 rounded-full text-sm font-black transition-all flex items-center gap-2 border-2 relative overflow-hidden group ${disabled ? 'opacity-20 cursor-not-allowed grayscale' : ''} ${
                 isActive 
                 ? 'border-transparent text-white shadow-[0_0_25px_rgba(139,92,246,0.6)]' 
                 : 'bg-panel border-border text-textSecondary hover:border-primary/50 hover:text-white hover:bg-primary/5'
@@ -224,132 +227,230 @@ Instruções para a IA (Antigravity):
     </div>
   )
 
+  // Variantes de Animação para os Steps
+  const stepVariants = {
+    initial: { opacity: 0, x: 20, scale: 0.95 },
+    animate: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.4 } },
+    exit: { opacity: 0, x: -20, scale: 0.95, transition: { duration: 0.3 } }
+  }
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-10">
+    <div className="min-h-[calc(100vh-64px)] flex flex-col bg-[#09090b] text-white selection:bg-primary/30">
       
-      <div>
-        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-          <Wand2 className="w-8 h-8 text-primary" /> Criador de Sites IA
+      {/* CABEÇALHO / PROGRESSO */}
+      <div className="pt-8 pb-4 px-6 max-w-4xl mx-auto w-full">
+        <h1 className="text-3xl font-black tracking-tight flex items-center gap-3 justify-center mb-8">
+          <Wand2 className="w-8 h-8 text-primary" /> Construtor Inteligente
         </h1>
-        <p className="text-textSecondary mt-2 text-lg">Selecione as opções desejadas. Nosso robô fará o resto.</p>
+        
+        <div className="flex items-center justify-between relative">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-panel rounded-full -z-10 overflow-hidden">
+            <motion.div 
+              className="h-full bg-primary" 
+              initial={{ width: '0%' }}
+              animate={{ width: `${((step - 1) / (totalSteps - 1)) * 100}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+          
+          {[1, 2, 3, 4, 5].map(s => (
+            <div key={s} className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-500 ${
+              step === s ? 'bg-primary text-white shadow-[0_0_20px_rgba(139,92,246,0.6)] scale-110' 
+              : step > s ? 'bg-primary/80 text-white' : 'bg-panel border-2 border-border text-textSecondary'
+            }`}>
+              {step > s ? <Check className="w-5 h-5" /> : s}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        
-        {/* ESQUERDA: FORMULÁRIO */}
-        <div className="xl:col-span-7 space-y-6">
+      {/* ÁREA DOS STEPS */}
+      <div className="flex-1 flex flex-col justify-center max-w-4xl mx-auto w-full px-6 pb-12 overflow-hidden">
+        <AnimatePresence mode="wait">
           
-          <div className="bg-panel border border-border p-6 rounded-3xl space-y-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 border-b border-border/50 pb-4">
-              <LayoutTemplate className="w-5 h-5 text-primary" /> Tipo de Negócio
-            </h2>
-            
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Qual o seu Nicho?</label>
-              <PillSelector id="niches" options={availableNiches} value={formData.niche} onChange={v => setFormData({...formData, niche: v})} />
-            </div>
+          {/* PASSO 1: O Básico */}
+          {step === 1 && (
+            <motion.div key="step1" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><LayoutTemplate className="w-7 h-7 text-primary" /> Detalhes do Negócio</h2>
+                <p className="text-textSecondary text-lg">Vamos começar entendendo o que vamos construir hoje.</p>
+              </div>
+              
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Qual o seu Nicho?</label>
+                <PillSelector id="niches" options={availableNiches} value={formData.niche} onChange={v => setFormData({...formData, niche: v})} />
+              </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">O que você quer criar?</label>
-              <PillSelector id="systemTypes" options={SYSTEM_TYPES} value={formData.systemType} onChange={v => setFormData({...formData, systemType: v})} />
-            </div>
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">O que você quer criar?</label>
+                <PillSelector id="systemTypes" options={SYSTEM_TYPES} value={formData.systemType} onChange={v => setFormData({...formData, systemType: v})} />
+              </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Público-Alvo principal</label>
-              <PillSelector id="audiences" options={TARGET_AUDIENCES} value={formData.targetAudience} onChange={v => setFormData({...formData, targetAudience: v})} />
-            </div>
-            
-            <div className="space-y-3 pt-4">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Nome da Empresa (Opcional)</label>
-              <Input className="bg-background border-2 border-border h-12 rounded-xl text-white" placeholder="Ex: Barbearia do Zé..." value={formData.projectName} onChange={e => setFormData({...formData, projectName: e.target.value})} />
-            </div>
-          </div>
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Público-Alvo Principal</label>
+                <PillSelector id="audiences" options={TARGET_AUDIENCES} value={formData.targetAudience} onChange={v => setFormData({...formData, targetAudience: v})} />
+              </div>
 
-          <div className="bg-panel border border-border p-6 rounded-3xl space-y-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 border-b border-border/50 pb-4">
-              <Palette className="w-5 h-5 text-primary" /> Identidade Visual
-            </h2>
-            
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Estilo Visual</label>
-              <PillSelector id="tones" options={TONES} value={formData.tone} onChange={v => setFormData({...formData, tone: v})} />
-            </div>
+              <div className="space-y-4 pt-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Qual o nome da sua empresa/projeto?</label>
+                <Input className="bg-panel border-2 border-border h-16 rounded-2xl text-white text-lg px-6 shadow-inner focus:border-primary transition-colors" placeholder="Digite aqui (Ex: Barbearia Vip)" value={formData.projectName} onChange={e => setFormData({...formData, projectName: e.target.value})} />
+              </div>
+            </motion.div>
+          )}
 
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Cores / Aparência</label>
-              <PillSelector id="designs" options={DESIGNS} value={formData.design} onChange={v => setFormData({...formData, design: v})} />
-            </div>
-          </div>
+          {/* PASSO 2: Tecnologia */}
+          {step === 2 && (
+            <motion.div key="step2" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><MonitorSmartphone className="w-7 h-7 text-primary" /> Stack de Tecnologia</h2>
+                <p className="text-textSecondary text-lg">Defina como a inteligência vai escrever seu código base.</p>
+              </div>
+              
+              <div className="bg-panel border border-border p-8 rounded-3xl text-center">
+                <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Code className="w-10 h-10" />
+                </div>
+                <h3 className="text-xl font-bold mb-6">Escolha o Framework ou Linguagem</h3>
+                <div className="flex justify-center">
+                  <PillSelector id="techs" options={TECHS} value={formData.tech} onChange={v => setFormData({...formData, tech: v})} />
+                </div>
+                
+                <AnimatePresence>
+                  {formData.tech === 'HTML + CSS + JS' && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-xl text-warning text-sm font-medium">
+                      Atenção: Ao escolher HTML puro, algumas funcionalidades avançadas (como banco de dados e autenticação) serão desativadas no próximo passo.
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
 
-          <div className="bg-panel border border-border p-6 rounded-3xl space-y-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 border-b border-border/50 pb-4">
-              <Settings2 className="w-5 h-5 text-primary" /> Estrutura & Funcionalidades
-            </h2>
-            
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Seções da Página</label>
-              <MultiPillSelector options={SECTION_OPTIONS} stateObj={formData.sections} onToggle={toggleSection} />
-            </div>
+          {/* PASSO 3: Identidade Visual */}
+          {step === 3 && (
+            <motion.div key="step3" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Palette className="w-7 h-7 text-primary" /> Identidade Visual</h2>
+                <p className="text-textSecondary text-lg">Como o seu sistema deve se parecer e qual será o tom de voz?</p>
+              </div>
+              
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Tom de Comunicação (Copywriting)</label>
+                <PillSelector id="tones" options={TONES} value={formData.tone} onChange={v => setFormData({...formData, tone: v})} />
+              </div>
 
-            <div className="space-y-3 pt-4">
-              <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Funcionalidades Extras</label>
-              {formData.tech === 'HTML + CSS + JS' && <p className="text-xs text-warning mb-2">Funcionalidades avançadas estão desativadas porque você selecionou HTML puro.</p>}
-              <MultiPillSelector options={FEATURE_OPTIONS} stateObj={formData.features} onToggle={toggleFeature} disabled={formData.tech === 'HTML + CSS + JS'} />
-            </div>
-          </div>
+              <div className="space-y-4 pt-6">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Esquema de Cores e Estética</label>
+                <PillSelector id="designs" options={DESIGNS} value={formData.design} onChange={v => setFormData({...formData, design: v})} />
+              </div>
+            </motion.div>
+          )}
 
-          <div className="bg-panel border border-border p-6 rounded-3xl space-y-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 border-b border-border/50 pb-4">
-              <MonitorSmartphone className="w-5 h-5 text-primary" /> Tecnologia
-            </h2>
-            <PillSelector id="techs" options={TECHS} value={formData.tech} onChange={v => setFormData({...formData, tech: v})} />
-          </div>
+          {/* PASSO 4: Funcionalidades */}
+          {step === 4 && (
+            <motion.div key="step4" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Settings2 className="w-7 h-7 text-primary" /> Estrutura & Recursos</h2>
+                <p className="text-textSecondary text-lg">Selecione tudo o que o seu site/sistema deve ter.</p>
+              </div>
+              
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2 flex justify-between">
+                  <span>Blocos da Página Inicial</span>
+                  <span className="text-primary text-xs normal-case">(Selecione múltiplos)</span>
+                </label>
+                <div className="p-6 bg-panel border border-border rounded-3xl">
+                  <MultiPillSelector options={SECTION_OPTIONS} stateObj={formData.sections} onToggle={toggleSection} />
+                </div>
+              </div>
 
-          <Button 
-            className="w-full h-16 text-lg font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-[0_0_40px_rgba(139,92,246,0.3)] transition-all hover:scale-[1.02]" 
-            onClick={generatePrompt}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <span className="flex items-center gap-2"><div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" /> Gerando Sistema...</span>
-            ) : (
-              <><Zap className="w-6 h-6 mr-2" /> Gerar Site Completo</>
-            )}
-          </Button>
+              <div className="space-y-4 pt-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2 flex justify-between">
+                  <span>Módulos Dinâmicos</span>
+                  <span className="text-primary text-xs normal-case">(Selecione múltiplos)</span>
+                </label>
+                <div className="p-6 bg-panel border border-border rounded-3xl relative overflow-hidden">
+                  {formData.tech === 'HTML + CSS + JS' && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
+                      <Zap className="w-8 h-8 text-warning mb-2" />
+                      <p className="font-bold text-white text-lg">Módulos Desativados</p>
+                      <p className="text-sm text-textSecondary max-w-sm text-center mt-1">Sistemas dinâmicos não são compatíveis com HTML/CSS puro. Volte ao passo 2 e escolha React ou Next.js para liberar.</p>
+                    </div>
+                  )}
+                  <MultiPillSelector options={FEATURE_OPTIONS} stateObj={formData.features} onToggle={toggleFeature} disabled={formData.tech === 'HTML + CSS + JS'} />
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-        </div>
-
-        {/* DIREITA: RESULTADO */}
-        <div className="xl:col-span-5 h-full">
-          <div className="bg-panel border border-border p-6 rounded-3xl h-full flex flex-col sticky top-8 min-h-[600px]">
-            <div className="flex flex-row items-center justify-between border-b border-border/50 pb-4 mb-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Code className="w-5 h-5 text-primary" /> Código / Prompt IA</h2>
-              {generatedPrompt && (
-                <Button variant="secondary" size="sm" onClick={copyToClipboard} className="bg-background text-white border border-border hover:border-primary">
-                  {copied ? <Check className="w-4 h-4 mr-2 text-success" /> : <Copy className="w-4 h-4 mr-2" />}
-                  {copied ? 'Copiado!' : 'Copiar'}
-                </Button>
-              )}
-            </div>
-            
-            <div className="flex-1 flex flex-col">
-              {generatedPrompt ? (
-                <div className="bg-[#0b0416] rounded-2xl border border-border p-6 flex-1 overflow-auto custom-scrollbar">
-                  <pre className="text-sm text-primary/80 whitespace-pre-wrap font-mono leading-relaxed">
+          {/* PASSO 5: Resultado / Código */}
+          {step === 5 && (
+            <motion.div key="step5" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-6 py-6 h-[600px] flex flex-col">
+              <div className="text-center mb-6">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Code className="w-7 h-7 text-primary" /> Seu Prompt Inteligente</h2>
+                <p className="text-textSecondary text-lg">Copiando este código e colando no cursor/claude, seu sistema nasce perfeito.</p>
+              </div>
+              
+              <div className="flex-1 bg-[#0b0416] rounded-3xl border-2 border-border p-6 overflow-hidden flex flex-col relative group">
+                <div className="absolute top-4 right-4 z-10 flex gap-2">
+                  <Button onClick={copyToClipboard} className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+                    {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                    {copied ? 'Copiado!' : 'Copiar Tudo'}
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-auto custom-scrollbar pr-4">
+                  <pre className="text-sm md:text-base text-primary/90 whitespace-pre-wrap font-mono leading-relaxed">
                     {generatedPrompt}
                   </pre>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+
+        {/* CONTROLES DE NAVEGAÇÃO */}
+        <div className="mt-8 flex items-center justify-between border-t border-border/50 pt-6">
+          <Button 
+            variant="ghost" 
+            onClick={prevStep} 
+            disabled={step === 1}
+            className={`h-14 px-8 text-lg font-bold transition-all ${step === 1 ? 'opacity-0 pointer-events-none' : 'text-textSecondary hover:text-white'}`}
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" /> Voltar
+          </Button>
+
+          {step < 4 && (
+            <Button 
+              onClick={nextStep} 
+              className="h-14 px-10 text-lg font-black bg-white text-black hover:bg-white/90 rounded-2xl shadow-xl hover:scale-105 transition-all"
+            >
+              Próximo <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          )}
+
+          {step === 4 && (
+            <Button 
+              onClick={generatePrompt}
+              disabled={isGenerating}
+              className="h-14 px-10 text-lg font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:scale-105 transition-all"
+            >
+              {isGenerating ? (
+                <span className="flex items-center gap-2"><div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin" /> Mágica acontecendo...</span>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-textSecondary border-2 border-dashed border-border/50 rounded-2xl bg-background/30 p-10 text-center">
-                  <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center mb-6 shadow-xl">
-                    <Zap className="w-10 h-10 text-borderHover" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Pronto para a Mágica?</h3>
-                  <p className="text-lg">Selecione as opções ao lado com um clique e aperte em "Gerar Site Completo" para a IA criar o código perfeito para você.</p>
-                </div>
+                <><Zap className="w-5 h-5 mr-2" /> Gerar Site Agora</>
               )}
-            </div>
-          </div>
+            </Button>
+          )}
+
+          {step === 5 && (
+            <Button 
+              onClick={() => setStep(1)} 
+              className="h-14 px-10 text-lg font-black bg-panel border-2 border-border text-white hover:border-primary rounded-2xl transition-all"
+            >
+              Criar Novo Site
+            </Button>
+          )}
         </div>
 
       </div>
