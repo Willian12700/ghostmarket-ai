@@ -83,8 +83,8 @@ export const AppPreview = () => {
                 <User className="w-4 h-4 text-primary" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold">WL</span>
-                <span className="text-[10px] text-white/40 font-medium tracking-wider">ADMINISTRADOR</span>
+                <span className="text-sm font-bold">Usuário Teste</span>
+                <span className="text-[10px] text-white/40 font-medium tracking-wider uppercase">PLANO VITALÍCIO</span>
               </div>
             </div>
           </div>
@@ -121,7 +121,7 @@ export const AppPreview = () => {
                   <Zap className="w-3.5 h-3.5" /> MODO ELITE ATIVADO
                 </div>
                 <div>
-                  <h1 className="text-5xl font-black tracking-tight mb-2">Olá, WL.</h1>
+                  <h1 className="text-5xl font-black tracking-tight mb-2">Olá, Usuário Teste.</h1>
                   <p className="text-lg text-white/60">Visão geral do seu império digital.</p>
                 </div>
               </div>
