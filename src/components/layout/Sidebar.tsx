@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, ChevronRight, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-
 import { cn } from '@/utils/cn'
 
 interface SidebarProps {
@@ -12,7 +11,7 @@ interface SidebarProps {
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore()
-    const navigate = useNavigate()
+  const navigate = useNavigate()
   const location = useLocation()
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Prompt, Sites e Leads', 'TikTok Shop', 'Marketing Digital'])
@@ -83,15 +82,24 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     }
   ]
 
-  // Add admin panel if user is admin
-  if ((user as any)?.role === 'admin') {
+  if (user?.email === 'willrandrier@gmail.com') {
     menuGroups.push({
-      label: 'Administrativo',
+      label: 'PAINEL ADM',
       items: [
-        { to: '/admin', icon: ShieldAlert, label: 'Painel Admin' },
+        { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' },
       ]
     })
   }
+
+  // Automatically expand group if a child is active
+  useEffect(() => {
+    menuGroups.forEach(group => {
+      const hasActiveChild = group.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'))
+      if (hasActiveChild && !expandedGroups.includes(group.label)) {
+        setExpandedGroups(prev => [...prev, group.label])
+      }
+    })
+  }, [location.pathname])
 
   // Effect to close sidebar on route change on mobile
   useEffect(() => {
@@ -140,12 +148,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-textMuted uppercase tracking-wider group hover:text-textSecondary transition-colors"
                 >
                   {group.label}
-                  <ChevronRight 
-                    className={cn(
-                      "w-3.5 h-3.5 transition-transform duration-200",
-                      expandedGroups.includes(group.label) ? "rotate-90" : ""
-                    )} 
-                  />
+                  <svg 
+                    className={cn("w-3.5 h-3.5 transition-transform duration-200", expandedGroups.includes(group.label) ? "rotate-90" : "")} 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
                 
                 <div 
@@ -186,35 +194,42 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           </div>
         </div>
 
-        <div className="p-4 border-t border-border bg-background/30 backdrop-blur-sm">
-          <div className="space-y-1 mb-4">
+        <div className="p-4 border-t border-border bg-background/30 backdrop-blur-sm space-y-4">
+          
+          {/* Support Button - Premium Moving Gradient */}
+          <a
+            href="https://wa.me/5584996162332?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20GhostMarket%20AI"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-glow hover:scale-[1.02] active:scale-95 animate-bg-shift bg-gradient-to-r from-accent via-secondary to-accent border border-white/20"
+            title="Suporte no WhatsApp"
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="tracking-wide">Suporte Exclusivo</span>
+          </a>
+
+          <div className="flex gap-2">
             <NavLink
               to="/settings"
               className={({ isActive }) => cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative",
+                "flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group",
                 isActive 
                   ? "text-textPrimary bg-surface-elevated border border-border shadow-sm"
-                  : "text-textSecondary hover:text-textPrimary hover:bg-surface border border-transparent"
+                  : "text-textSecondary hover:text-textPrimary hover:bg-surface border border-border/50"
               )}
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-accent rounded-r-full shadow-glow" />}
-                  <Settings className={cn("w-4 h-4", isActive ? "text-accent" : "text-textMuted group-hover:text-textSecondary")} />
-                  Configurações
-                </>
-              )}
+              <Settings className="w-4 h-4" /> Config
             </NavLink>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-textSecondary hover:text-error hover:bg-error/10 border border-transparent transition-all duration-200 group"
+              className="flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-textSecondary hover:text-error hover:bg-error/10 border border-border/50 transition-all duration-200 group"
             >
-              <LogOut className="w-4 h-4 text-textMuted group-hover:text-error transition-colors" />
+              <LogOut className="w-4 h-4 group-hover:text-error transition-colors" />
               Sair
             </button>
           </div>
 
-          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface border border-border shadow-sm hover:border-borderHover transition-colors cursor-pointer">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface border border-border shadow-sm">
             <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center overflow-hidden shrink-0">
               <User className="w-4 h-4 text-accent" />
             </div>
@@ -222,11 +237,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               <p className="text-sm font-medium text-textPrimary truncate">
                 {user?.name || 'Usuário Premium'}
               </p>
-              <p className="text-xs text-textMuted truncate">
-                {user?.email || 'admin@ghostmarket.ai'}
+              <p className="text-[10px] font-semibold text-textMuted truncate uppercase tracking-wider">
+                {user?.email === 'willrandrier@gmail.com' ? 'Administrador' : 'Membro Elite'}
               </p>
             </div>
           </div>
+
         </div>
       </aside>
     </>
