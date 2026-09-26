@@ -22,6 +22,7 @@ import { Checkout } from '@/pages/Checkout'
 import { SiteViewer } from '@/pages/SiteViewer'
 import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
+import { CnpjScanner } from '@/pages/CnpjScanner'
 import { Chatbots } from '@/pages/Chatbots'
 import { SalesScripts } from '@/pages/SalesScripts'
 import { Demo } from '@/pages/Demo'
@@ -93,6 +94,7 @@ function App() {
               <Route path="/finance" element={<Finance />} />
               <Route path="/products" element={<Products />} />
               <Route path="/scanner" element={<Scanner />} />
+              <Route path="/cnpj" element={<CnpjScanner />} />
               <Route path="/chatbots" element={<Chatbots />} />
               <Route path="/scripts" element={<SalesScripts />} />
               <Route path="/contracts" element={<Contracts />} />
