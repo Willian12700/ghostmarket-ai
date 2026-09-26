@@ -400,7 +400,7 @@ export const Landing = () => {
 
       {/* WhatsApp Floating Button */}
       <a 
-        href="https://wa.me/5511999999999?text=Ol%C3%A1!+Estava+vendo+o+site+do+GhostMarket+e+quero+saber+como+funciona+o+Plano+Vital%C3%ADcio."
+        href="https://wa.me/5584996162332?text=Ol%C3%A1!+Estava+vendo+o+site+do+GhostMarket+e+quero+saber+como+funciona+o+Plano+Vital%C3%ADcio."
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-[0_4px_24px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform flex items-center justify-center group"

@@ -25,7 +25,7 @@ export const Demo = () => {
       <div className="mt-20 text-center relative z-10 flex flex-col items-center">
         <h3 className="text-2xl font-bold mb-6">Pronto para ter a sua estrutura automtica?</h3>
         <a 
-          href="https://wa.me/5511999999999?text=Ol%C3%A1!+Acabei+de+ver+a+demo+do+GhostMarket+e+quero+garantir+minha+vaga+no+plano+vitalcio." 
+          href="https://wa.me/5584996162332?text=Ol%C3%A1!+Acabei+de+ver+a+demo+do+GhostMarket+e+quero+garantir+minha+vaga+no+plano+vitalcio." 
           target="_blank" 
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 bg-[#25D366] hover:bg-[#20bd5a] text-white font-black text-lg px-8 py-4 rounded-full transition-all hover:scale-105 shadow-[0_4px_24px_rgba(37,211,102,0.4)]"
