@@ -54,7 +54,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            photoURL: firebaseUser.photoURL || localStorage.getItem(`profile_pic_${firebaseUser.uid}`)
+            photoURL: firebaseUser.photoURL || localStorage.getItem(`profile_pic_${firebaseUser.uid}`),
+              isAnonymous: firebaseUser.isAnonymous
           },
           isAuthenticated: true,
           isLoading: false

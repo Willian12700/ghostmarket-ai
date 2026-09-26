@@ -170,6 +170,8 @@ export const MainLayout = () => {
       <CopilotChat />
       <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ToastContainer />
-      <SalesNotifier />\n      {user?.isAnonymous && <TrialTimer />}\n    </div>
+      <SalesNotifier />
+      {user?.isAnonymous && <TrialTimer />}
+    </div>
   )
 }
