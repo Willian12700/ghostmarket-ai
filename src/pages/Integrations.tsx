@@ -10,7 +10,7 @@ export const Integrations = () => {
   const { addToast } = useToastStore()
   const [copied, setCopied] = useState(false)
 
-  const webhookUrl = `https://ghostmarket-ai.vercel.app/api/client-webhook?user=${encodeURIComponent(user?.email || 'email')}`
+  const webhookUrl = `https://ghostmarket.cyou/api/client-webhook?user=${encodeURIComponent(user?.email || 'email')}`
 
   const handleCopy = () => {
     navigator.clipboard.writeText(webhookUrl)

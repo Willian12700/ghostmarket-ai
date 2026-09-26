@@ -351,7 +351,7 @@ export const HostedSites = () => {
                     <h4 className="text-xl font-bold text-white mb-1.5 truncate">{site.domain || site.id}</h4>
                     <div className="flex items-center">
                       <a href={site.domain.startsWith('http') ? site.domain : `https://${site.domain}`} target="_blank" rel="noopener noreferrer" className="text-sm text-textSecondary font-mono truncate hover:text-primary transition-colors flex items-center">
-                        {site.domain.startsWith('http') ? site.domain : `https://ghostmarket-ai.vercel.app/s/${site.id}`} <ExternalLink className="w-3 h-3 ml-2 shrink-0 opacity-50" />
+                        {site.domain.startsWith('http') ? site.domain : `https://ghostmarket.cyou/s/${site.id}`} <ExternalLink className="w-3 h-3 ml-2 shrink-0 opacity-50" />
                       </a>
                     </div>
                   </div>
