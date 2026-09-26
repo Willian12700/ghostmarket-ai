@@ -32,6 +32,32 @@ export const Chatbots = () => {
   const [step, setStep] = useState(1)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState(0);
+  
+  const processingSteps = [
+    "Inicializando Núcleo Cognitivo...",
+    "Estruturando Comportamento ({role})...",
+    "Injetando Prompt de Sistema...",
+    "Compilando Identidade Visual...",
+    "Ativando Atendente IA..."
+  ];
+
+  const handleSaveWithAI = async () => {
+    setIsProcessing(true);
+    setProcessingStep(0);
+    
+    // Simulate AI loading steps
+    for (let i = 0; i < processingSteps.length; i++) {
+      setProcessingStep(i);
+      await new Promise(r => setTimeout(r, 600)); // 600ms per step
+    }
+    
+    await handleSave();
+    setIsProcessing(false);
+  }
+
   
   // Form State
   const [formData, setFormData] = useState({
@@ -160,8 +186,52 @@ export const Chatbots = () => {
 
   if (isWizardOpen) {
     return (
-      <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+      <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-background text-white selection:bg-primary/30">
         <AnimatedBackground />
+
+      <AnimatePresence>
+        {isProcessing && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-background/90 backdrop-blur-xl flex flex-col items-center justify-center p-4"
+          >
+            <div className="max-w-md w-full bg-surface-elevated border border-border rounded-2xl p-8 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-surface">
+                <motion.div 
+                  className="h-full bg-accent"
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${((processingStep + 1) / processingSteps.length) * 100}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+              
+              <div className="w-20 h-20 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mb-8 relative">
+                <div className="absolute inset-0 rounded-full border-t-2 border-accent animate-spin" />
+                <Bot className="w-10 h-10 text-accent animate-pulse" />
+              </div>
+              
+              <h3 className="text-xl font-bold text-textPrimary mb-2">Construindo sua IA</h3>
+              
+              <div className="h-8 flex items-center justify-center">
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={processingStep}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="text-accent font-medium"
+                  >
+                    {processingSteps[processingStep].replace('{role}', formData.role)}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
         <div className="max-w-4xl mx-auto space-y-6 pt-10 pb-20 relative z-10 min-h-screen">
           
           <div className="flex justify-between items-center mb-8 px-4">
@@ -205,7 +275,7 @@ export const Chatbots = () => {
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border-4 transition-colors duration-500 ${
                     step >= i 
                     ? 'bg-primary border-panel text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]' 
-                    : 'bg-panel border-background text-textSecondary'
+                    : 'bg-surface-elevated border-background text-textSecondary'
                   }`}
                 >
                   {i}
@@ -217,7 +287,7 @@ export const Chatbots = () => {
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="step1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-                <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+                <Card className="border-border/50 bg-surface-elevated/50 backdrop-blur-sm shadow-2xl">
                   <CardContent className="p-8 space-y-8">
                     <div className="space-y-4">
                       <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 1 de 5</h3>
@@ -246,7 +316,7 @@ export const Chatbots = () => {
 
             {step === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-                <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+                <Card className="border-border/50 bg-surface-elevated/50 backdrop-blur-sm shadow-2xl">
                   <CardContent className="p-8 space-y-8">
                     <div className="space-y-4">
                       <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 2 de 5</h3>
@@ -285,7 +355,7 @@ export const Chatbots = () => {
 
             {step === 3 && (
               <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-                <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+                <Card className="border-border/50 bg-surface-elevated/50 backdrop-blur-sm shadow-2xl">
                   <CardContent className="p-8 space-y-8">
                     <div className="space-y-4">
                       <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 3 de 5</h3>
@@ -315,7 +385,7 @@ export const Chatbots = () => {
 
             {step === 4 && (
               <motion.div key="step4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-                <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+                <Card className="border-border/50 bg-surface-elevated/50 backdrop-blur-sm shadow-2xl">
                   <CardContent className="p-8 space-y-8">
                     <div className="space-y-4">
                       <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 4 de 5</h3>
@@ -373,7 +443,7 @@ export const Chatbots = () => {
 
                 <div className="flex gap-4 max-w-md mx-auto">
                   <Button variant="secondary" onClick={prevStep} className="h-14 px-6"><ChevronLeft className="w-5 h-5" /></Button>
-                  <Button onClick={handleSave} disabled={isSaving} className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-primaryLight shadow-[0_0_20px_rgba(139,92,246,0.3)] text-white">
+                  <Button onClick={handleSaveWithAI} disabled={isProcessing || isSaving} className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-primaryLight shadow-[0_0_20px_rgba(139,92,246,0.3)] text-white">
                     {isSaving ? <span className="animate-pulse">Salvando e Treinando IA...</span> : <><Save className="w-5 h-5 mr-2" /> Finalizar e Salvar</>}
                   </Button>
                 </div>
@@ -388,7 +458,7 @@ export const Chatbots = () => {
 
   // LISTAGEM DE CHATBOTS DEFAULT SCREEN
   return (
-    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-background text-white selection:bg-primary/30">
       <AnimatedBackground />
       <div className="space-y-6 max-w-7xl mx-auto pt-10 pb-20 relative z-10 min-h-screen">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-4">
@@ -408,7 +478,7 @@ export const Chatbots = () => {
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
         ) : bots.length === 0 ? (
-          <Card className="border-dashed border-2 bg-background/50 border-border/50 mx-4">
+          <Card className="border-dashed border-2 bg-surface border-border/50 mx-4 rounded-3xl">
             <CardContent className="flex flex-col items-center justify-center py-24 text-center">
               <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                 <MessageSquare className="w-12 h-12 text-primary/50" />
@@ -421,7 +491,7 @@ export const Chatbots = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
             {bots.map(bot => (
-              <Card key={bot.id} className="border-border bg-panel flex flex-col group hover:border-primary/50 transition-colors overflow-hidden">
+              <Card key={bot.id} className="border-border bg-surface-elevated flex flex-col group hover:border-borderHover hover:-translate-y-1 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-glow-sm rounded-2xl">
                 <div className="h-2 w-full" style={{ backgroundColor: bot.primaryColor || '#8B5CF6' }}></div>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <div className="flex items-center gap-3">
