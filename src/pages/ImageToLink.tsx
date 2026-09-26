@@ -6,12 +6,8 @@ import { Input } from '@/components/ui/Input'
 import { Copy, Check, UploadCloud, Link as LinkIcon, ChevronRight } from 'lucide-react'
 import { useToastStore } from '@/store/toastStore'
 import { motion, AnimatePresence } from 'framer-motion'
-import { storage } from '@/config/firebase'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { useAuthStore } from '@/store/authStore'
 
 export const ImageToLink = () => {
-  const { user } = useAuthStore()
   const [step, setStep] = useState(1)
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -56,20 +52,30 @@ export const ImageToLink = () => {
     setStep(2)
 
     try {
-      const timestamp = new Date().getTime()
-      const fileName = `${timestamp}_${file.name}`
-      const userId = user?.uid || 'anonymous'
-      const storageRef = ref(storage, `hosted_images/${userId}/${fileName}`)
-      
-      const uploadResult = await uploadBytes(storageRef, file)
-      const downloadURL = await getDownloadURL(uploadResult.ref)
-      
-      setGeneratedUrl(downloadURL)
-      setStep(3)
-      addToast('Imagem hospedada com sucesso!', 'success')
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await fetch('https://api.imgur.com/3/image', {
+        method: 'POST',
+        headers: {
+          // Client ID público para uploads anônimos
+          'Authorization': 'Client-ID 546c25a59c58ad7'
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setGeneratedUrl(data.data.link)
+        setStep(3)
+        addToast('Imagem hospedada com sucesso!', 'success')
+      } else {
+        throw new Error(data.data.error || 'Erro ao hospedar na nuvem.')
+      }
     } catch (error: any) {
       console.error('Erro no upload:', error)
-      addToast(error?.message || 'Erro ao hospedar imagem. Verifique as regras do Firebase Storage.', 'error')
+      addToast('Erro ao hospedar imagem. Verifique sua conexão.', 'error')
       setStep(1)
     }
   }
