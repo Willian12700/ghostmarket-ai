@@ -78,7 +78,8 @@ export const PromptBuilder = () => {
       tech: 'React / Vite',
       design: 'Dark Mode',
       sections: { hero: true, about: false, benefits: true, catalog: false, socialProof: false, testimonials: true, faq: true, pricing: false, cta: true, footer: true } as Record<string, boolean>,
-      features: { auth: false, database: false, payments: false, pix: false, api: false, dashboard: false, ai: false, whatsapp: true, delivery: false } as Record<string, boolean>
+      features: { auth: false, database: false, payments: false, pix: false, api: false, dashboard: false, ai: false, whatsapp: true, delivery: false } as Record<string, boolean>,
+        whatsappNumber: ''
   })
 
   const [isGenerating, setIsGenerating] = useState(false)
@@ -96,7 +97,12 @@ export const PromptBuilder = () => {
     
     setTimeout(() => {
       const activeSections = SECTION_OPTIONS.filter(s => formData.sections[s.id]).map(s => s.label).join(', ')
-      const activeFeatures = formData.tech === 'HTML + CSS + JS' ? '' : FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => f.label).join(', ')
+      const activeFeatures = formData.tech === 'HTML + CSS + JS' ? '' : FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => {
+          if (f.id === 'whatsapp' && formData.whatsappNumber) {
+            return `Boto WhatsApp (Link direto: https://wa.me/55${formData.whatsappNumber})`
+          }
+          return f.label
+        }).join(', ')
       
       const prompt = `Contexto do Projeto:
 Estou desenvolvendo um(a) ${formData.systemType} para o nicho de ${formData.niche}.
@@ -401,7 +407,21 @@ Instruções para a IA (Antigravity):
                       <p className="text-sm text-textSecondary max-w-sm text-center mt-1">Sistemas dinâmicos não são compatíveis com HTML/CSS puro. Volte ao passo 2 e escolha React ou Next.js para liberar.</p>
                     </div>
                   )}
-                  <MultiPillSelector options={FEATURE_OPTIONS} stateObj={formData.features} onToggle={toggleFeature} disabled={formData.tech === 'HTML + CSS + JS'} />
+                  
+                    <MultiPillSelector options={FEATURE_OPTIONS} stateObj={formData.features} onToggle={toggleFeature} disabled={formData.tech === 'HTML + CSS + JS'} />
+                    {formData.features.whatsapp && formData.tech !== 'HTML + CSS + JS' && (
+                      <div className="space-y-4 pt-6 mt-6 border-t border-[#261f36] w-full text-left">
+                        <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Número do WhatsApp (Sem API)</label>
+                        <Input 
+                          className="bg-panel border-2 border-border h-16 rounded-2xl text-white text-lg px-6 shadow-inner focus:border-primary transition-colors w-full" 
+                          placeholder="Somente nmeros (Ex: 11999999999)" 
+                          value={formData.whatsappNumber} 
+                          onChange={e => setFormData({...formData, whatsappNumber: e.target.value.replace(/\D/g, '')})} 
+                        />
+                        <p className="text-xs text-textSecondary ml-2">As IAs tm falhado ao gerar links complexos (api.whatsapp). Coloque s o nmero para gerarmos um link direto wa.me no prompt.</p>
+                      </div>
+                    )}
+
                 </div>
               </div>
             </motion.div>
