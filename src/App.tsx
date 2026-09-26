@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
 import { Landing } from '@/pages/Landing'
+import { PublicPartners } from '@/pages/PublicPartners'
 import { TrialLogin } from '@/pages/TrialLogin'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
@@ -71,6 +72,8 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/parceiros" element={<PublicPartners />} />
+            <Route path="/socios" element={<PublicPartners />} />
             <Route path="/login" element={<Login />} />
             <Route path="/trial" element={<TrialLogin />} />
         <Route path="/pay/:productId" element={<Checkout />} />
