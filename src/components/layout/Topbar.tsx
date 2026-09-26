@@ -26,7 +26,7 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
 
     const q = query(
       collection(db, 'notifications'),
-      where('userId', '==', user.uid)
+      where('userId', 'in', [user.uid, user.email])
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
