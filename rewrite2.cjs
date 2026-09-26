@@ -1,161 +1,15 @@
-import { useState, useEffect } from 'react'
-import { collection, query, where, getDocs, deleteDoc, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
-import { db } from '@/config/firebase'
-import { useAuthStore } from '@/store/authStore'
-import { useToastStore } from '@/store/toastStore'
-import { Globe, Trash2, Edit, ExternalLink, Plus, Search, Eye, TrendingUp, Link2, BarChart, ShieldCheck, Wand2, Activity, Power, Calendar } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Input } from '@/components/ui/Input'
+const fs = require('fs');
+let code = fs.readFileSync('src/pages/HostedSites.tsx', 'utf8');
 
-type Site = {
-  id: string;
-  domain: string;
-  publishedAt: string;
-  domainType: string;
-  views?: number;
-  isRedirect?: boolean;
-  isActive?: boolean;
-  redirectUrl?: string;
+const retStart = code.indexOf('  return (');
+if (retStart === -1) {
+    console.error("Could not find 'return ('");
+    process.exit(1);
 }
 
-export const HostedSites = () => {
-  const { user } = useAuthStore()
-  const { addToast } = useToastStore()
-  const navigate = useNavigate()
-  
-  const [sites, setSites] = useState<Site[]>([])
-  const [loading, setLoading] = useState(true)
-  
-  const [isScannerModalOpen, setIsScannerModalOpen] = useState(false)
-  const [scanningSite, setScanningSite] = useState<Site | null>(null)
-  const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'found' | 'fixing' | 'fixed'>('idle')
+const scriptPart = code.substring(0, retStart);
 
-  const handleOpenScanner = (site: Site) => {
-    setScanningSite(site)
-    setIsScannerModalOpen(true)
-    setScanStatus('idle')
-  }
-
-  const runScan = () => {
-    setScanStatus('scanning')
-    setTimeout(() => {
-      setScanStatus('found')
-    }, 2500)
-  }
-
-  const applyAutoFix = async () => {
-    if (!scanningSite) return
-    setScanStatus('fixing')
-    try {
-      const docRef = doc(db, 'sites', scanningSite.id)
-      await updateDoc(docRef, { autoHealed: true })
-      
-      setTimeout(() => {
-        setScanStatus('fixed')
-        addToast('Auto-Fix injetado com sucesso no servidor!', 'success')
-      }, 2000)
-    } catch (e) {
-      console.error(e)
-      addToast('Erro ao aplicar Auto-Fix', 'error')
-      setScanStatus('found')
-    }
-  }
-
-  const [search, setSearch] = useState('')
-  const [isRedirectModalOpen, setIsRedirectModalOpen] = useState(false)
-  const [redirectDest, setRedirectDest] = useState('')
-  const [redirectSlug, setRedirectSlug] = useState('')
-  const [isCreatingRedirect, setIsCreatingRedirect] = useState(false)
-
-  useEffect(() => {
-    fetchSites()
-  }, [user])
-
-  const fetchSites = async () => {
-    if (!user) return
-    try {
-      const q = query(collection(db, 'sites'), where('userId', '==', user.uid))
-      const querySnapshot = await getDocs(q)
-      const fetchedSites: Site[] = []
-      querySnapshot.forEach((doc) => {
-        fetchedSites.push({ id: doc.id, ...doc.data() } as Site)
-      })
-      setSites(fetchedSites.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()))
-    } catch (error) {
-      console.error('Error fetching sites:', error)
-      addToast('Erro ao carregar sites', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  
-  const handleCreateRedirect = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!redirectDest || !redirectSlug) return
-    setIsCreatingRedirect(true)
-    try {
-      const siteId = redirectSlug.toLowerCase().replace(/[^a-z0-9-]/g, '')
-
-      const docRef = doc(db, 'sites', siteId)
-      const snap = await getDoc(docRef)
-      if (snap.exists()) {
-        addToast('Este link já está em uso! Escolha outro nome.', 'error')
-        setIsCreatingRedirect(false)
-        return
-      }
-
-      await setDoc(docRef, {
-        id: siteId,
-        redirectUrl: redirectDest,
-        isRedirect: true,
-        domain: `${window.location.origin}/s/${siteId}`,
-        domainType: 'subdomain',
-        userId: user?.uid,
-        publishedAt: new Date().toISOString()
-      })
-      addToast('Link camuflado com sucesso!', 'success')
-      setIsRedirectModalOpen(false)
-      fetchSites()
-    } catch(e) {
-      console.error(e)
-      addToast('Erro ao criar link', 'error')
-    } finally {
-      setIsCreatingRedirect(false)
-    }
-  }
-
-
-
-  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-    try {
-      const newStatus = !currentStatus;
-      await updateDoc(doc(db, 'sites', id), { isActive: newStatus });
-      setSites(sites.map(s => s.id === id ? { ...s, isActive: newStatus } : s));
-      addToast(newStatus ? 'Site ativado com sucesso!' : 'Site desativado.', 'success');
-    } catch (e) {
-      console.error(e);
-      addToast('Erro ao alterar status do site', 'error');
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Tem certeza que deseja apagar este site? Ele sairá do ar imediatamente.')) return
-    try {
-      await deleteDoc(doc(db, 'sites', id))
-      setSites(sites.filter(s => s.id !== id))
-      addToast('Site apagado com sucesso', 'success')
-    } catch (error) {
-      console.error('Error deleting site:', error)
-      addToast('Erro ao apagar site', 'error')
-    }
-  }
-
-  const filteredSites = sites.filter(s => s.domain?.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase()))
-
-  return (
+const newReturn = `  return (
     <div className="min-h-[calc(100vh-64px)] bg-[#0b0714] p-8 font-sans selection:bg-primary/30">
       <div className="max-w-6xl mx-auto space-y-8">
         
@@ -277,7 +131,7 @@ export const HostedSites = () => {
                         <Power className="w-4 h-4" />
                       </button>
                       <button onClick={() => {
-                        const url = `${window.location.origin}/report/${site.id}`;
+                        const url = \`\${window.location.origin}/report/\${site.id}\`;
                         navigator.clipboard.writeText(url);
                         addToast('Link do relatório copiado!', 'success');
                         window.open(url, '_blank');
@@ -287,7 +141,7 @@ export const HostedSites = () => {
                       <button onClick={() => handleOpenScanner(site)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#261f36] text-textSecondary hover:text-white transition-colors" title="Auto-Healing Scanner">
                         <ShieldCheck className="w-4 h-4" />
                       </button>
-                      <button onClick={() => navigate(`/builder?edit=${site.id}`)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#261f36] text-textSecondary hover:text-white transition-colors" title="Editar / Ver">
+                      <button onClick={() => navigate(\`/builder?edit=\${site.id}\`)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#261f36] text-textSecondary hover:text-white transition-colors" title="Editar / Ver">
                         <Edit className="w-4 h-4" />
                       </button>
                       <button onClick={() => handleDelete(site.id)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/10 text-textSecondary hover:text-red-400 transition-colors" title="Apagar Site">
@@ -297,13 +151,13 @@ export const HostedSites = () => {
                   </div>
 
                   <div className="mb-8">
-                    <div className={`inline-flex items-center gap-2 border text-[10px] font-bold px-2.5 py-1 rounded-full mb-4 ${site.isActive !== false ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${site.isActive !== false ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'}`} /> {site.isActive !== false ? 'Site Ativado' : 'Site Desativado'}
+                    <div className={\`inline-flex items-center gap-2 border text-[10px] font-bold px-2.5 py-1 rounded-full mb-4 \${site.isActive !== false ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-500'}\`}>
+                      <div className={\`w-1.5 h-1.5 rounded-full \${site.isActive !== false ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'}\`} /> {site.isActive !== false ? 'Site Ativado' : 'Site Desativado'}
                     </div>
                     <h4 className="text-xl font-bold text-white mb-1.5 truncate">{site.domain || site.id}</h4>
                     <div className="flex items-center">
-                      <a href={site.domain.startsWith('http') ? site.domain : `https://${site.domain}`} target="_blank" rel="noopener noreferrer" className="text-sm text-textSecondary font-mono truncate hover:text-primary transition-colors flex items-center">
-                        {site.domain.startsWith('http') ? site.domain : `https://ghostmarket-ai.vercel.app/s/${site.id}`} <ExternalLink className="w-3 h-3 ml-2 shrink-0 opacity-50" />
+                      <a href={site.domain.startsWith('http') ? site.domain : \`https://\${site.domain}\`} target="_blank" rel="noopener noreferrer" className="text-sm text-textSecondary font-mono truncate hover:text-primary transition-colors flex items-center">
+                        {site.domain.startsWith('http') ? site.domain : \`https://ghostmarket-ai.vercel.app/s/\${site.id}\`} <ExternalLink className="w-3 h-3 ml-2 shrink-0 opacity-50" />
                       </a>
                     </div>
                   </div>
@@ -386,7 +240,7 @@ export const HostedSites = () => {
                   <div className="text-center py-10">
                     <Wand2 className="w-12 h-12 text-blue-400 mx-auto mb-4 animate-bounce" />
                     <h4 className="text-white font-bold text-lg mb-1 animate-pulse">Injetando correção no HTML...</h4>
-                    <p className="text-sm text-textSecondary">Reparando tags `<img/>` e recalculando margens...</p>
+                    <p className="text-sm text-textSecondary">Reparando tags \`<img/>\` e recalculando margens...</p>
                   </div>
                 )}
 
@@ -441,3 +295,6 @@ export const HostedSites = () => {
     </div>
   )
 }
+`
+
+fs.writeFileSync('src/pages/HostedSites.tsx', scriptPart + newReturn);
