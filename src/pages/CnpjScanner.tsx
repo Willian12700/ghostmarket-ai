@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Building2, Copy, Check, MapPin, Calendar, Briefcase, Phone, Users } from 'lucide-react'
+import { Search, Building2, Copy, Check, MapPin, Calendar, Briefcase, Phone, Users, User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -72,6 +72,35 @@ export const CnpjScanner = () => {
     }
   }
 
+  
+  const formatPhone = (phoneStr: string) => {
+    if (!phoneStr) return 'Não cadastrado';
+    let p = phoneStr.replace(/\D/g, '');
+    if (p.length === 10) {
+      const ddd = p.substring(0, 2);
+      const num = p.substring(2);
+      if (['6','7','8','9'].includes(num[0])) {
+        return `(${ddd}) 9${num.substring(0,4)}-${num.substring(4)}`;
+      }
+      return `(${ddd}) ${num.substring(0,4)}-${num.substring(4)}`;
+    }
+    if (p.length === 11) {
+      const ddd = p.substring(0, 2);
+      const num = p.substring(2);
+      return `(${ddd}) ${num.substring(0,5)}-${num.substring(5)}`;
+    }
+    return phoneStr;
+  };
+
+  const getDonoName = (data: CnpjData) => {
+    if (data.qsa && data.qsa.length > 0) {
+      return data.qsa.map(q => q.nome_socio).join(', ');
+    }
+    // Remove os números de CPF que ficam no final da Razão Social do MEI
+    let nome = data.razao_social.replace(/\d+$/, '').trim();
+    return nome;
+  };
+
   const formatDataToCopy = (data: CnpjData) => {
     let text = `*DADOS CADASTRAIS — ${data.nome_fantasia || data.razao_social}*\n\n`
     text += `*Razão Social:* ${data.razao_social}\n`
@@ -85,7 +114,8 @@ export const CnpjScanner = () => {
     text += `*Situação Cadastral:* ${data.descricao_situacao_cadastral}\n`
     text += `*Endereço:* ${data.logradouro}, ${data.numero}, ${data.municipio} - ${data.uf}, CEP ${data.cep}\n`
     text += `*Atividade Principal (CNAE):* ${data.cnae_fiscal_descricao} (${data.cnae_fiscal})\n`
-    text += `*Telefone de Contato:* ${data.ddd_telefone_1 || 'Não informado'}\n`
+    text += `*Nome do Dono (Sócio/Responsável):* ${getDonoName(data)}\n`
+    text += `*Telefone de Contato:* ${formatPhone(data.ddd_telefone_1)}\n`
 
     if (data.qsa && data.qsa.length > 0) {
       text += `\n*Sócios / Administradores:*\n`
@@ -217,9 +247,13 @@ export const CnpjScanner = () => {
                     </div>
 
                     <div>
+                      <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-1"><User className="w-3 h-3" /> Nome do Dono (Responsável)</h4>
+                      <p className="text-white bg-[#0b0714] p-3 rounded-lg border border-[#261f36] font-medium mb-4">
+                        {getDonoName(result)}
+                      </p>
                       <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-1"><Phone className="w-3 h-3" /> Telefone de Contato</h4>
                       <p className="text-white bg-[#0b0714] p-3 rounded-lg border border-[#261f36] font-mono">
-                        {result.ddd_telefone_1 || 'Não cadastrado'}
+                        {formatPhone(result.ddd_telefone_1)}
                       </p>
                     </div>
 

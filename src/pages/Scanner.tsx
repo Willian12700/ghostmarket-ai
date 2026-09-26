@@ -544,7 +544,12 @@ export const Scanner = () => {
                     </h5>
                     <p className="text-xs text-textSecondary mb-4">Essas ferramentas buscam informações públicas ocultas (CNPJ, nome dos sócios, reclamações e registros) baseadas no nome do local.</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <a href={`https://www.google.com/search?q=${encodeURIComponent(xrayLead.name + ' ' + xrayLead.city + ' cnpj')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-[#0b0714] border border-[#261f36] hover:border-primary/50 hover:bg-primary/5 transition-all rounded-lg text-sm text-gray-300">
+                      <a href={`https://www.google.com/search?q=${encodeURIComponent(xrayLead.name + ' ' + xrayLead.city + ' cnpj')}`} 
+                        onClick={() => {
+                          navigator.clipboard.writeText(xrayLead.name + ' ' + xrayLead.city);
+                          alert('O nome do estabelecimento foi copiado! \n\nComo o Google Maps esconde o CNPJ por segurança, você será levado ao Google. Copie o CNPJ de lá e use a aba "Dossiê CNPJ" aqui no sistema!');
+                        }}
+                        target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-[#0b0714] border border-[#261f36] hover:border-primary/50 hover:bg-primary/5 transition-all rounded-lg text-sm text-gray-300">
                         <Building2 className="w-4 h-4 text-blue-400 shrink-0" />
                         <span className="truncate">Puxar CNPJ e Sócios</span>
                       </a>
