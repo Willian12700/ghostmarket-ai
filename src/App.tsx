@@ -40,6 +40,7 @@ import { ViralScripts } from '@/pages/tiktok/ViralScripts'
 import { AdCopy } from '@/pages/tiktok/AdCopy'
 import { OfferIntelligence } from '@/pages/OfferIntelligence'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
+import { ToastContainer } from '@/components/ui/ToastContainer'
 import { useAuthStore } from '@/store/authStore'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
@@ -120,6 +121,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </APIProvider>
+      <ToastContainer />
     </ErrorBoundary>
   )
 }
