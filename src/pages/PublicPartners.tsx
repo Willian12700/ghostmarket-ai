@@ -37,7 +37,7 @@ export const PublicPartners = () => {
               SÓCIO PARCEIRO - GHOSTMARKET AI
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight leading-tight">
-              Trabalhe Conosco e <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-400">Lucre 50%</span>.
+              Trabalhe Conosco e <span className="text-primary">Lucre até 50%</span>.
             </h1>
             <p className="text-lg text-textSecondary max-w-2xl mb-8">
               Estamos recrutando parceiros sérios para vender o GhostMarket AI. Você prospecta, apresenta a ferramenta e recebe comissão automática na mesma hora direto na sua conta Cakto.
