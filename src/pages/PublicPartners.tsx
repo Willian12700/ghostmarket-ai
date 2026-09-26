@@ -126,9 +126,9 @@ export const PublicPartners = () => {
             <div className="mb-10 relative z-10">
               <p className="text-sm text-textSecondary mb-2 font-medium">Sua Comissão:</p>
               <div className="text-5xl md:text-6xl font-black text-white tracking-tight">
-                R$ 64,99
+                R$ 45,15
               </div>
-              <p className="text-sm text-white font-bold mt-3 bg-primary/40 inline-block px-3 py-1 rounded-full border border-primary/50">Por cada venda deste plano (50%)</p>
+              <p className="text-sm text-white font-bold mt-3 bg-primary/40 inline-block px-3 py-1 rounded-full border border-primary/50">Por cada venda deste plano (35%)</p>
             </div>
 
             <a href={CAKTO_LINK_VITALICIO} target="_blank" rel="noopener noreferrer" className="block relative z-10">

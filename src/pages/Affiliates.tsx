@@ -73,9 +73,9 @@ export const Affiliates = () => {
           
           <div className="mb-8 relative z-10">
             <div className="text-5xl font-extrabold text-white tracking-tight">
-              R$ 64,99
+              R$ 45,15
             </div>
-            <p className="text-sm text-textSecondary mt-2">Sua comissão (50%) a cada venda do Plano Vitalício.</p>
+            <p className="text-sm text-textSecondary mt-2">Sua comissão (35%) a cada venda do Plano Vitalício.</p>
           </div>
 
           <a href={CAKTO_LINK_MENSAL} target="_blank" rel="noopener noreferrer" className="block relative z-10">
