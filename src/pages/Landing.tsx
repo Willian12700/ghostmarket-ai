@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Ghost, Play, CheckCircle2, ChevronDown, Palette, Briefcase, DollarSign, Menu, X, Video, Search, Bot , MessageCircle} from 'lucide-react'
+import { Ghost, Play, CheckCircle2, ChevronDown, Palette, Briefcase, DollarSign, Menu, X, Video, Search, Bot , MessageCircle} from "lucide-react"
 import { Button } from '@/components/ui/Button'
 import { AnimatedMockup } from '@/components/ui/AnimatedMockup'
 import { AppPreview } from '@/components/ui/AppPreview'

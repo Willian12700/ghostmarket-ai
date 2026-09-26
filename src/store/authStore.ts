@@ -23,6 +23,7 @@ interface AuthUser {
   email: string
   uid: string
   photoURL?: string | null
+  isAnonymous?: boolean
 }
 
 interface AuthState {

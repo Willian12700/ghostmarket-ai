@@ -1,9 +1,18 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/layouts/MainLayout.tsx', 'utf8');
 
-const target = "onClick={() => window.location.href = 'mailto:suporte@ghostmarket.ai'}";
-const replacement = "onClick={() => window.open('https://wa.me/5584996162332?text=Olá,%20minha%20conta%20na%20GhostMarket%20foi%20suspensa%20e%20gostaria%20de%20ajuda.', '_blank')}";
+const newNumber = '5584996162332';
+const placeholder = '5511999999999';
 
-content = content.replace(target, replacement);
-
-fs.writeFileSync('src/layouts/MainLayout.tsx', content, 'utf8');
+try {
+  let landingCode = fs.readFileSync('src/pages/Landing.tsx', 'utf8');
+  landingCode = landingCode.replace(new RegExp(placeholder, 'g'), newNumber);
+  fs.writeFileSync('src/pages/Landing.tsx', landingCode, 'utf8');
+  
+  let demoCode = fs.readFileSync('src/pages/Demo.tsx', 'utf8');
+  demoCode = demoCode.replace(new RegExp(placeholder, 'g'), newNumber);
+  fs.writeFileSync('src/pages/Demo.tsx', demoCode, 'utf8');
+  
+  console.log('Numbers updated successfully.');
+} catch (e) {
+  console.error(e);
+}

@@ -159,6 +159,7 @@ export const Login = () => {
               </Button>
             </motion.div>
           </form>
+<div className="mt-6 text-center"><button type="button" onClick={() => navigate('/trial')} className="text-sm text-blue-400 hover:text-blue-300 font-medium underline underline-offset-4">Tenho um código de teste (5 Minutos)</button></div>
 
           <motion.div variants={itemFadeUp} className="mt-8 text-center text-sm">
             <span className="text-textSecondary">

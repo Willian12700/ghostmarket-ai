@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
 import { Landing } from '@/pages/Landing'
+import { TrialLogin } from '@/pages/TrialLogin'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { ResetPassword } from '@/pages/ResetPassword'
@@ -71,6 +72,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/trial" element={<TrialLogin />} />
         <Route path="/pay/:productId" element={<Checkout />} />
             <Route path="/register" element={<Register />} />
             <Route path="/reset-password" element={<ResetPassword />} />

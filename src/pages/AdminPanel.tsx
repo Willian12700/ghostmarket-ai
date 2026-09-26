@@ -5,7 +5,7 @@ import { collection, doc, setDoc, getDocs, query, where, writeBatch, serverTimes
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
-import { ShieldAlert, UserCheck, MessageSquare, Eye, Search, Users, Circle, Calendar, DollarSign, Globe, X, ExternalLink } from 'lucide-react'
+import { ShieldAlert, UserCheck, MessageSquare, Eye, Search, Users, Circle, Calendar, DollarSign, Globe, X, ExternalLink, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -17,6 +17,31 @@ export const AdminPanel = () => {
   const { user } = useAuthStore()
   const { addToast } = useToastStore()
   
+  
+  const [generatedCode, setGeneratedCode] = useState('')
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false)
+
+  const generateTrialCode = async () => {
+    setIsGeneratingCode(true)
+    try {
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      await setDoc(doc(db, 'trial_codes', code), {
+        code,
+        createdAt: serverTimestamp(),
+        activatedAt: null,
+        uid: null,
+        expiresAt: null
+      })
+      setGeneratedCode(code)
+      addToast('Código de 5 Minutos Gerado com Sucesso!', 'success')
+    } catch (e) {
+      console.error(e)
+      addToast('Erro ao gerar código', 'error')
+    } finally {
+      setIsGeneratingCode(false)
+    }
+  }
+
   const [freeAccessEmail, setFreeAccessEmail] = useState('')
   const [isGrantingAccess, setIsGrantingAccess] = useState(false)
 
@@ -269,6 +294,40 @@ export const AdminPanel = () => {
           </div>
         </CardContent>
       </Card>
+
+        
+          {/* Sessão de Código Temporário */}
+          <Card className="bg-[#0b0714] border-white/5 mb-8">
+            <CardHeader className="border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Gerar Teste Grátis (5 Minutos)</CardTitle>
+                  <p className="text-sm text-white/50">Crie um código de 6 dígitos para um Lead testar o painel temporariamente sem precisar criar conta.</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex items-end gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-white/70 mb-2 block">Código Gerado</label>
+                  <div className="flex items-center justify-between p-4 bg-[#050505] border border-white/10 rounded-xl">
+                    <span className="text-2xl font-mono tracking-[0.5em] text-white font-bold">{generatedCode || '------'}</span>
+                    {generatedCode && (
+                      <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(generatedCode); addToast('Copiado!', 'success'); }}>
+                        Copiar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <Button onClick={generateTrialCode} disabled={isGeneratingCode} className="h-[74px] px-8 bg-blue-600 hover:bg-blue-700">
+                  {isGeneratingCode ? 'Gerando...' : 'Gerar Código'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
         <NicheManager />
 

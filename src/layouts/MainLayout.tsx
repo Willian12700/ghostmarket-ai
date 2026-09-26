@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { SalesNotifier } from '@/components/ui/SalesNotifier'
+import { TrialTimer } from '@/components/ui/TrialTimer'
 import { db } from '@/config/firebase'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { Loader2, Lock } from 'lucide-react'
@@ -81,7 +82,12 @@ export const MainLayout = () => {
     }
 
     if (isAuthenticated) {
-      checkSubscription();
+      if (user?.isAnonymous) {
+        setHasSubscription(true)
+        setIsSuspended(false)
+      } else {
+        checkSubscription()
+      }
     }
 
     return () => {
@@ -164,7 +170,6 @@ export const MainLayout = () => {
       <CopilotChat />
       <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ToastContainer />
-      <SalesNotifier />
-    </div>
+      <SalesNotifier />\n      {user?.isAnonymous && <TrialTimer />}\n    </div>
   )
 }
