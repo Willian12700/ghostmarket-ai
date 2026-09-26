@@ -7,7 +7,7 @@ import { Copy, Check, UploadCloud, Link as LinkIcon, ChevronRight } from 'lucide
 import { useToastStore } from '@/store/toastStore'
 import { motion, AnimatePresence } from 'framer-motion'
 import { storage } from '@/config/firebase'
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { useAuthStore } from '@/store/authStore'
 
 export const ImageToLink = () => {
@@ -15,7 +15,6 @@ export const ImageToLink = () => {
   const [step, setStep] = useState(1)
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [generatedUrl, setGeneratedUrl] = useState('')
   const [copied, setCopied] = useState(false)
   
@@ -51,39 +50,28 @@ export const ImageToLink = () => {
     e.preventDefault()
   }
 
-  const uploadImage = () => {
+  const uploadImage = async () => {
     if (!file) return
 
-    
     setStep(2)
-    setUploadProgress(0)
 
-    const timestamp = new Date().getTime()
-    const fileName = `${timestamp}_${file.name}`
-    const userId = user?.uid || 'anonymous'
-    const storageRef = ref(storage, `hosted_images/${userId}/${fileName}`)
-    
-    const uploadTask = uploadBytesResumable(storageRef, file)
-
-    uploadTask.on('state_changed', 
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-        setUploadProgress(progress)
-      }, 
-      (error) => {
-        console.error(error)
-        addToast('Erro ao fazer upload da imagem.', 'error')
-        
-        setStep(1)
-      }, 
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
-        setGeneratedUrl(downloadURL)
-        
-        setStep(3)
-        addToast('Imagem hospedada com sucesso!', 'success')
-      }
-    )
+    try {
+      const timestamp = new Date().getTime()
+      const fileName = `${timestamp}_${file.name}`
+      const userId = user?.uid || 'anonymous'
+      const storageRef = ref(storage, `hosted_images/${userId}/${fileName}`)
+      
+      const uploadResult = await uploadBytes(storageRef, file)
+      const downloadURL = await getDownloadURL(uploadResult.ref)
+      
+      setGeneratedUrl(downloadURL)
+      setStep(3)
+      addToast('Imagem hospedada com sucesso!', 'success')
+    } catch (error: any) {
+      console.error('Erro no upload:', error)
+      addToast(error?.message || 'Erro ao hospedar imagem. Verifique as regras do Firebase Storage.', 'error')
+      setStep(1)
+    }
   }
 
   const copyToClipboard = () => {
@@ -213,11 +201,12 @@ export const ImageToLink = () => {
                   <div className="w-full max-w-md bg-background rounded-full h-3 overflow-hidden border border-border">
                     <motion.div 
                       className="h-full bg-gradient-to-r from-primary to-indigo-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${uploadProgress}%` }}
+                      initial={{ width: '0%', marginLeft: '0%' }}
+                      animate={{ width: ['0%', '30%', '100%'], marginLeft: ['0%', '70%', '100%'] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                     />
                   </div>
-                  <p className="text-primaryLight font-bold font-mono">{Math.round(uploadProgress)}% Concluído</p>
+                  <p className="text-primaryLight font-bold font-mono">Processando Imagem...</p>
                 </CardContent>
               </Card>
             </motion.div>
