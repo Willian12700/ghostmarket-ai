@@ -384,7 +384,7 @@ document.addEventListener('keydown', e => {
   ]
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#09090b] text-white selection:bg-primary/30 relative overflow-hidden">
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0b0714] text-white selection:bg-primary/30 relative overflow-hidden">
         {/* ANIMATED BACKGROUND BLOBS */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           <motion.div animate={{ x: [0, 50, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-primary/20 blur-[150px] rounded-full mix-blend-screen" />
@@ -396,7 +396,7 @@ document.addEventListener('keydown', e => {
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept={steps.find(s => s.id === step)?.accept} className="hidden" />
       
       {/* HEADER WIZARD */}
-      <div className="h-24 border-b border-white/5 bg-[#050505]/60 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10">
+      <div className="h-24 border-b border-[#261f36] bg-[#0b0714]/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <UploadCloud className="w-5 h-5 text-primary" />
@@ -411,7 +411,7 @@ document.addEventListener('keydown', e => {
           {steps.map((s, i) => (
             <div key={s.id} className="flex items-center">
               <div className={`flex flex-col items-center gap-2 ${step === s.id ? 'opacity-100' : step > s.id ? 'opacity-70' : 'opacity-40'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${step === s.id ? 'bg-primary text-white ring-4 ring-primary/20' : step > s.id ? 'bg-primary text-white' : 'bg-background border border-border text-textSecondary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${step === s.id ? 'bg-primary text-white ring-4 ring-primary/20' : step > s.id ? 'bg-primary text-white' : 'bg-[#0b0714] border border-[#261f36] text-textSecondary'}`}>
                   {step > s.id ? <CheckCircle2 className="w-4 h-4" /> : s.id}
                 </div>
                 <span className="text-xs font-bold text-white">{s.name}</span>
@@ -432,14 +432,14 @@ document.addEventListener('keydown', e => {
 
       {/* MAIN CONTENT */}
       <div className="flex-1 overflow-hidden relative bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat flex flex-col items-center">
-        <div className="absolute inset-0 bg-[#0b0416]/95 z-0" />
+        <div className="absolute inset-0 bg-[#0b0714] z-0" />
         
         <div className="z-10 w-full h-full max-w-5xl p-6 md:p-8 flex flex-col">
           
           <AnimatePresence mode="wait">
             {step < 5 ? (
-              <motion.div key="editor" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col bg-panel rounded-2xl border border-border overflow-hidden shadow-2xl">
-                <div className="h-14 bg-background border-b border-border flex items-center justify-between px-6">
+              <motion.div key="editor" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col bg-[#130e1d] rounded-2xl border border-[#261f36] overflow-hidden shadow-2xl">
+                <div className="h-14 bg-[#0b0714] border-b border-[#261f36] flex items-center justify-between px-6">
                   <div className="flex items-center gap-3">
                     <FileCode2 className="w-5 h-5 text-primary" />
                     <span className="font-bold text-white">Insira seu código {steps[step-1].name}</span>
@@ -452,7 +452,7 @@ document.addEventListener('keydown', e => {
                   value={steps[step-1].value}
                   onChange={(e) => steps[step-1].setter(e.target.value)}
                   placeholder={`Cole o seu código ${steps[step-1].name} aqui...`}
-                  className="flex-1 w-full bg-[#0d1117] text-gray-300 font-mono text-sm p-6 focus:outline-none resize-none custom-scrollbar"
+                  className="flex-1 w-full bg-[#0b0714] text-gray-300 font-mono text-sm p-6 focus:outline-none resize-none custom-scrollbar"
                   spellCheck={false}
                 />
               </motion.div>
@@ -460,12 +460,12 @@ document.addEventListener('keydown', e => {
               <motion.div key="preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex-1 flex flex-col items-center w-full">
                 <div className="w-full flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-white">Preview Final</h3>
-                  <div className="flex items-center gap-1 bg-panel border border-border p-1 rounded-lg">
-                    <button onClick={() => setActiveView('desktop')} className={`p-2 rounded-md transition-all ${activeView === 'desktop' ? 'bg-background text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Monitor className="w-4 h-4" /></button>
-                    <button onClick={() => setActiveView('mobile')} className={`p-2 rounded-md transition-all ${activeView === 'mobile' ? 'bg-background text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Smartphone className="w-4 h-4" /></button>
+                  <div className="flex items-center gap-1 bg-[#130e1d] border border-[#261f36] p-1 rounded-lg">
+                    <button onClick={() => setActiveView('desktop')} className={`p-2 rounded-md transition-all ${activeView === 'desktop' ? 'bg-[#0b0714] text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Monitor className="w-4 h-4" /></button>
+                    <button onClick={() => setActiveView('mobile')} className={`p-2 rounded-md transition-all ${activeView === 'mobile' ? 'bg-[#0b0714] text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Smartphone className="w-4 h-4" /></button>
                   </div>
                 </div>
-                <div className={`transition-all duration-500 ease-in-out border border-border rounded-xl bg-white shadow-2xl overflow-hidden relative flex-shrink-0 ${activeView === 'mobile' ? 'w-[375px] min-h-[812px] ring-[12px] ring-zinc-900 shadow-[0_0_50px_rgba(0,0,0,0.5)] mt-4 mb-12' : 'w-full flex-1'}`}>
+                <div className={`transition-all duration-500 ease-in-out border border-[#261f36] rounded-xl bg-white shadow-2xl overflow-hidden relative flex-shrink-0 ${activeView === 'mobile' ? 'w-[375px] min-h-[812px] ring-[12px] ring-zinc-900 shadow-[0_0_50px_rgba(0,0,0,0.5)] mt-4 mb-12' : 'w-full flex-1'}`}>
                   {activeView === 'mobile' && (
                     <div className="absolute top-0 inset-x-0 h-7 bg-zinc-900 z-50 flex justify-center rounded-b-3xl w-[150px] mx-auto pointer-events-none">
                       <div className="w-16 h-4 bg-black rounded-full mt-1.5 opacity-50"></div>
@@ -498,9 +498,9 @@ document.addEventListener('keydown', e => {
 
       <AnimatePresence>
         {isPublishModalOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-panel border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
-              <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-background/50">
+          <div className="fixed inset-0 bg-[#0b0714]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#130e1d] border border-[#261f36] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#261f36] flex justify-between items-center bg-[#0b0714]/50">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2"><Globe className="w-5 h-5 text-primary" /> Publicar e Hospedar</h3>
                 <button onClick={() => { setIsPublishModalOpen(false); setPublishedUrl(''); }} className="text-textSecondary hover:text-white transition-colors">x</button>
               </div>
@@ -512,7 +512,7 @@ document.addEventListener('keydown', e => {
                   <h3 className="text-xl font-bold text-white">Seu site está no ar!</h3>
                   <p className="text-textSecondary">Acesse agora mesmo através do link abaixo:</p>
                   
-                  <div className="bg-background border border-border p-3 rounded-lg flex items-center justify-between gap-4">
+                  <div className="bg-[#0b0714] border border-[#261f36] p-3 rounded-lg flex items-center justify-between gap-4">
                     <span className="text-primary font-mono text-sm truncate">{publishedUrl}</span>
                     <Button size="sm" onClick={() => { navigator.clipboard.writeText(publishedUrl); addToast('Link copiado!', 'success') }}>Copiar</Button>
                   </div>
@@ -526,9 +526,9 @@ document.addEventListener('keydown', e => {
                 </div>
               ) : (
                 <form onSubmit={handlePublish} className="p-6 space-y-6">
-                  <div className="flex p-1 bg-background border border-border rounded-lg">
-                    <button type="button" onClick={() => setDomainType('subdomain')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${domainType === 'subdomain' ? 'bg-panel text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}>Link Gratuito</button>
-                    <button type="button" onClick={() => setDomainType('custom')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${domainType === 'custom' ? 'bg-panel text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}>Domínio Próprio</button>
+                  <div className="flex p-1 bg-[#0b0714] border border-[#261f36] rounded-lg">
+                    <button type="button" onClick={() => setDomainType('subdomain')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${domainType === 'subdomain' ? 'bg-[#130e1d] text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}>Link Gratuito</button>
+                    <button type="button" onClick={() => setDomainType('custom')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${domainType === 'custom' ? 'bg-[#130e1d] text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}>Domínio Próprio</button>
                   </div>
                   {domainType === 'subdomain' ? (
                     <div className="space-y-2">
@@ -552,7 +552,7 @@ document.addEventListener('keydown', e => {
                     <select 
                       value={selectedBotId} 
                       onChange={e => setSelectedBotId(e.target.value)}
-                      className="w-full bg-background border border-border rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                      className="w-full bg-[#0b0714] border border-[#261f36] rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
                     >
                       <option value="">Nenhum (Desativado)</option>
                       {chatbots.map(bot => (
