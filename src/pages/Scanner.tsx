@@ -35,29 +35,6 @@ interface City {
   nome: string
 }
 
-
-const COUNTRIES = [
-  'Brasil', 'Estados Unidos', 'Portugal', 'Reino Unido', 'Austrália', 'Canadá', 
-  'Espanha', 'França', 'Alemanha', 'Itália', 'Argentina', 'Chile', 'Colômbia', 'México'
-];
-
-const COUNTRY_MAP: Record<string, string> = {
-  'Brasil': 'Brazil',
-  'Estados Unidos': 'United States',
-  'Portugal': 'Portugal',
-  'Reino Unido': 'United Kingdom',
-  'Austrália': 'Australia',
-  'Canadá': 'Canada',
-  'Espanha': 'Spain',
-  'França': 'France',
-  'Alemanha': 'Germany',
-  'Itália': 'Italy',
-  'Argentina': 'Argentina',
-  'Chile': 'Chile',
-  'Colômbia': 'Colombia',
-  'México': 'Mexico'
-};
-
 export const Scanner = () => {
   const [isScanning, setIsScanning] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
@@ -66,12 +43,6 @@ export const Scanner = () => {
   const [states, setStates] = useState<State[]>([])
   const [cities, setCities] = useState<City[]>([])
   const [selectedState, setSelectedState] = useState('SP')
-  const [selectedCountry, setSelectedCountry] = useState('Brasil')
-  const [intlStates, setIntlStates] = useState<string[]>([])
-  const [intlCities, setIntlCities] = useState<string[]>([])
-  const [selectedIntlState, setSelectedIntlState] = useState('')
-  const [selectedIntlCity, setSelectedIntlCity] = useState('')
-  const [isLoadingIntl, setIsLoadingIntl] = useState(false)
   const [selectedCity, setSelectedCity] = useState('São Paulo')
   const [niche, setNiche] = useState('Barbearia')
   const [onlyWithoutSite, setOnlyWithoutSite] = useState(false)
@@ -106,59 +77,6 @@ export const Scanner = () => {
     }
   }, [selectedState])
 
-  useEffect(() => {
-    if (selectedCountry !== 'Brasil') {
-      setIsLoadingIntl(true)
-      fetch('https://countriesnow.space/api/v0.1/countries/states', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ country: COUNTRY_MAP[selectedCountry] })
-      })
-      .then(r => r.json())
-      .then(d => {
-        if (!d.error && d.data && d.data.states) {
-          const s = d.data.states.map((st: any) => st.name);
-          setIntlStates(s);
-          setSelectedIntlState(s[0] || '');
-        } else {
-          setIntlStates([]);
-          setSelectedIntlState('');
-        }
-        setIsLoadingIntl(false)
-      })
-      .catch(e => {
-        console.error(e)
-        setIsLoadingIntl(false)
-      })
-    }
-  }, [selectedCountry])
-
-  useEffect(() => {
-    if (selectedCountry !== 'Brasil' && selectedIntlState) {
-      setIsLoadingIntl(true)
-      fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ country: COUNTRY_MAP[selectedCountry], state: selectedIntlState })
-      })
-      .then(r => r.json())
-      .then(d => {
-        if (!d.error && d.data) {
-          setIntlCities(d.data);
-          setSelectedIntlCity(d.data[0] || '');
-        } else {
-          setIntlCities([]);
-          setSelectedIntlCity('');
-        }
-        setIsLoadingIntl(false)
-      })
-      .catch(e => {
-        console.error(e)
-        setIsLoadingIntl(false)
-      })
-    }
-  }, [selectedIntlState, selectedCountry])
-
   const handleScan = async () => {
     if (!placesLib) {
       alert("A API do Google Maps ainda está carregando ou ocorreu um erro.");
@@ -171,11 +89,11 @@ export const Scanner = () => {
     try {
       const { Place } = placesLib;
       
-      const query = selectedCountry === 'Brasil' ? `${niche} em ${selectedCity}, ${selectedState}, Brasil` : `${niche} in ${selectedIntlCity}, ${selectedIntlState}, ${selectedCountry}`;
+      const query = `${niche} em ${selectedCity}, ${selectedState}, Brasil`;
       
       const request = {
         textQuery: query,
-        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'internationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount'],
+        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount'],
         maxResultCount: 20
       };
       
@@ -187,15 +105,10 @@ export const Scanner = () => {
         return;
       }
       
-      const actualCity = selectedCountry === 'Brasil' ? selectedCity : selectedIntlCity;
-      
       const realLeads: Lead[] = places.map((place: any) => {
-        let phone = place.internationalPhoneNumber || place.nationalPhoneNumber || '';
-        phone = String(phone).replace(/\D/g, '');
-        // fallback para o Brasil se por acaso só vier o national:
-        if (selectedCountry === 'Brasil' && phone.length <= 11) {
-            phone = '55' + phone;
-        }
+        let phone = place.nationalPhoneNumber || '';
+        phone = String(phone).replace(/\D/g, ''); 
+        
         let insta = '';
         let website = '';
 
@@ -214,7 +127,7 @@ export const Scanner = () => {
           id: place.id,
           name: place.displayName || niche,
           category: niche,
-          city: actualCity,
+          city: selectedCity,
           phone: phone,
           instagram: insta,
           website: website,
@@ -336,92 +249,33 @@ export const Scanner = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-5 items-end">
+          <div className="grid gap-4 md:grid-cols-4 items-end">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-textSecondary">País</label>
+              <label className="text-sm font-medium text-textSecondary">Estado</label>
               <select 
-                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                value={selectedCountry}
-                onChange={(e) => setSelectedCountry(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
               >
-                {COUNTRIES.map(country => (
-                  <option key={country} value={country}>{country}</option>
+                {states.map(state => (
+                  <option key={state.id} value={state.sigla}>{state.nome}</option>
                 ))}
               </select>
             </div>
             
-            {selectedCountry === 'Brasil' ? (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-textSecondary">Estado</label>
-                  <select 
-                    className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    value={selectedState}
-                    onChange={(e) => setSelectedState(e.target.value)}
-                  >
-                    {states.map(state => (
-                      <option key={state.id} value={state.sigla}>{state.nome}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-textSecondary">Cidade</label>
-                  <select 
-                    className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    disabled={cities.length === 0}
-                  >
-                    {cities.map(city => (
-                      <option key={city.id} value={city.nome}>{city.nome}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-textSecondary">Estado/Região</label>
-                  <select 
-                    className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                    value={selectedIntlState}
-                    onChange={(e) => setSelectedIntlState(e.target.value)}
-                    disabled={intlStates.length === 0 || isLoadingIntl}
-                  >
-                    {isLoadingIntl && intlStates.length === 0 ? (
-                      <option value="">Carregando...</option>
-                    ) : intlStates.map(st => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-textSecondary">Cidade</label>
-                  {intlCities.length > 0 ? (
-                    <select 
-                      className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                      value={selectedIntlCity}
-                      onChange={(e) => setSelectedIntlCity(e.target.value)}
-                      disabled={isLoadingIntl}
-                    >
-                      {isLoadingIntl ? (
-                        <option value="">Carregando...</option>
-                      ) : intlCities.map(city => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <Input 
-                      value={selectedIntlCity}
-                      onChange={(e) => setSelectedIntlCity(e.target.value)}
-                      placeholder="Ex: Orlando"
-                      disabled={isLoadingIntl}
-                    />
-                  )}
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-textSecondary">Cidade</label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                disabled={cities.length === 0}
+              >
+                {cities.map(city => (
+                  <option key={city.id} value={city.nome}>{city.nome}</option>
+                ))}
+              </select>
+            </div>
 
             <div className="space-y-2">
               <Input 
@@ -530,7 +384,7 @@ export const Scanner = () => {
                     {/* WhatsApp Botão Principal */}
                     {lead.phone ? (
                       <a 
-                        href={`https://wa.me/${lead.phone}?text=${generateWhatsAppMessage(lead)}`} 
+                        href={`https://wa.me/55${lead.phone}?text=${generateWhatsAppMessage(lead)}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="w-full"
