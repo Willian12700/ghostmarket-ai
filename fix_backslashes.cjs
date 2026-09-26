@@ -1,7 +1,15 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/pages/Finance.tsx', 'utf8');
 
-content = content.replace(/\\`/g, '`');
-content = content.replace(/\\\$/g, '$');
+const files = [
+  'src/pages/Creator.tsx',
+  'src/pages/marketing/AdsGenerator.tsx',
+  'src/pages/tiktok/PersonaGenerator.tsx',
+  'src/pages/tiktok/ViralScripts.tsx'
+];
 
-fs.writeFileSync('src/pages/Finance.tsx', content, 'utf8');
+files.forEach(file => {
+  let content = fs.readFileSync(file, 'utf8');
+  content = content.replace(/\\\`/g, '`');
+  content = content.replace(/\\\$/g, '$');
+  fs.writeFileSync(file, content, 'utf8');
+});
