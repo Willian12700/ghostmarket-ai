@@ -101,9 +101,7 @@ export const SiteViewer = () => {
     fetchSite()
   }, [siteId])
 
-  if (loading) {
-    return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Carregando site...</div>
-  }
+  if (loading) { return <div style={{ minHeight: "100vh", backgroundColor: "#000" }}></div> }
 
   if (!html) {
     return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Site não encontrado ou vazio.</div>

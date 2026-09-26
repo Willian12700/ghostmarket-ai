@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft } from 'lucide-react'
+import { CreationStepper } from '@/components/ui/CreationStepper'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
@@ -261,6 +262,7 @@ Instruções para a IA (Antigravity):
       
       {/* CABEÇALHO / PROGRESSO */}
       <div className="pt-8 pb-4 px-6 max-w-4xl mx-auto w-full relative z-10">
+<CreationStepper currentStep={2} />
         <h1 className="text-3xl font-black tracking-tight flex items-center gap-3 justify-center mb-8">
           <Wand2 className="w-8 h-8 text-primary" /> Construtor Inteligente
         </h1>

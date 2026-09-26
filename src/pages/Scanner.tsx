@@ -1,6 +1,7 @@
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState, useEffect } from 'react'
 import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert, Check, Plus, MessageSquare, Globe as GlobeIcon, Star, Sparkles, X } from 'lucide-react'
+import { CreationStepper } from '@/components/ui/CreationStepper'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -22,6 +23,7 @@ interface Lead {
   rating: number
   userRatingsTotal: number
   status: 'Novo' | 'Contatado'
+  imageUrl?: string
 }
 
 interface State {
@@ -93,7 +95,7 @@ export const Scanner = () => {
       
       const request = {
         textQuery: query,
-        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount'],
+        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount', 'photos'],
         maxResultCount: 20
       };
       
@@ -106,6 +108,17 @@ export const Scanner = () => {
       }
       
       const realLeads: Lead[] = places.map((place: any) => {
+          let imageUrl = '';
+          if (place.photos && place.photos.length > 0) {
+            try {
+              if (typeof place.photos[0].getURI === 'function' || typeof place.photos[0].getUrl === 'function') {
+                imageUrl = place.photos[0].getURI ? place.photos[0].getURI({maxWidth: 600}) : place.photos[0].getUrl({maxWidth: 600});
+              } else if (place.photos[0].name) {
+                // Se for a API REST nova sem o getURI
+                imageUrl = `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=400&maxWidthPx=600&key=${import.meta.env.VITE_FIREBASE_API_KEY}`;
+              }
+            } catch(e) {}
+          }
         let phone = place.nationalPhoneNumber || '';
         phone = String(phone).replace(/\D/g, ''); 
         
@@ -133,7 +146,8 @@ export const Scanner = () => {
           website: website,
           rating: place.rating || 0,
           userRatingsTotal: place.userRatingCount || 0,
-          status: 'Novo'
+          status: 'Novo',
+            imageUrl
         }
       });
 
@@ -144,7 +158,8 @@ export const Scanner = () => {
       }
     } catch (error) {
       console.error(error);
-      setLeads([{ id: 'error', name: 'Erro na Busca', category: 'Verifique a API', city: '', phone: '', instagram: '', website: '', rating: 0, userRatingsTotal: 0, status: 'Novo' }]);
+      setLeads([{ id: 'error', name: 'Erro na Busca', category: 'Verifique a API', city: '', phone: '', instagram: '', website: '', rating: 0, userRatingsTotal: 0, status: 'Novo',
+            imageUrl: undefined }]);
     } finally {
       setIsScanning(false)
     }
@@ -222,7 +237,9 @@ export const Scanner = () => {
   return (
     <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
       <AnimatedBackground />
+
       <div className="space-y-6 max-w-7xl pb-10 relative z-10 min-h-screen pb-20">
+          <CreationStepper currentStep={1} />
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
           <Search className="w-8 h-8 text-primary" />
@@ -328,6 +345,12 @@ export const Scanner = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {leads.map((lead) => (
             <Card key={lead.id} className="hover:border-primary/50 transition-colors flex flex-col relative overflow-hidden">
+              {lead.imageUrl && lead.id !== 'error' && (
+                <div className="w-full h-32 bg-surface-elevated shrink-0 border-b border-border overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10" />
+                  <img src={lead.imageUrl} alt={lead.name} className="w-full h-full object-cover" />
+                </div>
+              )}
               {!lead.website && lead.id !== 'error' && (
                 <div className="absolute top-0 right-0 bg-error text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-lg z-10 flex items-center gap-1">
                   <ShieldAlert className="w-3 h-3" />

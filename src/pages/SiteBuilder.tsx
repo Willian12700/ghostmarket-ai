@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { getDoc } from 'firebase/firestore'
 import { useAuthStore } from '@/store/authStore'
 import { Globe, UploadCloud, ChevronRight, ChevronLeft, CheckCircle2, FileCode2, Monitor, Smartphone, Shield, Bot } from 'lucide-react'
+import { CreationStepper } from '@/components/ui/CreationStepper'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
@@ -435,6 +436,7 @@ document.addEventListener('keydown', e => {
         <div className="absolute inset-0 bg-[#0b0714] z-0" />
         
         <div className="z-10 w-full h-full max-w-5xl p-6 md:p-8 flex flex-col">
+<CreationStepper currentStep={3} />
           
           <AnimatePresence mode="wait">
             {step < 5 ? (

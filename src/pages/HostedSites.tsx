@@ -7,6 +7,9 @@ import { Globe, Trash2, Edit, ExternalLink, Plus, Search, Eye, TrendingUp, Link2
 import { Button } from '@/components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
+import { Download, LayoutTemplate } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 
 type Site = {
@@ -18,6 +21,7 @@ type Site = {
   isRedirect?: boolean;
   isActive?: boolean;
   redirectUrl?: string;
+  rawHtml?: string;
 }
 
 export const HostedSites = () => {
@@ -141,6 +145,25 @@ export const HostedSites = () => {
     }
   }
 
+  
+  const handleDownloadZip = async (site: Site) => {
+    if (!site.rawHtml) {
+      addToast('Código-fonte não encontrado.', 'error');
+      return;
+    }
+    try {
+      const zip = new JSZip();
+      zip.file("index.html", site.rawHtml);
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${site.id}.zip`);
+      addToast('Download iniciado com sucesso!', 'success');
+    } catch(e) {
+      console.error(e);
+      addToast('Erro ao criar o arquivo ZIP', 'error');
+    }
+  }
+
+
   const handleDelete = async (id: string) => {
     if (!window.confirm('Tem certeza que deseja apagar este site? Ele sairá do ar imediatamente.')) return
     try {
@@ -255,7 +278,27 @@ export const HostedSites = () => {
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="bg-[#130e1d] border border-[#261f36] rounded-2xl p-6 hover:border-[#3b3054] transition-all group flex flex-col shadow-lg relative overflow-hidden"
                 >
-                  <div className="flex items-start justify-between mb-8">
+                  
+                    {!site.isRedirect && site.rawHtml ? (
+                      <div className="w-full h-44 bg-[#050505] relative overflow-hidden border-b border-border shrink-0 rounded-t-3xl group-hover:opacity-90 transition-opacity">
+                        <div className="absolute inset-0 origin-top-left" style={{ transform: 'scale(0.333)', width: '300%', height: '300%' }}>
+                          <iframe 
+                            srcDoc={site.rawHtml} 
+                            className="w-full h-full border-none pointer-events-none" 
+                            sandbox="allow-same-origin"
+                            scrolling="no"
+                          />
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#130e1d] via-[#130e1d]/20 to-transparent" />
+                      </div>
+                    ) : (
+                      <div className="w-full h-44 bg-background flex items-center justify-center border-b border-border shrink-0 relative overflow-hidden rounded-t-3xl">
+                        <LayoutTemplate className="w-12 h-12 text-border" />
+                      </div>
+                    )}
+                    
+                    <div className="p-6 flex flex-col flex-1">
+                      <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-3">
                       {site.isRedirect ? (
                         <div className="w-11 h-11 rounded-xl border border-[#261f36] bg-[#0b0714] flex items-center justify-center text-primary shadow-inner" title="Link CamCamuflado">
@@ -276,7 +319,12 @@ export const HostedSites = () => {
                       <button onClick={() => handleToggleStatus(site.id, site.isActive !== false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-emerald-500/10 text-emerald-400 transition-colors" title={site.isActive !== false ? 'Desativar Site' : 'Ativar Site'}>
                         <Power className="w-4 h-4" />
                       </button>
-                      <button onClick={() => {
+                                                {!site.isRedirect && site.rawHtml && (
+                            <button onClick={() => handleDownloadZip(site)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/10 text-primary transition-colors" title="Baixar ZIP">
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}
+<button onClick={() => {
                         const url = `${window.location.origin}/report/${site.id}`;
                         navigator.clipboard.writeText(url);
                         addToast('Link do relatório copiado!', 'success');
@@ -317,6 +365,7 @@ export const HostedSites = () => {
                       <span>{new Date(site.publishedAt).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
+                </div>
                 </motion.div>
               ))}
             </AnimatePresence>
