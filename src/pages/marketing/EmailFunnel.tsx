@@ -93,12 +93,12 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
   const prevStep = () => setStep(s => Math.max(1, s - 1))
 
   return (
-    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-background text-white selection:bg-primary/30">
       <AnimatedBackground />
       <div className="max-w-4xl mx-auto space-y-6 pt-10 pb-20 relative z-10 min-h-screen">
         
         <div className="mb-12 flex flex-col items-center justify-center text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6 border border-primary/20 shadow-[0_0_30px_rgba(139,92,246,0.3)]">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6 border border-primary/20 shadow-glow-sm">
             <Mail className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-indigo-400 mb-4">
@@ -128,7 +128,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border-4 transition-colors duration-500 ${
                   step >= i 
                   ? 'bg-primary border-panel text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]' 
-                  : 'bg-panel border-background text-textSecondary'
+                  : 'bg-surface-elevated border-background text-textSecondary'
                 }`}
               >
                 {i}
@@ -140,7 +140,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+              <Card className="border-border bg-surface-elevated shadow-2xl rounded-2xl">
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 1 de 4</h3>
@@ -169,7 +169,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
 
           {step === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+              <Card className="border-border bg-surface-elevated shadow-2xl rounded-2xl">
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 2 de 4</h3>
@@ -199,7 +199,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
 
           {step === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+              <Card className="border-border bg-surface-elevated shadow-2xl rounded-2xl">
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 3 de 4</h3>
@@ -218,7 +218,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
 
                   <div className="pt-6 border-t border-border/50 flex gap-4">
                     <Button variant="secondary" onClick={prevStep} className="h-14 px-6"><ChevronLeft className="w-5 h-5" /></Button>
-                    <Button onClick={handleGenerate} disabled={!formData.product} className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-primaryLight hover:to-indigo-500 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+                    <Button onClick={handleGenerate} disabled={!formData.product} className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-primaryLight hover:to-indigo-500 shadow-glow">
                       <Mail className="w-5 h-5 mr-2" /> Gerar Sequência Pronta
                     </Button>
                   </div>
@@ -245,7 +245,7 @@ Faça uma progressão lógica. O primeiro e-mail introduz/lembra, o segundo gera
                 </div>
               </div>
               
-              <div className="rounded-xl border border-border/50 bg-panel/50 backdrop-blur-md shadow-2xl overflow-hidden p-2">
+              <div className="rounded-xl border border-border/50 bg-surface-elevated/50 backdrop-blur-md shadow-2xl overflow-hidden p-2">
                 {isGenerating ? (
                   <div className="h-[400px] flex flex-col items-center justify-center text-textSecondary gap-6">
                     <div className="relative w-20 h-20">

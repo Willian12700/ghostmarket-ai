@@ -106,7 +106,7 @@ Formate o texto em Markdown (use negritos, títulos).`
   const prevStep = () => setStep(s => Math.max(1, s - 1))
 
   return (
-    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
+    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-background text-white selection:bg-primary/30">
       <AnimatedBackground />
       <div className="max-w-6xl mx-auto space-y-6 pt-10 pb-20 relative z-10 min-h-screen">
         
@@ -141,7 +141,7 @@ Formate o texto em Markdown (use negritos, títulos).`
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border-4 transition-colors duration-500 ${
                   step >= i 
                   ? 'bg-primary border-panel text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]' 
-                  : 'bg-panel border-background text-textSecondary'
+                  : 'bg-surface-elevated border-background text-textSecondary'
                 }`}
               >
                 {i}
@@ -153,7 +153,7 @@ Formate o texto em Markdown (use negritos, títulos).`
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+              <Card className="border-border bg-surface-elevated shadow-2xl rounded-2xl">
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 1 de 5</h3>
@@ -182,7 +182,7 @@ Formate o texto em Markdown (use negritos, títulos).`
 
           {step === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+              <Card className="border-border bg-surface-elevated shadow-2xl rounded-2xl">
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 2 de 5</h3>
@@ -212,7 +212,7 @@ Formate o texto em Markdown (use negritos, títulos).`
 
           {step === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+              <Card className="border-border bg-surface-elevated shadow-2xl rounded-2xl">
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 3 de 5</h3>
@@ -242,7 +242,7 @@ Formate o texto em Markdown (use negritos, títulos).`
 
           {step === 4 && (
             <motion.div key="step4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
+              <Card className="border-border bg-surface-elevated shadow-2xl rounded-2xl">
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 4 de 5</h3>
@@ -261,7 +261,7 @@ Formate o texto em Markdown (use negritos, títulos).`
 
                   <div className="pt-6 border-t border-border/50 flex gap-4">
                     <Button variant="secondary" onClick={prevStep} className="h-14 px-6"><ChevronLeft className="w-5 h-5" /></Button>
-                    <Button onClick={handleGenerate} disabled={!formData.mechanism} className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-primaryLight hover:to-indigo-500 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+                    <Button onClick={handleGenerate} disabled={!formData.mechanism} className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-primaryLight hover:to-indigo-500 shadow-glow">
                       <Brain className="w-5 h-5 mr-2" /> Engatilhar VSL
                     </Button>
                   </div>
@@ -282,7 +282,7 @@ Formate o texto em Markdown (use negritos, títulos).`
                     </div>
                   </div>
 
-                  <Card className="border-border/50 bg-panel/50 backdrop-blur-md shadow-2xl">
+                  <Card className="border-border/50 bg-surface-elevated/50 backdrop-blur-md shadow-2xl">
                     <CardContent className="p-6">
                       <div className="h-[250px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -328,7 +328,7 @@ Formate o texto em Markdown (use negritos, títulos).`
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border/50 bg-panel/50 backdrop-blur-md shadow-2xl overflow-hidden p-2 flex flex-col h-[550px]">
+                <div className="rounded-xl border border-border/50 bg-surface-elevated/50 backdrop-blur-md shadow-2xl overflow-hidden p-2 flex flex-col h-[550px]">
                   {isGenerating ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-textSecondary gap-6">
                       <div className="relative w-20 h-20">
