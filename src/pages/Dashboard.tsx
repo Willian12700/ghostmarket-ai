@@ -218,14 +218,14 @@ export const Dashboard = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-3">
             <Zap className="w-3 h-3 fill-primary" /> Modo Elite Ativado
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-textPrimary tracking-tight">
             Olá, {user?.name?.split(' ')[0] || 'Usuário'}.
           </h1>
           <p className="text-textSecondary mt-2 text-lg">Visão geral do seu império digital.</p>
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-primary hover:bg-primaryLight text-white px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover:-translate-y-1">
+          <button className="flex items-center gap-2 bg-primary hover:bg-primaryLight text-textPrimary px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover:-translate-y-1">
             <Plus className="w-5 h-5" /> Registrar Venda
           </button>
         </div>
@@ -236,20 +236,20 @@ export const Dashboard = () => {
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
         transition={{ delay: 0.2 }}
-        className="bg-panel border border-primary/30 rounded-2xl p-6 relative overflow-hidden mb-8"
+        className="bg-surface-elevated border border-border rounded-2xl p-6 relative overflow-hidden mb-8 group hover:-translate-y-1 hover:border-borderHover transition-all duration-300 shadow-sm"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Zap className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-extrabold text-white tracking-tight">Auto-Cálculo de Meta</h3>
+              <h3 className="text-lg font-extrabold text-textPrimary tracking-tight">Auto-Cálculo de Meta</h3>
             </div>
             <p className="text-sm text-textSecondary flex items-center gap-2">
               Meta Mensal: 
               <input 
                 type="number" 
-                className="bg-background border border-border rounded-lg px-3 py-1.5 text-white w-36 focus:outline-none focus:border-primary transition-colors"
+                className="bg-surface border border-border rounded-lg px-3 py-1.5 text-textPrimary w-36 focus:outline-none focus:border-primary transition-colors"
                 value={monthlyGoal}
                 onChange={(e) => {
                   setMonthlyGoal(Number(e.target.value))
@@ -260,7 +260,7 @@ export const Dashboard = () => {
           </div>
           <div className="flex-1 w-full max-w-xl">
             <div className="flex justify-between text-sm font-bold mb-2">
-              <span className="text-white">Progresso ({Math.min(100, (mes / (monthlyGoal || 1)) * 100).toFixed(1)}%)</span>
+              <span className="text-textPrimary">Progresso ({Math.min(100, (mes / (monthlyGoal || 1)) * 100).toFixed(1)}%)</span>
               <span className="text-primary">{formatCurrency(mes)} / {formatCurrency(monthlyGoal)}</span>
             </div>
             <div className="w-full bg-background rounded-full h-3 border border-border overflow-hidden">
@@ -282,12 +282,12 @@ export const Dashboard = () => {
               </span>
             ) : (
               <span>
-                Faltam <span className="text-white font-bold">{formatCurrency(monthlyGoal - mes)}</span> para atingir a meta.
+                Faltam <span className="text-textPrimary font-bold">{formatCurrency(monthlyGoal - mes)}</span> para atingir a meta.
               </span>
             )}
           </div>
           {mes < monthlyGoal && (
-            <div className="bg-primary/10 border border-primary/30 text-primary px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(139,92,246,0.15)]">
+            <div className="bg-primary/10 border border-border text-primary px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(139,92,246,0.15)]">
               <Activity className="w-4 h-4" /> Sugestão da IA: Aumente o orçamento da oferta principal em 20% hoje.
             </div>
           )}
@@ -309,60 +309,60 @@ export const Dashboard = () => {
         className="flex flex-col gap-4 lg:col-span-3"
       >
         {/* Card Hoje */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Hoje</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
+            <div className="p-2 rounded-lg bg-surface border border-border">
               <Calendar className="w-4 h-4 text-primary" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(hoje)}</div>
+          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(hoje)}</div>
           <p className="text-xs text-success flex items-center mt-2 font-medium">
             <ArrowUpRight className="w-3 h-3 mr-1" /> Faturamento diário
           </p>
         </motion.div>
 
         {/* Card Semana */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Esta Semana</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
+            <div className="p-2 rounded-lg bg-surface border border-border">
               <TrendingUp className="w-4 h-4 text-primary" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(semana)}</div>
+          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(semana)}</div>
           <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
             Acumulado nos últimos 7 dias
           </p>
         </motion.div>
 
         {/* Card Mês */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Mês</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
+            <div className="p-2 rounded-lg bg-surface border border-border">
               <ShoppingCart className="w-4 h-4 text-primary" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(mes)}</div>
+          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(mes)}</div>
           <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
             Performance mensal
           </p>
         </motion.div>
 
         {/* Card Ano */}
-        <motion.div variants={itemVariants} className="bg-panel border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
+        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Ano</h3>
-            <div className="p-2 rounded-lg bg-background border border-border">
+            <div className="p-2 rounded-lg bg-surface border border-border">
               <DollarSign className="w-4 h-4 text-primary" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{formatCurrency(ano)}</div>
+          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(ano)}</div>
           <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
             Receita anual bruta
           </p>
@@ -372,31 +372,31 @@ export const Dashboard = () => {
       
       
         {/* CHART BLOCK */}
-        <div className="lg:col-span-6 bg-panel border border-border rounded-3xl p-6 lg:p-8 relative overflow-hidden group flex flex-col min-h-[400px]">
+        <div className="lg:col-span-6 bg-surface-elevated border border-border rounded-2xl p-6 lg:p-8 relative overflow-hidden group flex flex-col min-h-[400px] hover:border-borderHover transition-colors">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10 shrink-0">
             <div>
-              <h3 className="text-xl font-extrabold text-white tracking-tight mb-1">Visão de Crescimento</h3>
+              <h3 className="text-xl font-extrabold text-textPrimary tracking-tight mb-1">Visão de Crescimento</h3>
               <p className="text-sm text-textSecondary font-medium">Acompanhe a escalabilidade do seu negócio</p>
             </div>
             
-            <div className="flex items-center p-1 bg-background border border-border rounded-lg mt-4 sm:mt-0">
+            <div className="flex items-center p-1 bg-surface border border-border rounded-lg mt-4 sm:mt-0">
               <button 
                 onClick={() => setDateFilter('semana')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'semana' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'semana' ? 'bg-primary text-textPrimary shadow-md' : 'text-textSecondary hover:text-textPrimary'}`}
               >
                 7 Dias
               </button>
               <button 
                 onClick={() => setDateFilter('mes')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'mes' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'mes' ? 'bg-primary text-textPrimary shadow-md' : 'text-textSecondary hover:text-textPrimary'}`}
               >
                 30 Dias
               </button>
               <button 
                 onClick={() => setDateFilter('ano')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'ano' ? 'bg-primary text-white shadow-md' : 'text-textSecondary hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'ano' ? 'bg-primary text-textPrimary shadow-md' : 'text-textSecondary hover:text-textPrimary'}`}
               >
                 12 Meses
               </button>
@@ -460,9 +460,9 @@ export const Dashboard = () => {
         </div>
 
         {/* RECENT TRANSACTIONS BLOCK */}
-        <div className="lg:col-span-3 bg-panel border border-border rounded-3xl p-6 flex flex-col relative overflow-hidden group">
+        <div className="lg:col-span-3 bg-surface-elevated border border-border rounded-2xl p-6 flex flex-col relative overflow-hidden group hover:border-borderHover transition-colors">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-extrabold text-white tracking-tight">Notificações</h3>
+            <h3 className="text-lg font-extrabold text-textPrimary tracking-tight">Notificações</h3>
             <div className="bg-success/10 text-success text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-success/20">
               <span className="w-2 h-2 bg-success rounded-full animate-pulse shadow-[0_0_8px_#22C55E]"></span>
               Live
@@ -482,13 +482,13 @@ export const Dashboard = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 * i }}
                   key={tx.id} 
-                  className="flex items-center gap-3 p-3 rounded-xl bg-background border border-border hover:border-primary/40 transition-colors group cursor-pointer"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-primary/40 transition-colors group cursor-pointer"
                 >
                   <div className="w-10 h-10 rounded-full bg-success/10 border border-success/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <DollarSign className="w-5 h-5 text-success" />
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-sm font-bold text-white truncate">{tx.clientName}</p>
+                    <p className="text-sm font-bold text-textPrimary truncate">{tx.clientName}</p>
                     <p className="text-[10px] text-textSecondary mt-0.5 font-medium uppercase tracking-wider">{tx.source}</p>
                   </div>
                   <div className="text-right shrink-0">

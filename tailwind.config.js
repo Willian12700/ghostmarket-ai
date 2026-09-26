@@ -8,22 +8,44 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
+        sans: ['Inter', 'Outfit', 'sans-serif'],
       },
       colors: {
-        background: 'var(--color-bg, #0A0A0A)',
-        panel: 'var(--color-panel, #111111)',
-        panelHover: 'var(--color-panel-hover, #171717)',
-        border: 'var(--color-border, #27272A)',
-        borderHover: 'var(--color-border-hover, #334155)',
-        textPrimary: 'var(--color-text-primary, #F3F4F6)',
-        textSecondary: 'var(--color-text-secondary, #9CA3AF)',
-        primary: 'var(--color-primary, #8B5CF6)',
-        primaryLight: 'var(--color-primary-light, #A855F7)',
-        secondary: 'var(--color-secondary, #EC4899)',
-        accent: 'var(--color-accent, #D946EF)',
-        success: '#22C55E',
-        error: '#EF4444',
+        background: 'var(--background)',
+        backgroundSecondary: 'var(--background-secondary)',
+        surface: 'var(--surface)',
+        surfaceElevated: 'var(--surface-elevated)',
+        border: 'var(--border)',
+        borderHover: 'var(--border-hover)',
+        textPrimary: 'var(--text-primary)',
+        textSecondary: 'var(--text-secondary)',
+        textMuted: 'var(--text-muted)',
+        accent: 'var(--accent)',
+        success: 'var(--success)',
+        error: 'var(--error)',
+        // Keeping legacy colors that might be used elsewhere to avoid breaking changes, mapped to new tokens
+        panel: 'var(--surface)',
+        panelHover: 'var(--surface-elevated)',
+        primary: 'var(--accent)',
+        primaryLight: 'var(--accent)',
+      },
+      boxShadow: {
+        'glow': '0 0 20px var(--accent-glow)',
+        'glow-sm': '0 0 10px var(--accent-glow)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-out forwards',
+        'slide-up': 'slideUp 0.4s ease-out forwards',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        }
       }
     },
   },
