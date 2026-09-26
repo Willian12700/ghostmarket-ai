@@ -247,7 +247,11 @@ export const Landing = () => {
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">POR DENTRO DA MÁQUINA</h2>
               <p className="text-textSecondary max-w-2xl mx-auto mb-12">Um ecossistema com design premium, focado em velocidade e conversão. Desenvolvido para você gerenciar clientes, criar sites e faturar no mesmo dia.</p>
-              <AppPreview />
+              <div className="w-full overflow-x-auto pb-4 custom-scrollbar snap-x">
+                  <div className="min-w-[900px] md:min-w-full px-4 md:px-0 snap-center">
+                    <AppPreview />
+                  </div>
+                </div>
             </motion.div>
           </div>
         </section>

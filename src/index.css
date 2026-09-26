@@ -48,3 +48,8 @@
   background-size: 200% 200%;
   animation: bg-shift 4s ease infinite;
 }
+
+.custom-scrollbar::-webkit-scrollbar { height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.5); }
