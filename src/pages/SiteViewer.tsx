@@ -14,7 +14,6 @@ export const SiteViewer = () => {
       try {
         const docRef = doc(db, 'sites', siteId)
         const docSnap = await getDoc(docRef)
-        
 
         if (docSnap.exists()) {
           const data = docSnap.data()
@@ -30,15 +29,6 @@ export const SiteViewer = () => {
             return;
           }
           
-          // Analytics Tracker Invisível
-          const visited = sessionStorage.getItem(`visited_${siteId}`)
-          if (!visited) {
-            try {
-              await updateDoc(docRef, { views: increment(1) })
-              sessionStorage.setItem(`visited_${siteId}`, 'true')
-            } catch(e) { console.error('Analytics err', e) }
-          }
-          
           if (data.rawHtml) {
             let finalHtml = data.rawHtml;
             
@@ -47,7 +37,6 @@ export const SiteViewer = () => {
               const autoHealingScript = `
                 <!-- GHOST AUTO-HEALING INJECTED -->
                 <style>
-                  /* Previne rolagem horizontal no mobile (Botões vazando) */
                   html, body {
                     max-width: 100vw;
                     overflow-x: hidden;
@@ -57,7 +46,6 @@ export const SiteViewer = () => {
                 </style>
                 <script>
                   document.addEventListener('DOMContentLoaded', function() {
-                    // Substitui qualquer imagem quebrada por um placeholder mantendo o tamanho
                     document.querySelectorAll('img').forEach(img => {
                       img.addEventListener('error', function() {
                         this.src = 'https://placehold.co/600x400/1a1a1a/8b5cf6?text=Imagem+Recuperada';
@@ -65,8 +53,6 @@ export const SiteViewer = () => {
                         this.style.opacity = '0.8';
                         console.log('Ghost Auto-Healing: Imagem 404 reparada com sucesso.');
                       });
-                      
-                      // Trigger manual caso a imagem já tenha falhado antes do script carregar
                       if (img.complete && img.naturalHeight === 0) {
                         const event = new Event('error');
                         img.dispatchEvent(event);
@@ -76,7 +62,6 @@ export const SiteViewer = () => {
                 </script>
               `;
               
-              // Injeta antes de fechar a tag head, ou no topo do documento
               if (finalHtml.includes('</head>')) {
                 finalHtml = finalHtml.replace('</head>', autoHealingScript + '</head>');
               } else {
@@ -86,22 +71,44 @@ export const SiteViewer = () => {
 
             setHtml(finalHtml)
           } else {
-            // Caso seja um site antigo feito com blocks
             setHtml('<h1>Este site foi criado na versão antiga do sistema. Por favor, recrie o site usando o novo Ghost Builder.</h1>')
           }
+          
+          // SET LOADING FALSE IMMEDIATELY BEFORE ANALYTICS
+          setLoading(false)
+
+          // Analytics Tracker Fire-and-forget (NÃO USAR AWAIT AQUI)
+          const visited = sessionStorage.getItem(`visited_${siteId}`)
+          if (!visited) {
+            updateDoc(docRef, { views: increment(1) }).then(() => {
+              sessionStorage.setItem(`visited_${siteId}`, 'true')
+            }).catch(e => console.error('Analytics err', e))
+          }
+          
         } else {
           console.error('Site not found')
+          setLoading(false)
         }
       } catch (err) {
         console.error('Error fetching site', err)
-      } finally {
         setLoading(false)
       }
     }
     fetchSite()
   }, [siteId])
 
-  if (loading) { return <div style={{ minHeight: "100vh", backgroundColor: "#000" }}></div> }
+  if (loading) { 
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: "24px", height: "24px", border: "3px solid rgba(139, 92, 246, 0.2)", borderTopColor: "#8b5cf6", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <style>
+          {`
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          `}
+        </style>
+      </div>
+    ) 
+  }
 
   if (!html) {
     return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Site não encontrado ou vazio.</div>
