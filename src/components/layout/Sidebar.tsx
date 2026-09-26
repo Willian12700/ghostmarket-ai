@@ -54,6 +54,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
         { to: '/chatbots', icon: Bot, label: 'Chatbots de IA' },
         { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
+        { to: '/scripts', icon: MessageCircle, label: 'Scripts X1' },
       ]
     },
     {
