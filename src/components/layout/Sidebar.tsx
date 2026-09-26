@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe , ShieldAlert, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, User, BookMarked, Sparkles, ChevronDown, ChevronRight, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { cn } from '@/utils/cn'
@@ -53,6 +53,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
         { to: '/prompt-builder', icon: Code, label: 'Prompt Builder' },
         { to: '/builder', icon: LayoutTemplate, label: 'Hospedar Novo Site' },
+        { to: '/image-to-link', icon: ImageIcon, label: 'Converter Imagem (URL)' },
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
           { to: '/chatbots', icon: Bot, label: 'Chatbots de IA' },
         { to: '/scanner', icon: Search, label: 'Scanner de Leads' },

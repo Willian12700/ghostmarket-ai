@@ -12,6 +12,7 @@ import { Creator } from '@/pages/Creator'
 import { Library } from '@/pages/Library'
 import { PromptBuilder } from '@/pages/PromptBuilder'
 import { SiteBuilder } from '@/pages/SiteBuilder'
+import { ImageToLink } from '@/pages/ImageToLink'
 import { HostedSites } from '@/pages/HostedSites'
 import { Finance } from '@/pages/Finance'
 import { Products } from '@/pages/Products'
@@ -79,6 +80,7 @@ function App() {
               <Route path="/library" element={<Library />} />
               <Route path="/prompt-builder" element={<PromptBuilder />} />
               <Route path="/builder" element={<SiteBuilder />} />
+              <Route path="/image-to-link" element={<ImageToLink />} />
               <Route path="/sites" element={<HostedSites />} />
               <Route path="/finance" element={<Finance />} />
               <Route path="/products" element={<Products />} />
