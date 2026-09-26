@@ -21,6 +21,8 @@ import { SiteViewer } from '@/pages/SiteViewer'
 import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
 import { Chatbots } from '@/pages/Chatbots'
+import { SalesScripts } from '@/pages/SalesScripts'
+import { Demo } from '@/pages/Demo'
 import { VslGenerator } from '@/pages/marketing/VslGenerator'
 import { PlrGenerator } from '@/pages/marketing/PlrGenerator'
 import { AdsGenerator } from '@/pages/marketing/AdsGenerator'
@@ -86,6 +88,7 @@ function App() {
               <Route path="/products" element={<Products />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/chatbots" element={<Chatbots />} />
+              <Route path="/scripts" element={<SalesScripts />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminPanel />} />
@@ -106,6 +109,7 @@ function App() {
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />
+            <Route path="/demo" element={<Demo />} />
             <Route path="/report/:siteId" element={<ClientReport />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

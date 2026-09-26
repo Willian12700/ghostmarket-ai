@@ -1,24 +1,11 @@
 const fs = require('fs');
+let hs = fs.readFileSync('src/pages/HostedSites.tsx', 'utf8');
 
-let content = fs.readFileSync('src/pages/SiteBuilder.tsx', 'utf8');
+hs = hs.replace(/<button onClick=\{\(\) => \{\r?\n\s*const url = `\$\{window.location.origin\}\/report/, 
+`                          {!site.isRedirect && site.rawHtml && (
+                            <button onClick={() => handleDownloadZip(site)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/10 text-primary transition-colors" title="Baixar ZIP">
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}\n$&`);
 
-const target = `            {step === 5 && (
-              <Button onClick={() => setIsPublishModalOpen(true)} className="shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-green-500 hover:bg-green-600 text-white">
-                <Globe className="w-4 h-4 mr-2" /> Hospedar Site
-              </Button>
-            )}`;
-
-const replacement = `            {step === 5 && (
-              <Button 
-                onClick={editId ? (e) => handlePublish(e as any) : () => setIsPublishModalOpen(true)} 
-                disabled={isPublishing}
-                className="shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-green-500 hover:bg-green-600 text-white"
-              >
-                <Globe className="w-4 h-4 mr-2" /> 
-                {isPublishing ? 'Salvando...' : (editId ? 'Atualizar Site' : 'Hospedar Site')}
-              </Button>
-            )}`;
-
-content = content.replace(target, replacement);
-
-fs.writeFileSync('src/pages/SiteBuilder.tsx', content);
+fs.writeFileSync('src/pages/HostedSites.tsx', hs);

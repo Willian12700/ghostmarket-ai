@@ -1,20 +1,15 @@
 const fs = require('fs');
+let code = fs.readFileSync('src/components/ui/AppPreview.tsx', 'utf8');
 
-const fixGlass = () => {
-  let file = 'src/components/ui/GlassTerminal.tsx';
-  let c = fs.readFileSync(file, 'utf8');
-  c = c.replace(/,\s*language\s*=\s*"text"/, '');
-  c = c.replace(/language\?: string;/, '');
-  fs.writeFileSync(file, c);
-}
+const newImports = `import { motion } from 'framer-motion'
+import { 
+  Ghost, Bell, Plus, Zap, LayoutDashboard, Crown, Sparkles, 
+  Settings, LogOut, DollarSign, 
+  Calendar, TrendingUp, User, ArrowUpRight, MessageSquare,
+  Globe, Code, Search, Bot
+} from 'lucide-react'`;
 
-const fixImports = (file) => {
-  let c = fs.readFileSync(file, 'utf8');
-  c = c.replace("import { GlassTerminal } from '@/components/ui/GlassTerminal'\n", '');
-  fs.writeFileSync(file, c);
-}
+// Replace everything up to export const AppPreview
+code = code.replace(/^[\s\S]*?export const AppPreview/m, newImports + '\n\nexport const AppPreview');
 
-fixGlass();
-fixImports('src/pages/Chatbots.tsx');
-fixImports('src/pages/Scanner.tsx');
-fixImports('src/pages/marketing/PlrGenerator.tsx');
+fs.writeFileSync('src/components/ui/AppPreview.tsx', code, 'utf8');

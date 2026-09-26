@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Ghost, Play, CheckCircle2, ChevronDown, Palette, Briefcase, DollarSign, Menu, X, Video, Search, Bot } from 'lucide-react'
+import { Ghost, Play, CheckCircle2, ChevronDown, Palette, Briefcase, DollarSign, Menu, X, Video, Search, Bot , MessageCircle} from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { AnimatedMockup } from '@/components/ui/AnimatedMockup'
 import { AppPreview } from '@/components/ui/AppPreview'
@@ -397,6 +397,19 @@ export const Landing = () => {
           Â© 2026 GhostMarket AI. Todos os direitos reservados.
         </div>
       </footer>
+
+      {/* WhatsApp Floating Button */}
+      <a 
+        href="https://wa.me/5511999999999?text=Ol%C3%A1!+Estava+vendo+o+site+do+GhostMarket+e+quero+saber+como+funciona+o+Plano+Vital%C3%ADcio."
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-[0_4px_24px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform flex items-center justify-center group"
+      >
+        <MessageCircle className="w-8 h-8" />
+        <span className="absolute right-full mr-4 bg-white text-black text-sm font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg">
+          Falar no WhatsApp
+        </span>
+      </a>
     </div>
   )
 }
