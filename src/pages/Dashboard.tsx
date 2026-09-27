@@ -261,11 +261,7 @@ export const Dashboard = () => {
           <p className="text-textSecondary mt-2 text-lg font-medium">Visão estratégica do seu império digital.</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-accent hover:bg-accent/90 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:-translate-y-1">
-            <Plus className="w-5 h-5" /> Registrar Venda
-          </button>
-        </div>
+
       </motion.div>
 
       {/* GHOST GOAL AUTO-TRACKING */}
