@@ -164,7 +164,7 @@ export const Landing = () => {
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-white mb-6 tracking-tight leading-[1.05]">
-              A inteligência artificial para <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-primary/80 to-primary">criar e vender</span>.
+              A inteligência artificial para <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-400 to-purple-600">criar e vender</span>.
             </h1>
             
             <p className="text-lg md:text-xl text-[#8A8A94] mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
