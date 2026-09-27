@@ -58,8 +58,12 @@ export function AnimatedMockup() {
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setOpacity(1)}
         onMouseLeave={() => setOpacity(0)}
-        className="bg-[#0b0714] rounded-xl border border-white/10 overflow-hidden flex h-[400px] md:h-[480px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform hover:scale-[1.02] hover:-translate-y-2 transition-all duration-500 relative"
+        className="bg-[#0b0714] rounded-xl border border-white/10 overflow-hidden flex h-[500px] md:h-[580px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform hover:scale-[1.02] hover:-translate-y-2 transition-all duration-500 relative"
       >
+        {/* Bordas Neon Roxas nas Laterais */}
+        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#8b5cf6]/80 shadow-[0_0_20px_4px_rgba(139,92,246,0.8)] z-50 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-[#8b5cf6]/80 shadow-[0_0_20px_4px_rgba(139,92,246,0.8)] z-50 pointer-events-none" />
+
         <div
           className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 z-50"
           style={{
@@ -69,15 +73,15 @@ export function AnimatedMockup() {
         />
 
         {/* Mockup Sidebar */}
-        <div className="w-16 md:w-48 bg-[#050505] border-r border-white/5 hidden sm:flex flex-col p-4 relative z-10">
+        <div className="w-16 md:w-48 bg-[#050505] border-r border-white/5 hidden sm:flex flex-col p-4 relative z-10 shrink-0">
           <div className="flex items-center gap-2 mb-8">
             <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center">
                <div className="w-3 h-3 bg-primary rounded-sm" />
             </div>
             <div className="h-4 w-20 bg-white/10 rounded hidden md:block" />
           </div>
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
+          <div className="space-y-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <motion.div 
                 key={i} 
                 initial={{ opacity: 0, x: -20 }}
@@ -85,8 +89,8 @@ export function AnimatedMockup() {
                 transition={{ delay: 0.2 + i * 0.1 }}
                 className="flex items-center gap-3"
               >
-                <div className="w-4 h-4 rounded-full bg-white/5" />
-                <div className="h-3 w-3/4 bg-white/5 rounded hidden md:block" />
+                <div className="w-4 h-4 rounded-full bg-white/5 shrink-0" />
+                <div className="h-3 w-full bg-white/5 rounded hidden md:block" />
               </motion.div>
             ))}
           </div>
@@ -108,29 +112,29 @@ export function AnimatedMockup() {
             </motion.div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
-            <div className="bg-[#050505] border border-white/5 rounded-xl p-4 md:p-5 flex flex-col justify-center relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-bl-full pointer-events-none" />
+          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6">
+            <div className="col-span-2 bg-[#050505] border border-white/5 rounded-xl p-5 flex flex-col justify-center relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full pointer-events-none" />
               <div className="text-xs md:text-sm text-[#8A8A94] mb-1.5 font-medium">Receita Total</div>
-              <div className="text-xl md:text-3xl font-bold text-white tracking-tight">
-                <Counter to={12480} prefix="R$ " suffix=",00" duration={2.5} />
+              <div className="text-3xl md:text-5xl font-bold text-white tracking-tight">
+                <Counter to={12480} prefix="R$ " duration={2.5} />
               </div>
             </div>
-            <div className="bg-[#050505] border border-white/5 rounded-xl p-4 md:p-5 flex flex-col justify-center">
+            <div className="col-span-1 bg-[#050505] border border-white/5 rounded-xl p-4 md:p-5 flex flex-col justify-center">
               <div className="text-xs md:text-sm text-[#8A8A94] mb-1.5 font-medium">Assinaturas</div>
-              <div className="text-xl md:text-3xl font-bold text-white tracking-tight">
+              <div className="text-2xl md:text-3xl font-bold text-white tracking-tight">
                 <Counter to={347} duration={2} />
               </div>
             </div>
-            <div className="bg-[#050505] border border-white/5 rounded-xl p-4 md:p-5 hidden md:flex flex-col justify-center">
+            <div className="col-span-1 bg-[#050505] border border-white/5 rounded-xl p-4 md:p-5 flex flex-col justify-center">
               <div className="text-xs md:text-sm text-[#8A8A94] mb-1.5 font-medium">Conversão</div>
-              <div className="text-xl md:text-3xl font-bold text-white tracking-tight text-emerald-400">
+              <div className="text-2xl md:text-3xl font-bold text-white tracking-tight text-emerald-400">
                 <Counter to={8} suffix="%" duration={1.5} />
               </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 overflow-hidden">
             {/* Chart Area */}
             <div className="md:col-span-2 bg-[#050505] border border-white/5 rounded-xl p-4 flex flex-col relative overflow-hidden group">
               <div className="text-xs text-[#8A8A94] mb-4 font-medium">Crescimento (30 dias)</div>
@@ -189,7 +193,7 @@ export function AnimatedMockup() {
                   className="h-10 bg-[#0b0714] border border-white/5 rounded flex items-center px-3 justify-between"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-primary/20" />
+                    <div className="w-4 h-4 rounded-full bg-primary/20 shrink-0" />
                     <div className="h-2 w-12 bg-white/10 rounded" />
                   </div>
                   <div className="h-2 w-10 bg-emerald-400/80 rounded" />
