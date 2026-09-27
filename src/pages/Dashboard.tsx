@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { DollarSign, Plus, ShoppingCart, TrendingUp, Calendar, Zap, ArrowUpRight, Activity, ArrowDownRight, Target } from 'lucide-react'
+import { DollarSign, ShoppingCart, TrendingUp, Calendar, Zap, ArrowUpRight, Activity, ArrowDownRight, Target } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { motion } from 'framer-motion'
 

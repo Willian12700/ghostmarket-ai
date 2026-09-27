@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
 import confetti from 'canvas-confetti'
 import { motion, AnimatePresence } from 'framer-motion'
+import { GlobalLeadScanner } from '@/components/dashboard/GlobalLeadScanner'
 
 interface Lead {
   id: string
@@ -24,6 +25,8 @@ interface Lead {
   userRatingsTotal: number
   status: 'Novo' | 'Contatado'
   imageUrl?: string
+  lat: number
+  lng: number
 }
 
 interface State {
@@ -39,6 +42,7 @@ interface City {
 
 export const Scanner = () => {
   const [isScanning, setIsScanning] = useState(false)
+  const [showScannerAnimation, setShowScannerAnimation] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
   const [savedLeads, setSavedLeads] = useState<Record<string, boolean>>({})
   
@@ -86,6 +90,7 @@ export const Scanner = () => {
     }
     
     setIsScanning(true)
+    setShowScannerAnimation(true)
     setLeads([])
     
     try {
@@ -95,7 +100,7 @@ export const Scanner = () => {
       
       const request = {
         textQuery: query,
-        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount', 'photos'],
+        fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount', 'photos', 'location'],
         maxResultCount: 20
       };
       
@@ -147,7 +152,9 @@ export const Scanner = () => {
           rating: place.rating || 0,
           userRatingsTotal: place.userRatingCount || 0,
           status: 'Novo',
-            imageUrl
+            imageUrl,
+          lat: typeof place.location?.lat === "function" ? place.location.lat() : (place.location?.lat || 0),
+          lng: typeof place.location?.lng === "function" ? place.location.lng() : (place.location?.lng || 0)
         }
       });
 
@@ -157,11 +164,12 @@ export const Scanner = () => {
         setLeads(realLeads);
       }
     } catch (error) {
+      setShowScannerAnimation(false);
       console.error(error);
       setLeads([{ id: 'error', name: 'Erro na Busca', category: 'Verifique a API', city: '', phone: '', instagram: '', website: '', rating: 0, userRatingsTotal: 0, status: 'Novo',
-            imageUrl: undefined }]);
+            imageUrl: undefined, lat: 0, lng: 0 }]);
     } finally {
-      setIsScanning(false)
+      // setIsScanning(false) will be handled by the animation
     }
   }
 
@@ -332,15 +340,14 @@ export const Scanner = () => {
         </CardContent>
       </Card>
 
-      {isScanning ? (
-        <div className="flex flex-col items-center justify-center py-20 text-textSecondary">
-          <div className="relative w-16 h-16 mb-4">
-            <div className="absolute inset-0 rounded-full border-t-2 border-primary animate-spin"></div>
-            <Search className="absolute inset-0 m-auto w-6 h-6 text-primary animate-pulse" />
-          </div>
-          <p className="text-lg font-medium text-white animate-pulse">Varrendo o Google Places...</p>
-          <p className="text-sm mt-2 text-primary">Encontrando as melhores oportunidades pra você.</p>
-        </div>
+      {showScannerAnimation ? (
+        <GlobalLeadScanner 
+          leads={leads} 
+          onAnimationComplete={() => {
+            setShowScannerAnimation(false);
+            setIsScanning(false);
+          }} 
+        />
       ) : leads.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {leads.map((lead) => (
