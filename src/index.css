@@ -1,25 +1,26 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @config "../tailwind.config.js";
 
 @layer base {
   :root {
-    --background: #050505;
-    --background-secondary: #090909;
-    --surface: #0D0D0F;
-    --surface-elevated: #111114;
-    --border: rgba(255, 255, 255, 0.07);
-    --border-hover: rgba(255, 255, 255, 0.13);
-    --text-primary: #F5F5F5;
+    --background: #050506;
+    --background-secondary: #0A0A0D;
+    --surface: #101014;
+    --surface-elevated: #15151A;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.15);
+    --text-primary: #FAFAFA;
     --text-secondary: #A1A1AA;
     --text-muted: #71717A;
     --accent: #8B5CF6;
-    --accent-glow: rgba(139, 92, 246, 0.3);
-    --success: #10b981;
-    --error: #ef4444;
+    --accent-glow: rgba(139, 92, 246, 0.35);
+    --success: #10B981;
+    --error: #EF4444;
   }
 
   body {
     @apply bg-background text-textPrimary overflow-x-hidden font-sans antialiased selection:bg-accent/30;
+    background-image: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.03) 0%, transparent 60%);
   }
 }
 

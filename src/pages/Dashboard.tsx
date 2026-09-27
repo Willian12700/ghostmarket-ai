@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { DollarSign,  Plus, ShoppingCart, TrendingUp, Calendar, Zap,  ArrowUpRight, Activity } from 'lucide-react'
+import { DollarSign, Plus, ShoppingCart, TrendingUp, Calendar, Zap, ArrowUpRight, Activity, ArrowDownRight, Target } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { motion } from 'framer-motion'
 
@@ -127,24 +127,37 @@ export const Dashboard = () => {
     const startOfYearTime = new Date(now.getFullYear(), 0, 1).getTime()
 
     let hoje = 0, semana = 0, mes = 0, ano = 0
+    let ontem = 0, semanaPassada = 0, mesPassado = 0, anoPassado = 0
 
     allPaidTransactions.forEach(tx => {
+      // Atual
       if (tx.date >= startOfToday) hoje += tx.amount
       if (tx.date >= startOfWeekTime) semana += tx.amount
       if (tx.date >= startOfMonthTime) mes += tx.amount
       if (tx.date >= startOfYearTime) ano += tx.amount
+      
+      // Anterior (simplificado para tendencias)
+      if (tx.date >= startOfToday - (24 * 60 * 60 * 1000) && tx.date < startOfToday) ontem += tx.amount
+      if (tx.date >= startOfWeekTime - (7 * 24 * 60 * 60 * 1000) && tx.date < startOfWeekTime) semanaPassada += tx.amount
+      if (tx.date >= startOfMonthTime - (30 * 24 * 60 * 60 * 1000) && tx.date < startOfMonthTime) mesPassado += tx.amount
+      if (tx.date >= startOfYearTime - (365 * 24 * 60 * 60 * 1000) && tx.date < startOfYearTime) anoPassado += tx.amount
     })
 
-    return { hoje, semana, mes, ano }
+    return { 
+      hoje, semana, mes, ano,
+      tendenciaHoje: ontem ? ((hoje - ontem) / ontem) * 100 : 100,
+      tendenciaSemana: semanaPassada ? ((semana - semanaPassada) / semanaPassada) * 100 : 100,
+      tendenciaMes: mesPassado ? ((mes - mesPassado) / mesPassado) * 100 : 100,
+      tendenciaAno: anoPassado ? ((ano - anoPassado) / anoPassado) * 100 : 100,
+    }
   }
 
-  
   const [monthlyGoal, setMonthlyGoal] = useState<number>(() => {
     const saved = localStorage.getItem('ghost_monthly_goal')
     return saved ? Number(saved) : 50000
   })
 
-  const { hoje, semana, mes, ano } = calculateMetrics()
+  const { hoje, semana, mes, ano, tendenciaHoje, tendenciaSemana, tendenciaMes, tendenciaAno } = calculateMetrics()
 
   // Chart Data Generator
   const salesData = useMemo(() => {
@@ -202,7 +215,30 @@ export const Dashboard = () => {
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    show: { y: 0, opacity: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+    show: { y: 0, opacity: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24, duration: 0.4 } }
+  }
+
+  const MetricCard = ({ title, value, trend, icon: Icon, description }: any) => {
+    const isPositive = trend >= 0;
+    return (
+      <motion.div variants={itemVariants} className="bg-surface/40 backdrop-blur-md border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-accent/40 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(139,92,246,0.12)] hover:-translate-y-1">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform duration-500 group-hover:scale-150 group-hover:bg-accent/10" />
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">{title}</h3>
+          <div className="p-2 rounded-xl bg-surface-elevated border border-border group-hover:border-accent/30 transition-colors">
+            <Icon className="w-4 h-4 text-accent" />
+          </div>
+        </div>
+        <div className="text-3xl font-extrabold text-textPrimary tracking-tight mb-2">{formatCurrency(value)}</div>
+        <div className="flex items-center gap-2">
+          <span className={`flex items-center text-xs font-bold px-1.5 py-0.5 rounded-md ${isPositive ? 'text-success bg-success/10' : 'text-error bg-error/10'}`}>
+            {isPositive ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />}
+            {Math.abs(trend).toFixed(1)}%
+          </span>
+          <p className="text-xs text-textMuted font-medium">{description}</p>
+        </div>
+      </motion.div>
+    )
   }
 
   return (
@@ -212,20 +248,21 @@ export const Dashboard = () => {
       <motion.div 
         initial={{ opacity: 0, y: -20 }} 
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         className="flex flex-col md:flex-row md:items-end justify-between gap-6"
       >
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-3">
-            <Zap className="w-3 h-3 fill-primary" /> Modo Elite Ativado
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold uppercase tracking-widest mb-4 shadow-[0_0_15px_rgba(139,92,246,0.15)]">
+            <Zap className="w-3 h-3 fill-accent" /> Modo Elite Ativado
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-textPrimary tracking-tight">
             Olá, {user?.name?.split(' ')[0] || 'Usuário'}.
           </h1>
-          <p className="text-textSecondary mt-2 text-lg">Visão geral do seu império digital.</p>
+          <p className="text-textSecondary mt-2 text-lg font-medium">Visão estratégica do seu império digital.</p>
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-primary hover:bg-primaryLight text-textPrimary px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover:-translate-y-1">
+          <button className="flex items-center gap-2 bg-accent hover:bg-accent/90 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:-translate-y-1">
             <Plus className="w-5 h-5" /> Registrar Venda
           </button>
         </div>
@@ -235,37 +272,50 @@ export const Dashboard = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ delay: 0.2 }}
-        className="bg-surface-elevated border border-border rounded-2xl p-6 relative overflow-hidden mb-8 group hover:-translate-y-1 hover:border-borderHover transition-all duration-300 shadow-sm"
+        transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
+        className="bg-surface-elevated/80 backdrop-blur-xl border border-border rounded-2xl p-6 relative overflow-hidden mb-8 group hover:-translate-y-1 hover:border-accent/30 transition-all duration-300 shadow-sm"
       >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-extrabold text-textPrimary tracking-tight">Auto-Cálculo de Meta</h3>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-[80px] pointer-events-none transition-opacity duration-500 group-hover:opacity-100 opacity-70" />
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 relative z-10">
+          <div className="w-full md:w-auto">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-accent/10">
+                <Target className="w-5 h-5 text-accent" />
+              </div>
+              <h3 className="text-lg font-extrabold text-textPrimary tracking-tight">Objetivo Mensal</h3>
             </div>
-            <p className="text-sm text-textSecondary flex items-center gap-2">
-              Meta Mensal: 
+            <div className="flex items-center gap-3 bg-surface/50 p-1.5 rounded-lg border border-border/50 focus-within:border-accent/50 transition-colors w-full md:w-48">
+              <span className="text-textMuted font-bold pl-2">R$</span>
               <input 
                 type="number" 
-                className="bg-surface border border-border rounded-lg px-3 py-1.5 text-textPrimary w-36 focus:outline-none focus:border-primary transition-colors"
+                className="bg-transparent text-textPrimary font-bold w-full focus:outline-none"
                 value={monthlyGoal}
                 onChange={(e) => {
                   setMonthlyGoal(Number(e.target.value))
                   localStorage.setItem('ghost_monthly_goal', e.target.value)
                 }}
               />
-            </p>
-          </div>
-          <div className="flex-1 w-full max-w-xl">
-            <div className="flex justify-between text-sm font-bold mb-2">
-              <span className="text-textPrimary">Progresso ({Math.min(100, (mes / (monthlyGoal || 1)) * 100).toFixed(1)}%)</span>
-              <span className="text-primary">{formatCurrency(mes)} / {formatCurrency(monthlyGoal)}</span>
             </div>
-            <div className="w-full bg-background rounded-full h-3 border border-border overflow-hidden">
+          </div>
+          
+          <div className="flex-1 w-full">
+            <div className="flex justify-between items-end mb-3">
+              <div>
+                <p className="text-sm font-bold text-textSecondary uppercase tracking-wider mb-1">Progresso Atual</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-textPrimary tracking-tight">{formatCurrency(mes)}</span>
+                  <span className="text-sm font-bold text-textMuted">/ {formatCurrency(monthlyGoal)}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-black text-accent">{Math.min(100, (mes / (monthlyGoal || 1)) * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+            
+            <div className="w-full bg-surface rounded-full h-4 border border-border overflow-hidden p-0.5">
               <div 
-                className="bg-primary h-full rounded-full transition-all duration-1000 relative"
+                className="bg-gradient-to-r from-accent/80 to-accent h-full rounded-full transition-all duration-1000 ease-out relative shadow-[0_0_10px_rgba(139,92,246,0.5)]"
                 style={{ width: `${Math.min(100, (mes / (monthlyGoal || 1)) * 100)}%` }}
               >
                 <div className="absolute top-0 left-0 w-full h-full bg-white/20 animate-pulse" />
@@ -274,21 +324,21 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        <div className="mt-6 pt-5 border-t border-border flex flex-col sm:flex-row gap-4 items-center justify-between relative z-10">
-          <div className="text-sm text-textSecondary">
+        <div className="mt-6 pt-5 border-t border-border/50 flex flex-col sm:flex-row gap-4 items-center justify-between relative z-10">
+          <div className="text-sm font-medium">
             {mes >= monthlyGoal ? (
-              <span className="text-success font-bold flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> Parabéns! Você ultrapassou sua meta em {formatCurrency(mes - monthlyGoal)}!
+              <span className="text-success flex items-center gap-2 bg-success/10 px-3 py-1.5 rounded-lg border border-success/20">
+                <TrendingUp className="w-4 h-4" /> Meta superada em {formatCurrency(mes - monthlyGoal)}!
               </span>
             ) : (
-              <span>
-                Faltam <span className="text-textPrimary font-bold">{formatCurrency(monthlyGoal - mes)}</span> para atingir a meta.
+              <span className="text-textSecondary">
+                Faltam <span className="text-textPrimary font-bold">{formatCurrency(monthlyGoal - mes)}</span> para atingir a meta do mês.
               </span>
             )}
           </div>
           {mes < monthlyGoal && (
-            <div className="bg-primary/10 border border-border text-primary px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(139,92,246,0.15)]">
-              <Activity className="w-4 h-4" /> Sugestão da IA: Aumente o orçamento da oferta principal em 20% hoje.
+            <div className="bg-accent/10 border border-accent/20 text-accent px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(139,92,246,0.1)] hover:bg-accent/20 transition-colors cursor-default">
+              <Activity className="w-4 h-4" /> Insight: Aumente as campanhas de remarketing.
             </div>
           )}
         </div>
@@ -298,105 +348,48 @@ export const Dashboard = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.3, duration: 0.4 }}
         className="grid gap-6 grid-cols-1 lg:grid-cols-12"
       >
         {/* TOP METRICS GRID (4 CARDS) */}
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="flex flex-col gap-4 lg:col-span-3"
-      >
-        {/* Card Hoje */}
-        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Hoje</h3>
-            <div className="p-2 rounded-lg bg-surface border border-border">
-              <Calendar className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(hoje)}</div>
-          <p className="text-xs text-success flex items-center mt-2 font-medium">
-            <ArrowUpRight className="w-3 h-3 mr-1" /> Faturamento diário
-          </p>
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="flex flex-col gap-4 lg:col-span-3"
+        >
+          <MetricCard title="Hoje" value={hoje} trend={tendenciaHoje} icon={Calendar} description="vs. ontem" />
+          <MetricCard title="Esta Semana" value={semana} trend={tendenciaSemana} icon={TrendingUp} description="vs. sem. passada" />
+          <MetricCard title="Este Mês" value={mes} trend={tendenciaMes} icon={ShoppingCart} description="vs. mês passado" />
+          <MetricCard title="Este Ano" value={ano} trend={tendenciaAno} icon={DollarSign} description="vs. ano passado" />
         </motion.div>
 
-        {/* Card Semana */}
-        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Esta Semana</h3>
-            <div className="p-2 rounded-lg bg-surface border border-border">
-              <TrendingUp className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(semana)}</div>
-          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
-            Acumulado nos últimos 7 dias
-          </p>
-        </motion.div>
-
-        {/* Card Mês */}
-        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Mês</h3>
-            <div className="p-2 rounded-lg bg-surface border border-border">
-              <ShoppingCart className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(mes)}</div>
-          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
-            Performance mensal
-          </p>
-        </motion.div>
-
-        {/* Card Ano */}
-        <motion.div variants={itemVariants} className="bg-surface border-border border rounded-2xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150" />
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold text-textSecondary uppercase tracking-widest">Este Ano</h3>
-            <div className="p-2 rounded-lg bg-surface border border-border">
-              <DollarSign className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-textPrimary tracking-tight">{formatCurrency(ano)}</div>
-          <p className="text-xs text-textSecondary flex items-center mt-2 font-medium">
-            Receita anual bruta
-          </p>
-        </motion.div>
-      </motion.div>
-
-      
-      
         {/* CHART BLOCK */}
-        <div className="lg:col-span-6 bg-surface-elevated border border-border rounded-2xl p-6 lg:p-8 relative overflow-hidden group flex flex-col min-h-[400px] hover:border-borderHover transition-colors">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="lg:col-span-6 bg-surface-elevated/60 backdrop-blur-xl border border-border rounded-2xl p-6 lg:p-8 relative overflow-hidden group flex flex-col min-h-[400px] hover:border-accent/30 transition-all duration-300">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] pointer-events-none transition-opacity duration-700 opacity-50 group-hover:opacity-100" />
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10 shrink-0">
             <div>
-              <h3 className="text-xl font-extrabold text-textPrimary tracking-tight mb-1">Visão de Crescimento</h3>
-              <p className="text-sm text-textSecondary font-medium">Acompanhe a escalabilidade do seu negócio</p>
+              <h3 className="text-xl font-extrabold text-textPrimary tracking-tight mb-1">Crescimento de Receita</h3>
+              <p className="text-sm text-textSecondary font-medium">Análise de escalabilidade temporal</p>
             </div>
             
-            <div className="flex items-center p-1 bg-surface border border-border rounded-lg mt-4 sm:mt-0">
+            <div className="flex items-center p-1 bg-surface/80 border border-border rounded-lg mt-4 sm:mt-0 backdrop-blur-sm">
               <button 
                 onClick={() => setDateFilter('semana')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${dateFilter === 'semana' ? 'bg-primary text-textPrimary shadow-md' : 'text-textSecondary hover:text-textPrimary'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${dateFilter === 'semana' ? 'bg-accent text-white shadow-[0_0_10px_rgba(139,92,246,0.4)]' : 'text-textSecondary hover:text-textPrimary hover:bg-surface-elevated'}`}
               >
                 7 Dias
               </button>
               <button 
                 onClick={() => setDateFilter('mes')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'mes' ? 'bg-primary text-textPrimary shadow-md' : 'text-textSecondary hover:text-textPrimary'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 whitespace-nowrap ${dateFilter === 'mes' ? 'bg-accent text-white shadow-[0_0_10px_rgba(139,92,246,0.4)]' : 'text-textSecondary hover:text-textPrimary hover:bg-surface-elevated'}`}
               >
                 30 Dias
               </button>
               <button 
                 onClick={() => setDateFilter('ano')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${dateFilter === 'ano' ? 'bg-primary text-textPrimary shadow-md' : 'text-textSecondary hover:text-textPrimary'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 whitespace-nowrap ${dateFilter === 'ano' ? 'bg-accent text-white shadow-[0_0_10px_rgba(139,92,246,0.4)]' : 'text-textSecondary hover:text-textPrimary hover:bg-surface-elevated'}`}
               >
                 12 Meses
               </button>
@@ -408,14 +401,14 @@ export const Dashboard = () => {
               <AreaChart data={salesData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRevenueGlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.5}/>
-                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.6}/>
+                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
                 <XAxis 
                   dataKey="day" 
-                  stroke="#6b7280" 
+                  stroke="#71717A" 
                   fontSize={12}
                   fontWeight={500}
                   tickLine={false} 
@@ -423,7 +416,7 @@ export const Dashboard = () => {
                   dy={10}
                 />
                 <YAxis 
-                  stroke="#6b7280" 
+                  stroke="#71717A" 
                   fontSize={12}
                   fontWeight={500}
                   tickLine={false} 
@@ -432,25 +425,25 @@ export const Dashboard = () => {
                   dx={-10}
                 />
                 <Tooltip 
-                  cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '3 3' }}
+                  cursor={{ stroke: 'rgba(139,92,246,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
                   contentStyle={{ 
-                    backgroundColor: 'rgba(10,10,10,0.8)', 
-                    backdropFilter: 'blur(10px)',
-                    borderColor: 'rgba(139,92,246,0.3)', 
-                    borderRadius: '16px', 
-                    boxShadow: '0 0 30px rgba(139,92,246,0.2)',
+                    backgroundColor: 'rgba(10,10,13,0.95)', 
+                    backdropFilter: 'blur(12px)',
+                    borderColor: 'rgba(255,255,255,0.1)', 
+                    borderRadius: '12px', 
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(139,92,246,0.15)',
                     padding: '12px 16px'
                   }}
                   itemStyle={{ color: '#fff', fontWeight: '800', fontSize: '16px' }}
-                  labelStyle={{ color: '#9CA3AF', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}
-                  formatter={(value: any) => [formatCurrency(value as number), 'Faturamento']}
+                  labelStyle={{ color: '#A1A1AA', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}
+                  formatter={(value: any) => [formatCurrency(value as number), 'Receita']}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="revenue" 
-                  stroke="var(--color-primary)" 
-                  strokeWidth={4}
-                  activeDot={{ r: 8, fill: "var(--color-primary)", stroke: "#fff", strokeWidth: 3, style: { filter: 'drop-shadow(0px 0px 10px var(--color-primary))' } }}
+                  stroke="var(--accent)" 
+                  strokeWidth={3}
+                  activeDot={{ r: 6, fill: "var(--accent)", stroke: "#fff", strokeWidth: 2, style: { filter: 'drop-shadow(0px 0px 8px var(--accent))' } }}
                   fillOpacity={1} 
                   fill="url(#colorRevenueGlow)" 
                 />
@@ -460,36 +453,38 @@ export const Dashboard = () => {
         </div>
 
         {/* RECENT TRANSACTIONS BLOCK */}
-        <div className="lg:col-span-3 bg-surface-elevated border border-border rounded-2xl p-6 flex flex-col relative overflow-hidden group hover:border-borderHover transition-colors">
+        <div className="lg:col-span-3 bg-surface-elevated/60 backdrop-blur-xl border border-border rounded-2xl p-6 flex flex-col relative overflow-hidden group hover:border-accent/30 transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-extrabold text-textPrimary tracking-tight">Notificações</h3>
+            <h3 className="text-lg font-extrabold text-textPrimary tracking-tight">Atividade Recente</h3>
             <div className="bg-success/10 text-success text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-success/20">
-              <span className="w-2 h-2 bg-success rounded-full animate-pulse shadow-[0_0_8px_#22C55E]"></span>
+              <span className="w-2 h-2 bg-success rounded-full animate-pulse shadow-[0_0_8px_#10B981]"></span>
               Live
             </div>
           </div>
 
           <div className="space-y-3 overflow-y-auto pr-2 flex-1 custom-scrollbar">
             {allPaidTransactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center h-full">
-                <Activity className="w-10 h-10 text-border mb-3" />
-                <p className="text-textSecondary text-sm font-medium">Nenhuma venda registrada ainda.</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center h-full opacity-70">
+                <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mb-3 border border-border">
+                  <Activity className="w-6 h-6 text-textMuted" />
+                </div>
+                <p className="text-textSecondary text-sm font-medium">Nenhuma atividade recente.</p>
               </div>
             ) : (
               allPaidTransactions.slice(0, 8).map((tx, i) => (
                 <motion.div 
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 * i }}
+                  transition={{ delay: 0.05 * i, ease: "easeOut" }}
                   key={tx.id} 
-                  className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-primary/40 transition-colors group cursor-pointer"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-surface/50 border border-border/50 hover:border-accent/40 hover:bg-surface transition-all duration-200 group cursor-pointer"
                 >
-                  <div className="w-10 h-10 rounded-full bg-success/10 border border-success/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <div className="w-10 h-10 rounded-full bg-success/10 border border-success/20 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-success/20 transition-all duration-300">
                     <DollarSign className="w-5 h-5 text-success" />
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <p className="text-sm font-bold text-textPrimary truncate">{tx.clientName}</p>
-                    <p className="text-[10px] text-textSecondary mt-0.5 font-medium uppercase tracking-wider">{tx.source}</p>
+                    <p className="text-[10px] text-textSecondary mt-0.5 font-bold uppercase tracking-wider">{tx.source}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-extrabold text-success">+{formatCurrency(tx.amount)}</p>
