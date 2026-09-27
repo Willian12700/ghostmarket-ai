@@ -90,8 +90,26 @@ export const Landing = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-[#F5F5F5] selection:bg-primary/30 relative font-sans overflow-x-hidden">
       {/* Global Background Elements */}
-      <div className="fixed inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="fixed inset-0 pointer-events-none opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
+        
+        {/* Bordas Neon Ambientais nas Laterais da Tela */}
+        <div className="absolute top-0 bottom-0 left-[-150px] w-[300px] bg-[#8b5cf6]/20 blur-[120px]" />
+        <div className="absolute top-0 bottom-0 right-[-150px] w-[300px] bg-[#8b5cf6]/20 blur-[120px]" />
+
+        {/* Orbes Animadas de Fundo para dar Profundidade */}
+        <motion.div 
+          animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[10%] left-[10%] w-[600px] h-[600px] bg-[#8b5cf6]/10 rounded-full blur-[150px]" 
+        />
+        <motion.div 
+          animate={{ x: [0, -100, 0], y: [0, 100, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[60%] right-[10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[150px]" 
+        />
+      </div>
       
       {/* Navbar */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/70 backdrop-blur-md border-b border-white/5 py-3 shadow-lg' : 'bg-transparent py-5'}`}>
