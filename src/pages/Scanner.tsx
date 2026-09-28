@@ -340,16 +340,36 @@ export const Scanner = () => {
         </CardContent>
       </Card>
 
-      {showScannerAnimation ? (
-        <GlobalLeadScanner 
-          leads={leads} 
-          onAnimationComplete={() => {
-            setShowScannerAnimation(false);
-            setIsScanning(false);
-          }} 
-        />
-      ) : leads.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <AnimatePresence mode="wait">
+        {showScannerAnimation && (
+          <motion.div
+            key="scanner-3d"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+            className="fixed inset-0 z-[100]"
+          >
+            <GlobalLeadScanner 
+              leads={leads} 
+              onAnimationComplete={() => {
+                setShowScannerAnimation(false);
+                setIsScanning(false);
+              }} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!showScannerAnimation && leads.length > 0 && (
+          <motion.div
+            key="scanner-results"
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+          >
           {leads.map((lead) => (
             <Card key={lead.id} className="hover:border-primary/50 transition-colors flex flex-col relative overflow-hidden">
               {lead.imageUrl && lead.id !== 'error' && (
@@ -468,14 +488,23 @@ export const Scanner = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-textSecondary border-2 border-dashed border-border rounded-xl">
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!showScannerAnimation && leads.length === 0 && !isScanning && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="flex flex-col items-center justify-center py-20 text-textSecondary border-2 border-dashed border-border rounded-xl"
+          >
           <ShieldAlert className="w-12 h-12 mb-4 text-borderHover" />
           <p className="text-lg font-medium text-textPrimary">Nenhum lead encontrado</p>
           <p className="text-sm mt-1">Realize uma busca para encontrar oportunidades.</p>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* RAIO-X MODAL */}
       <AnimatePresence>
