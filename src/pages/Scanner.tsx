@@ -101,7 +101,8 @@ export const Scanner = () => {
       const request = {
         textQuery: query,
         fields: ['id', 'displayName', 'formattedAddress', 'nationalPhoneNumber', 'websiteURI', 'rating', 'userRatingCount', 'photos', 'location'],
-        maxResultCount: 20
+        maxResultCount: 20,
+        region: 'br'
       };
       
       const { places } = await Place.searchByText(request);
@@ -112,7 +113,36 @@ export const Scanner = () => {
         return;
       }
       
-      const realLeads: Lead[] = places.map((place: any) => {
+      // FILTRAGEM ESTRITA: Garante que o lead realmente pertence ao estado e à cidade pesquisada
+      const strictPlaces = places.filter((place: any) => {
+        if (!place.formattedAddress) return true;
+        const address = place.formattedAddress.toUpperCase();
+        const stateCode = selectedState.toUpperCase();
+        
+        // Remove acentos para comparação
+        const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const cityNormalized = normalize(selectedCity).toUpperCase();
+        const addressNormalized = normalize(address);
+        
+        // Formatos comuns de endereço no Google Maps para estados: " - SP,", ", SP", " - SP "
+        const hasState = address.includes(`- ${stateCode}`) || 
+                         address.includes(` ${stateCode},`) || 
+                         address.includes(`, ${stateCode}`) ||
+                         address.includes(` ${stateCode} `) ||
+                         address.endsWith(` ${stateCode}`);
+                         
+        const hasCity = addressNormalized.includes(cityNormalized);
+                         
+        return hasState && hasCity;
+      });
+
+      if (strictPlaces.length === 0) {
+        setLeads([]);
+        setIsScanning(false);
+        return;
+      }
+      
+      const realLeads: Lead[] = strictPlaces.map((place: any) => {
           let imageUrl = '';
           if (place.photos && place.photos.length > 0) {
             try {
