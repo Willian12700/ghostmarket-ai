@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase'
-import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft, MapPin, Plus, Trash2, Cpu, FileCode2 } from 'lucide-react'
+import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft, MapPin, Plus, Trash2, Cpu, FileCode2, ImageIcon } from 'lucide-react'
 import { CreationStepper } from '@/components/ui/CreationStepper'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -71,6 +71,7 @@ export const PromptBuilder = () => {
 
   const [googleData, setGoogleData] = useState('')
   const [googleComplexity, setGoogleComplexity] = useState<'static' | 'dynamic' | null>(null)
+  const [brandImages, setBrandImages] = useState('')
   
   const [products, setProducts] = useState([{ name: '', price: '', image: '' }])
 
@@ -98,87 +99,142 @@ export const PromptBuilder = () => {
     setFormData(prev => ({ ...prev, features: { ...prev.features, [id]: !prev.features[id] } }))
   }
 
+  const getSectionsText = (sections: Record<string, boolean>) => {
+    let text = '';
+    if (sections.hero) {
+      text += `\n# HERO / PRIMEIRA DOBRA\nCriar uma seção inicial extremamente impactante. Utilizar uma fotografia grande (se fornecida) como background ou elemento principal com iluminação e estética premium. Textos persuasivos e chamadas para ação (CTAs) claras.\n`;
+    }
+    if (sections.about) {
+      text += `\n# SOBRE NÓS / NOSSA ESSÊNCIA\nApresentar a história e a proposta de valor da empresa de forma autêntica e confiável. Criar pequenos destaques visuais (ex: experiência, qualidade).\n`;
+    }
+    if (sections.benefits) {
+      text += `\n# VANTAGENS E BENEFÍCIOS\nDestacar visualmente os principais diferenciais com ícones premium e textos curtos e diretos.\n`;
+    }
+    if (sections.catalog) {
+      text += `\n# CATÁLOGO / PRODUTOS\nCriar uma seção visualmente forte para apresentar os produtos ou serviços. Cards grandes, foco nas imagens (caso existam) e interface moderna (ex: filtros, animações de hover).\n`;
+    }
+    if (sections.socialProof) {
+      text += `\n# PROVA SOCIAL / MARCAS\nExibir logotipos de clientes, parceiros ou marcas para gerar autoridade imediata.\n`;
+    }
+    if (sections.testimonials) {
+      text += `\n# AVALIAÇÕES (REVIEWS)\nCriar uma seção de depoimentos baseada nas avaliações reais. Exibir estrelas (ex: 4,9/5) e cards elegantes de avaliação. O design deve focar em confiança e prova social.\n`;
+    }
+    if (sections.faq) {
+      text += `\n# PERGUNTAS FREQUENTES (FAQ)\nUm bloco de accordion limpo, elegante e funcional para as dúvidas mais comuns.\n`;
+    }
+    if (sections.pricing) {
+      text += `\n# TABELA DE PREÇOS\nCards de precificação claros e modernos, destacando o plano principal (popular/recomendado).\n`;
+    }
+    if (sections.cta) {
+      text += `\n# CTA FINAL\nCriar uma seção final extremamente visual com uma última chamada persuasiva antes do footer (ex: "Comece agora").\n`;
+    }
+    if (sections.footer) {
+      text += `\n# FOOTER\nUm rodapé profissional contendo informações de contato, localização, links rápidos, redes sociais e navegação.\n`;
+    }
+    if (!text) {
+      text = `\n# ESTRUTURA DA PÁGINA\nCrie as seções essenciais para uma landing page de alta conversão (Hero, Sobre, Serviços, Footer).\n`;
+    }
+    return text;
+  }
+
   const generatePrompt = () => {
     setIsGenerating(true)
     
     setTimeout(() => {
-      let prompt = '';
       
-      if (promptStyle === 'google') {
-        const activeSections = SECTION_OPTIONS.filter(s => formData.sections[s.id]).map(s => s.label).join(', ')
-        const activeFeatures = FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => {
+      const activeFeatures = (promptStyle === 'manual' && formData.tech === 'HTML + CSS + JS') || (promptStyle === 'google' && googleComplexity === 'static') 
+        ? '' 
+        : FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => {
             if (f.id === 'whatsapp' && formData.whatsappNumber) {
-              return `Botão WhatsApp (Link direto: https://wa.me/55${formData.whatsappNumber})`
+              return `- Botão WhatsApp (Link direto: https://wa.me/55${formData.whatsappNumber})`
             }
-            return f.label
-          }).join(', ')
-
-        const stackInfo = googleComplexity === 'static' 
-          ? 'HTML, CSS puro e JavaScript vanilla (Sem frameworks, apenas arquivos web nativos).'
-          : 'Ferramentas avançadas (React, Lovable, Google AI Studio, Antigravity) para um sistema completo.';
-
-        const structureInfo = googleComplexity === 'static'
-          ? `\n\nEstrutura da Interface (Páginas/Seções):\nPor favor, inclua as seguintes seções na interface:\n${activeSections || 'Crie as seções básicas de uma Landing Page.'}`
-          : `\n\nFuncionalidades e Módulos:\nO sistema deve conter os seguintes recursos funcionais implementados:\n${activeFeatures || 'Desenvolva as funcionalidades completas de um sistema robusto.'}`;
-
-        prompt = `Atue como um Desenvolvedor Front-end Senior e Especialista em UI/UX.
-
-Contexto:
-Preciso que você crie uma página/sistema profissional, moderno e de alta conversão usando:
-${stackInfo}
-
-Abaixo estão as informações extraídas do Google Maps sobre o estabelecimento. Use esses dados REAIS para compor os textos, endereço, horários, avaliações, nome da empresa e serviços oferecidos no site:
-
-DADOS DO ESTABELECIMENTO:
-${googleData}${structureInfo}
-
-Instruções para a IA (Antigravity/Lovable):
-1. Gere o código limpo, moderno e totalmente responsivo.
-2. Crie uma paleta de cores baseada no nicho do estabelecimento (seja criativo e premium).
-3. O código deve ser componentizado sempre que possível.
-4. Adicione uma seção de "Avaliações" usando as reviews fornecidas.
-5. Adicione uma seção de "Localização e Horários".
-6. Crie um botão flutuante de WhatsApp.`;
-      } else {
-        const activeSections = SECTION_OPTIONS.filter(s => formData.sections[s.id]).map(s => s.label).join(', ')
-        const activeFeatures = formData.tech === 'HTML + CSS + JS' ? '' : FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => {
-            if (f.id === 'whatsapp' && formData.whatsappNumber) {
-              return `Botão WhatsApp (Link direto: https://wa.me/55${formData.whatsappNumber})`
-            }
-            return f.label
-          }).join(', ')
+            return `- ${f.label}`
+          }).join('\n');
+          
+      const validProducts = products.filter(p => p.name.trim() !== '');
+      const productsText = validProducts.length > 0 
+        ? `\n\n# PRODUTOS EM DESTAQUE\nPor favor, inclua exatamente os seguintes produtos no catálogo do site:\n\n` + validProducts.map(p => `**${p.name}**\nPreço: ${p.price}\n${p.image ? `Imagem: ${p.image}\n` : ''}`).join('\n')
+        : '';
         
-        const validProducts = products.filter(p => p.name.trim() !== '');
-        const productsText = validProducts.length > 0 
-          ? `\n\nProdutos e Serviços (Incluir no catálogo):\n` + validProducts.map(p => `- ${p.name} (${p.price}) | Imagem: ${p.image}`).join('\n')
-          : '';
+      const brandImagesText = brandImages.trim() 
+        ? `\n\n# GALERIA / ASSETS VISUAIS\nUtilize os seguintes links de imagens reais no layout do site (distribua no Hero, Catálogo ou Galeria):\n${brandImages}\n` 
+        : '';
 
-        prompt = `Contexto do Projeto:
-Estou desenvolvendo um(a) ${formData.systemType} para o nicho de ${formData.niche}.
-Nome do Projeto/Empresa: ${formData.projectName || '[Definir Nome]'}
-Público-Alvo: ${formData.targetAudience}
-Descrição do Negócio: ${formData.description || '[Adicionar descrição do negócio]'}${productsText}
+      const targetNiche = formData.niche;
+      const targetTone = formData.tone;
+      const targetDesign = formData.design;
+      const targetTech = formData.tech;
+      const projectName = formData.projectName || '[Definir Nome]';
 
-Stack Tecnológica:
-- Front-end/Framework: ${formData.tech}
-- Design System/Estilo Visual: ${formData.design}
-- Tom de Voz / Aparência: ${formData.tone}
+      let prompt = `Crie um(a) ${formData.systemType} moderno, premium e altamente profissional para o nicho de **${targetNiche}**.
 
-Estrutura da Interface (Páginas/Seções):
-Por favor, inclua as seguintes seções na interface:
-${activeSections}
+## OBJETIVO DO SITE
+O objetivo é transformar a presença digital em uma experiência visual muito mais profissional, destacando a identidade da marca e focando totalmente em conversão (fazer o visitante ter vontade de comprar ou entrar em contato).
+O site deve transmitir uma sensação de um negócio premium, ${targetTone.toLowerCase()}, autêntico e confiável.
+Não criar aparência genérica de template de IA. O resultado precisa parecer um site desenvolvido por uma agência profissional de design e UI/UX web.
 
-Funcionalidades e Módulos:
-O sistema deve conter os seguintes recursos funcionais implementados:
-${activeFeatures || 'Nenhuma funcionalidade dinâmica extra (site estático).'}
+---
+# IDENTIDADE DA EMPRESA
+`;
 
-Instruções para a IA (Antigravity):
-1. Gere o código limpo, moderno, totalmente responsivo e utilizando Tailwind CSS para estilização (se compatível com a stack).
-2. Utilize ícones modernos (Lucide React ou similar).
-3. Respeite o esquema de cores sugerido pelo Design System escolhido (${formData.design}).
-4. O código deve ser componentizado (separado em pequenos componentes lógicos) sempre que possível para facilitar a manutenção.
-5. Siga rigorosamente o Tom de Voz definido para os textos gerados no layout (${formData.tone}).`
+      if (promptStyle === 'google') {
+        prompt += `Extraia e utilize as informações fornecidas abaixo (copiadas do Google Maps) para preencher o nome, endereço real, horários, avaliações e telefone no site:
+
+${googleData}`;
+      } else {
+        prompt += `**Nome:** ${projectName}
+**Categoria/Nicho:** ${targetNiche}
+**Público-Alvo:** ${formData.targetAudience}
+**Descrição:** ${formData.description || 'Uma empresa focada em excelência e ótimo atendimento.'}`;
       }
+
+      prompt += `
+
+---
+# DIREÇÃO VISUAL
+Crie uma identidade visual baseada no universo de ${targetNiche}.
+A estética deve ser:
+* ${targetTone}
+* Premium
+* Sofisticada sem parecer formal demais
+* Forte visualmente e fotográfica
+
+**Design System sugerido:** ${targetDesign}
+Utilize tipografia moderna e marcante para títulos, combinada com uma fonte extremamente legível para textos. Evite fontes excessivamente decorativas.`;
+
+      prompt += brandImagesText;
+
+      prompt += `\n\n---
+${getSectionsText(formData.sections)}`;
+
+      prompt += productsText;
+
+      if (activeFeatures) {
+        prompt += `\n\n---
+# FUNCIONALIDADES E MÓDULOS (SISTEMA DINÂMICO)
+O sistema deve conter as seguintes integrações e recursos funcionais implementados estruturalmente:
+${activeFeatures}`;
+      }
+
+      prompt += `\n\n---
+# EXPERIÊNCIA E ANIMAÇÕES
+O site deve possuir microinterações e animações profissionais, mas sem exagero.
+Utilizar:
+* Fade-in suave e Scroll reveal
+* Hover elegante nos cards (zoom extremamente sutil)
+* Transições fluidas e navegação suave
+* Evitar efeitos neon exagerados, partículas aleatórias ou elementos 3D desnecessários. A animação deve valorizar o conteúdo, não competir com ele.
+
+---
+# RESPONSIVIDADE E PERFORMANCE
+O site deve ser totalmente responsivo (Mobile-first adaptado para Desktop).
+No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptados.
+
+---
+# INSTRUÇÕES TÉCNICAS (Stack)
+* Framework/Stack: ${promptStyle === 'google' ? (googleComplexity === 'static' ? 'HTML, CSS puro e JS (estático)' : 'Ferramentas modernas (React/Next/Lovable)') : targetTech}
+* Código organizado, semântico e componentizado.
+* Importante: Não invente informações irreais (como preços, ingredientes específicos ou horários fictícios). Caso falte alguma informação, crie componentes preparados visualmente (placeholders claros) para substituição posterior.`;
       
       setGeneratedPrompt(prompt)
       setIsGenerating(false)
@@ -389,17 +445,34 @@ Instruções para a IA (Antigravity):
 
           {/* ================= GOOGLE FLOW ================= */}
           {promptStyle === 'google' && step === 1 && (
-            <motion.div key="google1" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-6 py-6">
+            <motion.div key="google1" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><MapPin className="w-7 h-7 text-green-500" /> Dados do Google Maps</h2>
                 <p className="text-textSecondary text-lg">Cole tudo o que copiou da página do estabelecimento no mapa.</p>
               </div>
-              <textarea
-                className="w-full bg-panel border-2 border-border rounded-2xl p-6 text-white text-lg focus:border-green-500 transition-colors min-h-[300px] shadow-inner custom-scrollbar"
-                placeholder="Exemplo: Do Chef Hamburgueria Artesanal, 4.1, Avaliações, Endereço..."
-                value={googleData}
-                onChange={e => setGoogleData(e.target.value)}
-              />
+              
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Dados do Estabelecimento</label>
+                <textarea
+                  className="w-full bg-panel border-2 border-border rounded-2xl p-6 text-white text-lg focus:border-green-500 transition-colors min-h-[200px] shadow-inner custom-scrollbar"
+                  placeholder="Exemplo: Do Chef Hamburgueria Artesanal, 4.1, Avaliações, Endereço..."
+                  value={googleData}
+                  onChange={e => setGoogleData(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-4 pt-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-primary" /> Banco de Imagens (Opcional)
+                </label>
+                <p className="text-sm text-textSecondary ml-2 mb-2">Cole os links das fotos que o cliente te enviou para a IA usar no site (um link por linha).</p>
+                <textarea
+                  className="w-full bg-panel border-2 border-border rounded-2xl p-6 text-white text-base focus:border-green-500 transition-colors min-h-[120px] shadow-inner custom-scrollbar"
+                  placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.png"
+                  value={brandImages}
+                  onChange={e => setBrandImages(e.target.value)}
+                />
+              </div>
             </motion.div>
           )}
 
@@ -530,6 +603,20 @@ Instruções para a IA (Antigravity):
                 <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Esquema de Cores e Estética</label>
                 <PillSelector id="designs" options={DESIGNS} value={formData.design} onChange={v => setFormData({...formData, design: v})} />
               </div>
+
+              <div className="space-y-4 pt-8">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-primary" /> Banco de Imagens (Opcional)
+                </label>
+                <p className="text-sm text-textSecondary ml-2 mb-2">Cole os links das fotos que deseja usar no layout final (um link por linha).</p>
+                <textarea
+                  className="w-full bg-panel border-2 border-border rounded-2xl p-6 text-white text-base focus:border-primary transition-colors min-h-[120px] shadow-inner custom-scrollbar"
+                  placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.png"
+                  value={brandImages}
+                  onChange={e => setBrandImages(e.target.value)}
+                />
+              </div>
+
             </motion.div>
           )}
 
@@ -683,7 +770,7 @@ Instruções para a IA (Antigravity):
             {isLastStep && (
               <div className="flex flex-col sm:flex-row items-center gap-4 ml-auto">
                 <Button 
-                  onClick={() => { setStep(1); setPromptStyle(null); setGoogleData(''); setGoogleComplexity(null); }} 
+                  onClick={() => { setStep(1); setPromptStyle(null); setGoogleData(''); setGoogleComplexity(null); setBrandImages(''); }} 
                   className="h-14 px-8 text-lg font-black bg-panel border-2 border-border text-textSecondary hover:text-white hover:border-white/20 rounded-2xl transition-all"
                 >
                   Refazer Prompt
