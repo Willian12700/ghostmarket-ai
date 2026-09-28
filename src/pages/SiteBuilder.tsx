@@ -515,7 +515,11 @@ document.addEventListener('keydown', e => {
               <Button onClick={() => setStep(step + 1)} className="h-12 px-8 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:scale-105 transition-all">
                 Próximo Passo <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
-            ) : null}
+            ) : (
+                <Button onClick={() => setIsPublishModalOpen(true)} className="h-12 px-8 text-base font-black shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-green-500 hover:bg-green-600 text-white rounded-xl hover:scale-105 transition-all">
+                  <Globe className="w-4 h-4 mr-2" /> Hospedar Site
+                </Button>
+              )}
           </div>
 
         </div>
