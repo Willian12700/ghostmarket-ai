@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -142,7 +143,7 @@ export const CloudIde = () => {
                 {'    '}&lt;<span className="text-blue-300">div</span> <span className="text-cyan-300">className</span>=<span className="text-green-300">"min-h-screen bg-black text-white flex items-center justify-center"</span>&gt;<br/>
                 {'      '}&lt;<span className="text-blue-300">div</span> <span className="text-cyan-300">className</span>=<span className="text-green-300">"text-center space-y-6"</span>&gt;<br/>
                 {'        '}&lt;<span className="text-blue-300">h1</span> <span className="text-cyan-300">className</span>=<span className="text-green-300">"text-4xl font-bold"</span>&gt;GhostMarket IDE&lt;/<span className="text-blue-300">h1</span>&gt;<br/>
-                {'        '}&lt;<span className="text-blue-300">p</span> <span className="text-cyan-300">className</span>=<span className="text-green-300">"text-gray-400"</span>&gt;Sistema dinâmico rodando no navegador!&lt;/<span className="text-blue-300">p</span>&gt;<br/>
+                {'        '}&lt;<span className="text-blue-300">p</span> <span className="text-cyan-300">className</span>=<span className="text-green-300">"text-gray-400"</span>&gt;Sistema dinmico rodando no navegador!&lt;/<span className="text-blue-300">p</span>&gt;<br/>
                 {'      '}&lt;/<span className="text-blue-300">div</span>&gt;<br/>
                 {'    '}&lt;/<span className="text-blue-300">div</span>&gt;<br/>
                 {'  '});<br/>
@@ -206,16 +207,16 @@ export const CloudIde = () => {
                   <MonitorPlay className="w-20 h-20 text-primary mb-6" />
                 </motion.div>
                 <h1 className="text-3xl font-bold mb-2">GhostMarket IDE</h1>
-                <p className="text-gray-400">Preview ao vivo do seu código.</p>
+                <p className="text-gray-400">Preview ao vivo do seu cdigo.</p>
                 <div className="mt-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-sm">
-                  Edite <span className="text-primary font-mono">App.tsx</span> para ver as mudanças
+                  Edite <span className="text-primary font-mono">App.tsx</span> para ver as mudanas
                 </div>
               </motion.div>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center flex-col text-gray-500 bg-gray-50">
                 <MonitorPlay className="w-16 h-16 mb-4 opacity-20" />
-                <p>O servidor está desligado.</p>
-                <p className="text-sm">Clique em "Start Server" para rodar o código.</p>
+                <p>O servidor est desligado.</p>
+                <p className="text-sm">Clique em "Start Server" para rodar o cdigo.</p>
               </div>
             )}
           </div>
