@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase'
-import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft, MapPin, Plus, Trash2 } from 'lucide-react'
+import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft, MapPin, Plus, Trash2, Cpu, FileCode2 } from 'lucide-react'
 import { CreationStepper } from '@/components/ui/CreationStepper'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -46,7 +46,7 @@ export const PromptBuilder = () => {
   
   const [promptStyle, setPromptStyle] = useState<'manual' | 'google' | null>(null)
   const [step, setStep] = useState(1)
-  const totalSteps = promptStyle === 'google' ? 2 : (promptStyle === 'manual' ? 6 : 1)
+  const totalSteps = promptStyle === 'google' ? 4 : (promptStyle === 'manual' ? 6 : 1)
 
   const [availableNiches, setAvailableNiches] = useState<string[]>([
     'SaaS / Tecnologia',
@@ -70,6 +70,8 @@ export const PromptBuilder = () => {
   }, []);
 
   const [googleData, setGoogleData] = useState('')
+  const [googleComplexity, setGoogleComplexity] = useState<'static' | 'dynamic' | null>(null)
+  
   const [products, setProducts] = useState([{ name: '', price: '', image: '' }])
 
   const [formData, setFormData] = useState({
@@ -92,7 +94,7 @@ export const PromptBuilder = () => {
 
   const toggleSection = (id: string) => setFormData(prev => ({ ...prev, sections: { ...prev.sections, [id]: !prev.sections[id] } }))
   const toggleFeature = (id: string) => {
-    if (formData.tech === 'HTML + CSS + JS') return;
+    if (promptStyle === 'manual' && formData.tech === 'HTML + CSS + JS') return;
     setFormData(prev => ({ ...prev, features: { ...prev.features, [id]: !prev.features[id] } }))
   }
 
@@ -103,17 +105,34 @@ export const PromptBuilder = () => {
       let prompt = '';
       
       if (promptStyle === 'google') {
+        const activeSections = SECTION_OPTIONS.filter(s => formData.sections[s.id]).map(s => s.label).join(', ')
+        const activeFeatures = FEATURE_OPTIONS.filter(f => formData.features[f.id]).map(f => {
+            if (f.id === 'whatsapp' && formData.whatsappNumber) {
+              return `Botão WhatsApp (Link direto: https://wa.me/55${formData.whatsappNumber})`
+            }
+            return f.label
+          }).join(', ')
+
+        const stackInfo = googleComplexity === 'static' 
+          ? 'HTML, CSS puro e JavaScript vanilla (Sem frameworks, apenas arquivos web nativos).'
+          : 'Ferramentas avançadas (React, Lovable, Google AI Studio, Antigravity) para um sistema completo.';
+
+        const structureInfo = googleComplexity === 'static'
+          ? `\n\nEstrutura da Interface (Páginas/Seções):\nPor favor, inclua as seguintes seções na interface:\n${activeSections || 'Crie as seções básicas de uma Landing Page.'}`
+          : `\n\nFuncionalidades e Módulos:\nO sistema deve conter os seguintes recursos funcionais implementados:\n${activeFeatures || 'Desenvolva as funcionalidades completas de um sistema robusto.'}`;
+
         prompt = `Atue como um Desenvolvedor Front-end Senior e Especialista em UI/UX.
 
 Contexto:
-Preciso que você crie uma Landing Page profissional, moderna e de alta conversão usando React (com Vite), Tailwind CSS e lucide-react para os ícones.
+Preciso que você crie uma página/sistema profissional, moderno e de alta conversão usando:
+${stackInfo}
 
 Abaixo estão as informações extraídas do Google Maps sobre o estabelecimento. Use esses dados REAIS para compor os textos, endereço, horários, avaliações, nome da empresa e serviços oferecidos no site:
 
 DADOS DO ESTABELECIMENTO:
-${googleData}
+${googleData}${structureInfo}
 
-Instruções para a IA (Antigravity):
+Instruções para a IA (Antigravity/Lovable):
 1. Gere o código limpo, moderno e totalmente responsivo.
 2. Crie uma paleta de cores baseada no nicho do estabelecimento (seja criativo e premium).
 3. O código deve ser componentizado sempre que possível.
@@ -163,7 +182,7 @@ Instruções para a IA (Antigravity):
       
       setGeneratedPrompt(prompt)
       setIsGenerating(false)
-      setStep(promptStyle === 'google' ? 2 : 6)
+      setStep(promptStyle === 'google' ? 4 : 6)
     }, 1500)
   }
 
@@ -174,7 +193,14 @@ Instruções para a IA (Antigravity):
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const nextStep = () => setStep(s => Math.min(totalSteps, s + 1))
+  const nextStep = () => {
+    if (promptStyle === 'google' && step === 2 && !googleComplexity) {
+      addToast('Escolha a complexidade do sistema!', 'error');
+      return;
+    }
+    setStep(s => Math.min(totalSteps, s + 1))
+  }
+  
   const prevStep = () => {
     if (step === 1 && promptStyle !== null) {
       setPromptStyle(null);
@@ -186,13 +212,13 @@ Instruções para a IA (Antigravity):
   const addProduct = () => setProducts([...products, { name: '', price: '', image: '' }])
   const removeProduct = (idx: number) => {
     const newP = [...products];
-    newP.splice(idx, 1)
-    setProducts(newP)
+    newP.splice(idx, 1);
+    setProducts(newP);
   }
   const updateProduct = (idx: number, field: string, val: string) => {
     const newP = [...products];
-    (newP[idx] as any)[field] = val
-    setProducts(newP)
+    (newP[idx] as any)[field] = val;
+    setProducts(newP);
   }
 
   // Componentes de Seleção (Pills)
@@ -291,8 +317,8 @@ Instruções para a IA (Antigravity):
     exit: { opacity: 0, x: -20, scale: 0.95, transition: { duration: 0.3 } }
   }
 
-  const isLastStep = (promptStyle === 'google' && step === 2) || (promptStyle === 'manual' && step === 6);
-  const isGeneratingStep = (promptStyle === 'google' && step === 1) || (promptStyle === 'manual' && step === 5);
+  const isLastStep = (promptStyle === 'google' && step === 4) || (promptStyle === 'manual' && step === 6);
+  const isGeneratingStep = (promptStyle === 'google' && step === 3) || (promptStyle === 'manual' && step === 5);
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex flex-col bg-[#09090b] text-white selection:bg-primary/30 relative overflow-hidden">
@@ -361,6 +387,7 @@ Instruções para a IA (Antigravity):
             </motion.div>
           )}
 
+          {/* ================= GOOGLE FLOW ================= */}
           {promptStyle === 'google' && step === 1 && (
             <motion.div key="google1" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-6 py-6">
               <div className="text-center mb-10">
@@ -368,7 +395,7 @@ Instruções para a IA (Antigravity):
                 <p className="text-textSecondary text-lg">Cole tudo o que copiou da página do estabelecimento no mapa.</p>
               </div>
               <textarea
-                className="w-full bg-panel border-2 border-border rounded-2xl p-6 text-white text-lg focus:border-primary transition-colors min-h-[300px] shadow-inner custom-scrollbar"
+                className="w-full bg-panel border-2 border-border rounded-2xl p-6 text-white text-lg focus:border-green-500 transition-colors min-h-[300px] shadow-inner custom-scrollbar"
                 placeholder="Exemplo: Do Chef Hamburgueria Artesanal, 4.1, Avaliações, Endereço..."
                 value={googleData}
                 onChange={e => setGoogleData(e.target.value)}
@@ -376,6 +403,69 @@ Instruções para a IA (Antigravity):
             </motion.div>
           )}
 
+          {promptStyle === 'google' && step === 2 && (
+            <motion.div key="google2" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><MonitorSmartphone className="w-7 h-7 text-green-500" /> Complexidade do Sistema</h2>
+                <p className="text-textSecondary text-lg">Como você vai construir isso?</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button onClick={() => { setGoogleComplexity('static'); setStep(3); }} className={`p-8 bg-panel border-2 rounded-3xl text-left group transition-all ${googleComplexity === 'static' ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]' : 'border-border hover:border-green-500/50'}`}>
+                  <div className="w-14 h-14 bg-green-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <FileCode2 className="w-7 h-7 text-green-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Básico (HTML, CSS, JS)</h3>
+                  <p className="text-textSecondary">Site estático, focado apenas em mostrar informações da empresa e catálogo de serviços.</p>
+                </button>
+                <button onClick={() => { setGoogleComplexity('dynamic'); setStep(3); }} className={`p-8 bg-panel border-2 rounded-3xl text-left group transition-all ${googleComplexity === 'dynamic' ? 'border-primary shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'border-border hover:border-primary/50'}`}>
+                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Cpu className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Profundo (Lovable / AI Studio)</h3>
+                  <p className="text-textSecondary">Sistema dinâmico avançado. Pode conter painel ADM, integrações com IA, banco de dados, etc.</p>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {promptStyle === 'google' && step === 3 && googleComplexity === 'static' && (
+            <motion.div key="google3_static" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><LayoutTemplate className="w-7 h-7 text-green-500" /> Estrutura da Página</h2>
+                <p className="text-textSecondary text-lg">Quais seções você deseja incluir no site do estabelecimento?</p>
+              </div>
+              <div className="p-6 bg-panel border border-border rounded-3xl">
+                <MultiPillSelector options={SECTION_OPTIONS} stateObj={formData.sections} onToggle={toggleSection} />
+              </div>
+            </motion.div>
+          )}
+
+          {promptStyle === 'google' && step === 3 && googleComplexity === 'dynamic' && (
+            <motion.div key="google3_dynamic" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Settings2 className="w-7 h-7 text-primary" /> Módulos Profundos</h2>
+                <p className="text-textSecondary text-lg">Quais módulos dinâmicos e avançados o sistema deve ter?</p>
+              </div>
+              <div className="p-6 bg-panel border border-border rounded-3xl">
+                <MultiPillSelector options={FEATURE_OPTIONS} stateObj={formData.features} onToggle={toggleFeature} />
+                {formData.features.whatsapp && (
+                  <div className="space-y-4 pt-6 mt-6 border-t border-[#261f36] w-full text-left">
+                    <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2">Número do WhatsApp (Sem API)</label>
+                    <Input 
+                      className="bg-panel border-2 border-border h-16 rounded-2xl text-white text-lg px-6 shadow-inner focus:border-primary transition-colors w-full" 
+                      placeholder="Somente números (Ex: 11999999999)" 
+                      value={formData.whatsappNumber} 
+                      onChange={e => setFormData({...formData, whatsappNumber: e.target.value.replace(/\D/g, '')})} 
+                    />
+                    <p className="text-xs text-textSecondary ml-2">As IAs têm falhado ao gerar links complexos. Coloque só o número para gerarmos um link direto wa.me no prompt.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+
+          {/* ================= MANUAL FLOW ================= */}
           {promptStyle === 'manual' && step === 1 && (
             <motion.div key="step1" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
               <div className="text-center mb-10">
@@ -593,7 +683,7 @@ Instruções para a IA (Antigravity):
             {isLastStep && (
               <div className="flex flex-col sm:flex-row items-center gap-4 ml-auto">
                 <Button 
-                  onClick={() => { setStep(1); setPromptStyle(null); setGoogleData(''); }} 
+                  onClick={() => { setStep(1); setPromptStyle(null); setGoogleData(''); setGoogleComplexity(null); }} 
                   className="h-14 px-8 text-lg font-black bg-panel border-2 border-border text-textSecondary hover:text-white hover:border-white/20 rounded-2xl transition-all"
                 >
                   Refazer Prompt
