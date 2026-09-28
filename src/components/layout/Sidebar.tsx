@@ -50,6 +50,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
         { to: '/prompt-builder', icon: Code, label: 'Prompt Builder' },
         { to: '/builder', icon: LayoutTemplate, label: 'Hospedar Novo Site' },
+        { to: '/ide', icon: Code, label: 'Ghost IDE (BETA)' },
         { to: '/image-to-link', icon: ImageIcon, label: 'Converter Imagem (URL)' },
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
         { to: '/chatbots', icon: Bot, label: 'Chatbots de IA' },
