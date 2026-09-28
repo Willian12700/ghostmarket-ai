@@ -25,7 +25,7 @@ export const CloudIde = () => {
             <div className="w-3 h-3 rounded-full bg-warning/80"></div>
             <div className="w-3 h-3 rounded-full bg-success/80"></div>
           </div>
-          <span className="text-sm font-semibold text-textSecondary bg-white/5 px-3 py-1 rounded-md border border-white/5">meu-saas-premium</span>
+          <span className="text-sm font-semibold text-textSecondary bg-white/5 px-3 py-1 rounded-md border border-white/5">meu-saas-premium</span><span className="text-xs font-bold text-white bg-warning/20 border border-warning/30 px-2 py-0.5 rounded ml-2 uppercase">EM DESENVOLVIMENTO (EM BREVE)</span>
         </div>
 
         <div className="flex items-center gap-2">
