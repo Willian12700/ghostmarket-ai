@@ -515,7 +515,7 @@ export const Scanner = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-panel border border-border w-full max-w-lg rounded-2xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-panel border border-border w-full max-w-lg rounded-2xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[90vh]"
             >
               <div className="p-4 border-b border-border flex justify-between items-center bg-background/50">
                 <div className="flex items-center gap-2">
@@ -527,7 +527,7 @@ export const Scanner = () => {
                 </button>
               </div>
               
-              <div className="p-6 overflow-y-auto space-y-6">
+              <div className="flex-1 p-6 overflow-y-auto overscroll-contain space-y-6">
                 <div>
                   <h4 className="text-xl font-black text-white mb-1">{xrayLead.name}</h4>
                   <p className="text-sm text-textSecondary">{xrayLead.category} em {xrayLead.city}</p>

@@ -115,7 +115,7 @@ export const CopilotChat = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 right-6 z-50 w-[350px] sm:w-[400px] h-[600px] max-h-[85vh] flex flex-col bg-surface border border-border shadow-2xl rounded-2xl overflow-hidden"
+            className="fixed bottom-6 right-6 z-50 w-[350px] sm:w-[400px] h-[600px] max-h-[85dvh] flex flex-col bg-surface border border-border shadow-2xl rounded-2xl overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 bg-background border-b border-border flex items-center justify-between relative overflow-hidden shrink-0">
