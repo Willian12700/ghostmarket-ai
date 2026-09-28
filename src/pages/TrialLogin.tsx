@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signInAnonymously } from 'firebase/auth'
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/config/firebase'
 import { Ghost, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -17,7 +17,7 @@ export const TrialLogin = () => {
     e.preventDefault()
     setError('')
     if (code.length !== 6) {
-      setError('O cdigo deve ter exatos 6 dgitos.')
+      setError('O código deve ter exatos 6 dígitos.')
       return
     }
 
@@ -32,7 +32,7 @@ export const TrialLogin = () => {
 
       if (!snap.exists()) {
         await auth.signOut()
-        setError('Cdigo invlido ou no encontrado.')
+        setError('Código inválido ou não encontrado.')
         setLoading(false)
         return
       }
@@ -40,7 +40,7 @@ export const TrialLogin = () => {
       const data = snap.data()
       if (data.activatedAt) {
         await auth.signOut()
-        setError('Este cdigo j foi utilizado por outra pessoa.')
+        setError('Este código já foi utilizado por outra pessoa.')
         setLoading(false)
         return
       }
@@ -52,6 +52,16 @@ export const TrialLogin = () => {
         uid,
         expiresAt
       })
+      
+      // Salva no banco APENAS depois que o código foi validado!
+      await setDoc(doc(db, 'users', uid), {
+        uid,
+        email: `Teste VIP (${code})`,
+        name: `Teste VIP (${code})`,
+        photoURL: '',
+        lastLogin: new Date().toISOString(),
+        isTrial: true
+      }, { merge: true })
 
       // Salva no localstorage o limite local pra fazer logout
       localStorage.setItem('trial_expires_at', expiresAt.toString())

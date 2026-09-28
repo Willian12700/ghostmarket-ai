@@ -5,6 +5,8 @@ import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 
 const syncUserToFirestore = async (user: User) => {
+  if (user.isAnonymous) return; // Evita salvar no banco antes de validar o código de teste
+  
   try {
     await setDoc(doc(db, 'users', user.email || user.uid), {
       uid: user.uid,
