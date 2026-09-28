@@ -8,6 +8,7 @@ import { TrialLogin } from '@/pages/TrialLogin'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { ResetPassword } from '@/pages/ResetPassword'
+import { CloudIde } from '@/pages/CloudIde'
 import { Dashboard } from '@/pages/Dashboard'
 import { Ranking } from '@/pages/Ranking'
 import { Creator } from '@/pages/Creator'
@@ -83,6 +84,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             
             <Route element={<MainLayout />}>
+              <Route path="/ide" element={<CloudIde />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/creator" element={<Creator />} />
