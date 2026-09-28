@@ -50,7 +50,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
         { to: '/prompt-builder', icon: Code, label: 'Prompt Builder' },
         { to: '/builder', icon: LayoutTemplate, label: 'Hospedar Novo Site' },
-        { to: '/ide', icon: Code, label: 'Ghost IDE (BETA)' },
+        { to: '/ide', icon: Code, label: 'Ghost IDE (BETA)', badge: 'NOVO' },
         { to: '/image-to-link', icon: ImageIcon, label: 'Converter Imagem (URL)' },
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
         { to: '/chatbots', icon: Bot, label: 'Chatbots de IA' },
@@ -188,7 +188,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                           "w-4 h-4 transition-all duration-300",
                           isActive ? "text-accent drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" : "text-textMuted group-hover:text-textPrimary"
                         )} />
-                        {item.label}
+                        <span>{item.label}</span>
+                        {(item as any).badge && (
+                          <span className="ml-auto text-[10px] bg-primary text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(139,92,246,0.5)]">
+                            {(item as any).badge}
+                          </span>
+                        )}
                       </NavLink>
                     )
                   })}
