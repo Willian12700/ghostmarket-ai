@@ -11,6 +11,8 @@ import { CRMKanban } from '@/components/crm/CRMKanban'
 import { CRMTable } from '@/components/crm/CRMTable'
 import { CRMAnalytics } from '@/components/crm/CRMAnalytics'
 import { CRMLeadProfile } from '@/components/crm/CRMLeadProfile'
+import { CRMCommandPalette } from '@/components/crm/CRMCommandPalette'
+import { CRMTrash } from '@/components/crm/CRMTrash'
 
 export const ALLOWED_EMAILS = [
   'oliveiramirandaisaac@gmail.com',
@@ -28,9 +30,10 @@ export function DigitalizaCRM() {
   const { syncContracts, addContract } = useDigitalizaStore()
   const { addToast } = useToastStore()
 
-  const [view, setView] = useState<'kanban' | 'table' | 'analytics'>('kanban')
+  const [view, setView] = useState<'kanban' | 'table' | 'analytics' | 'trash'>('kanban')
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
 
   // Form data for new lead
   const [formData, setFormData] = useState({
@@ -47,6 +50,17 @@ export function DigitalizaCRM() {
     const unsubscribe = syncContracts()
     return () => unsubscribe()
   }, [syncContracts])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsCommandPaletteOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleSubmitNewLead = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,8 +115,8 @@ export function DigitalizaCRM() {
       <AnimatedBackground />
       
       <CRMDashboard 
-        view={view} 
-        setView={setView} 
+        view={view === 'trash' ? 'kanban' : view} // Keep dashboard layout valid
+        setView={(newView) => setView(newView)} 
         onNewLead={() => setIsModalOpen(true)} 
       />
 
@@ -110,12 +124,21 @@ export function DigitalizaCRM() {
         {view === 'kanban' && <CRMKanban onSelectLead={setSelectedLeadId} />}
         {view === 'table' && <CRMTable onSelectLead={setSelectedLeadId} />}
         {view === 'analytics' && <CRMAnalytics />}
+        {view === 'trash' && <CRMTrash onClose={() => setView('kanban')} />}
       </div>
 
       {selectedLeadId && (
         <CRMLeadProfile 
           leadId={selectedLeadId} 
           onClose={() => setSelectedLeadId(null)} 
+        />
+      )}
+
+      {isCommandPaletteOpen && (
+        <CRMCommandPalette 
+          onClose={() => setIsCommandPaletteOpen(false)}
+          onSelectLead={setSelectedLeadId}
+          onOpenTrash={() => setView('trash')}
         />
       )}
 

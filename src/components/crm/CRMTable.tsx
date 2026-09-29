@@ -12,9 +12,10 @@ export function CRMTable({ onSelectLead }: CRMTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
 
   const filteredContracts = contracts.filter(c => 
-    c.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    !c.isDeleted &&
+    (c.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   const getPriorityBadge = (priority?: string) => {

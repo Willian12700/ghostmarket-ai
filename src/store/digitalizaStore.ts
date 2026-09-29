@@ -15,9 +15,16 @@ export interface CRMTask {
 
 export interface CRMHistoryEntry {
   id: string
-  type: 'nota' | 'ligacao' | 'email' | 'mudanca_status' | 'tarefa'
+  type: 'nota' | 'ligacao' | 'email' | 'mudanca_status' | 'tarefa' | 'exclusao' | 'restauracao' | 'mesclagem'
   content: string
   date: string
+  author?: string
+}
+
+export interface CRMChecklistItem {
+  id: string
+  title: string
+  completed: boolean
 }
 
 export interface DigitalizaContract {
@@ -49,6 +56,18 @@ export interface DigitalizaContract {
   tags?: string[]
   tasks?: CRMTask[]
   history?: CRMHistoryEntry[]
+  
+  // NEW ENTERPRISE FEATURES
+  isDeleted?: boolean
+  deletedAt?: string
+  score?: number // 0 a 100
+  nextAction?: string
+  nextActionDate?: string
+  customFields?: Record<string, string | number | boolean>
+  isFavorite?: boolean
+  isPinned?: boolean
+  checklist?: CRMChecklistItem[]
+  relationships?: string[] // IDs of related leads
 }
 
 interface DigitalizaState {
@@ -58,9 +77,13 @@ interface DigitalizaState {
   addContract: (contract: Omit<DigitalizaContract, 'id'>) => Promise<void>
   updateContract: (id: string, data: Partial<Omit<DigitalizaContract, 'id'>>) => Promise<void>
   deleteContract: (id: string) => Promise<void>
+  moveToTrash: (id: string) => Promise<void>
+  restoreContract: (id: string) => Promise<void>
+  permanentDelete: (id: string) => Promise<void>
+  mergeLeads: (sourceId: string, targetId: string) => Promise<void>
 }
 
-export const useDigitalizaStore = create<DigitalizaState>()((set) => ({
+export const useDigitalizaStore = create<DigitalizaState>()((set, get) => ({
   contracts: [],
   isSynced: false,
 
@@ -74,10 +97,8 @@ export const useDigitalizaStore = create<DigitalizaState>()((set) => ({
       const txs = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data(),
-        // Migrate old statuses on the fly if needed (optional, just defaults to 'Novo' or something if mapping is off, but we can handle that in UI or here)
       } as DigitalizaContract))
       
-      // Basic migration for old status data in memory to avoid breaking UI before DB update
       const migratedTxs = txs.map(tx => {
         let status = tx.status as any
         if (status === 'Lead') status = 'Novo'
@@ -98,10 +119,70 @@ export const useDigitalizaStore = create<DigitalizaState>()((set) => ({
   },
 
   updateContract: async (id, data) => {
-    await updateDoc(doc(db, 'digitaliza_crm', id), data)
+    await updateDoc(doc(db, 'digitaliza_crm', id), {
+      ...data,
+      updatedAt: serverTimestamp()
+    })
   },
 
   deleteContract: async (id) => {
+    // Soft delete por padrao agora? Não, deleteContract remains original.
+    // We added moveToTrash for soft delete.
     await deleteDoc(doc(db, 'digitaliza_crm', id))
+  },
+
+  moveToTrash: async (id) => {
+    await updateDoc(doc(db, 'digitaliza_crm', id), {
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+      updatedAt: serverTimestamp()
+    })
+  },
+
+  restoreContract: async (id) => {
+    await updateDoc(doc(db, 'digitaliza_crm', id), {
+      isDeleted: false,
+      deletedAt: null,
+      updatedAt: serverTimestamp()
+    })
+  },
+
+  permanentDelete: async (id) => {
+    await deleteDoc(doc(db, 'digitaliza_crm', id))
+  },
+
+  mergeLeads: async (sourceId, targetId) => {
+    const { contracts, updateContract, moveToTrash } = get()
+    const source = contracts.find(c => c.id === sourceId)
+    const target = contracts.find(c => c.id === targetId)
+
+    if (!source || !target) return
+
+    // Merge logic: Combine history, tasks, tags. Fill missing fields in target from source.
+    const mergedHistory = [...(target.history || []), ...(source.history || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const mergedTasks = [...(target.tasks || []), ...(source.tasks || [])]
+    const mergedTags = Array.from(new Set([...(target.tags || []), ...(source.tags || [])]))
+    
+    // Add a history entry about the merge
+    mergedHistory.unshift({
+      id: Math.random().toString(36).substring(7),
+      type: 'mesclagem',
+      content: `Lead ${source.client} mesclado a este.`,
+      date: new Date().toISOString()
+    })
+
+    const updateData: Partial<DigitalizaContract> = {
+      history: mergedHistory,
+      tasks: mergedTasks,
+      tags: mergedTags,
+      phone: target.phone || source.phone,
+      email: target.email || source.email,
+      company: target.company || source.company,
+      amount: Math.max(target.amount, source.amount),
+      customFields: { ...(source.customFields || {}), ...(target.customFields || {}) }
+    }
+
+    await updateContract(targetId, updateData)
+    await moveToTrash(sourceId)
   }
 }))
