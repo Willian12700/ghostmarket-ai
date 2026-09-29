@@ -32,6 +32,7 @@ import { PlrGenerator } from '@/pages/marketing/PlrGenerator'
 import { AdsGenerator } from '@/pages/marketing/AdsGenerator'
 import { EmailFunnel } from '@/pages/marketing/EmailFunnel'
 
+import { DigitalizaCRM } from '@/pages/DigitalizaCRM'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
 import { Affiliates } from '@/pages/Affiliates'
@@ -99,6 +100,7 @@ function App() {
               <Route path="/cnpj" element={<CnpjScanner />} />
               <Route path="/chatbots" element={<Chatbots />} />
               <Route path="/scripts" element={<SalesScripts />} />
+              <Route path="/digitaliza-crm" element={<DigitalizaCRM />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminPanel />} />
