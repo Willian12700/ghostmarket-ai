@@ -14,7 +14,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Prompt, Sites e Leads', 'TikTok Shop', 'Marketing Digital'])
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Prompt, Sites e Leads', 'TikTok Shop', 'Marketing Digital', 'Digitaliza Comercial', 'PAINEL ADM'])
 
   const toggleGroup = (groupLabel: string) => {
     setExpandedGroups(prev => 
@@ -106,7 +106,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     'willrandrier@gmail.com'
   ]
 
-  if (user?.email && DIGITALIZA_EMAILS.includes(user.email.toLowerCase())) {
+  const uEmail = user?.email ? user.email.trim().toLowerCase() : ''
+  if (uEmail && DIGITALIZA_EMAILS.includes(uEmail)) {
     menuGroups.push({
       label: 'Digitaliza Comercial',
       items: [
