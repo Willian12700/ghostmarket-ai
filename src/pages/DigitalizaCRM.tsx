@@ -102,7 +102,7 @@ function DraggableCard({ card, onEdit, onDelete }: { card: DigitalizaContract, o
 export const DigitalizaCRM = () => {
   const { user } = useAuthStore()
   const { addToast } = useToastStore()
-  const { contracts, isSynced, syncContracts, addContract, updateContract, deleteContract } = useDigitalizaStore()
+  const { contracts, syncContracts, addContract, updateContract, deleteContract } = useDigitalizaStore()
 
   const [activeId, setActiveId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
