@@ -244,16 +244,25 @@ export const useDigitalizaStore = create<DigitalizaState>()((set, get) => ({
 
     const q = query(
       collection(db, 'digitaliza_crm'),
-      where('workspaceId', '==', activeWorkspace.id),
-      orderBy('createdAt', 'desc')
+      where('workspaceId', '==', activeWorkspace.id)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const txs = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data(),
-      } as DigitalizaContract))
+      const txs = snapshot.docs.map(doc => {
+        const data = doc.data()
+        return { 
+          id: doc.id, 
+          ...data,
+          createdAt: data.createdAt || { toDate: () => new Date() }
+        }
+      }) as any[]
       
+      txs.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0
+        return dateB - dateA
+      })
+
       const migratedTxs = txs.map(tx => {
         let status = tx.status as any
         if (status === 'Lead') status = 'Novo'
