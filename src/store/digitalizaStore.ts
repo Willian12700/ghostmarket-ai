@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { db } from '@/config/firebase'
-import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, where, getDocs, limit, runTransaction } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, where, getDocs, limit, runTransaction } from 'firebase/firestore'
 
 export type CRMStatus = 'Novo' | 'Contato' | 'Qualificado' | 'Proposta' | 'Negociação' | 'Fechado' | 'Perdido'
 
