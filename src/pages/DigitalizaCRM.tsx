@@ -13,27 +13,44 @@ import { CRMAnalytics } from '@/components/crm/CRMAnalytics'
 import { CRMLeadProfile } from '@/components/crm/CRMLeadProfile'
 import { CRMCommandPalette } from '@/components/crm/CRMCommandPalette'
 import { CRMTrash } from '@/components/crm/CRMTrash'
-
-export const ALLOWED_EMAILS = [
-  'oliveiramirandaisaac@gmail.com',
-  'josehenrique9373@gmail.com',
-  'kaios8252@gmail.com',
-  'daviizcl.0003@gmail.com',
-  'el6084905@gmail.com',
-  'adrianodeoliveiracarneiro13@gmail.com',
-  'caioqsilva09@gmail.com',
-  'willrandrier@gmail.com'
-]
+import { CRMTeamManager } from '@/components/crm/CRMTeamManager'
 
 export function DigitalizaCRM() {
   const { user } = useAuthStore()
   const { syncContracts, addContract } = useDigitalizaStore()
   const { addToast } = useToastStore()
 
-  const [view, setView] = useState<'kanban' | 'table' | 'analytics' | 'trash'>('kanban')
+  const [view, setView] = useState<'kanban' | 'table' | 'analytics' | 'trash' | 'team'>('kanban')
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+
+  // Workspace Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onboardingMode, setOnboardingMode] = useState<'select' | 'create' | 'join'>('select')
+  const [wsName, setWsName] = useState('')
+  const [wsCompany, setWsCompany] = useState('')
+  const [wsCode, setWsCode] = useState('')
+
+  const { fetchWorkspaces, workspaces, activeWorkspace, createWorkspace, joinWorkspace } = useDigitalizaStore()
+
+  useEffect(() => {
+    if (!user) return
+    const unsubscribe = fetchWorkspaces(user.uid || user.email || '')
+    return () => unsubscribe()
+  }, [user, fetchWorkspaces])
+
+  useEffect(() => {
+    // Determine if onboarding should be shown (after a small delay to allow fetch)
+    const timeout = setTimeout(() => {
+      if (!activeWorkspace && workspaces.length === 0) {
+        setShowOnboarding(true)
+      } else {
+        setShowOnboarding(false)
+      }
+    }, 500)
+    return () => clearTimeout(timeout)
+  }, [activeWorkspace, workspaces])
 
   // Form data for new lead
   const [formData, setFormData] = useState({
@@ -49,7 +66,7 @@ export function DigitalizaCRM() {
   useEffect(() => {
     const unsubscribe = syncContracts()
     return () => unsubscribe()
-  }, [syncContracts])
+  }, [syncContracts, activeWorkspace])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -62,15 +79,48 @@ export function DigitalizaCRM() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wsName || !wsCompany) return addToast('Preencha os dados do Workspace', 'error')
+    try {
+      await createWorkspace(user?.uid || user?.email || '', user?.email || '', (user as any)?.name || 'Usuário', { name: wsName, company: wsCompany })
+      addToast('Workspace criado com sucesso!', 'success')
+      setShowOnboarding(false)
+    } catch (err) {
+      addToast('Erro ao criar Workspace', 'error')
+    }
+  }
+
+  const handleJoinWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wsCode) return addToast('Informe o código de convite', 'error')
+    try {
+      const success = await joinWorkspace(user?.uid || user?.email || '', user?.email || '', (user as any)?.name || 'Usuário', wsCode)
+      if (success) {
+        addToast('Entrou no Workspace com sucesso!', 'success')
+        setShowOnboarding(false)
+      } else {
+        addToast('Código inválido ou não encontrado', 'error')
+      }
+    } catch (err) {
+      addToast('Erro ao entrar no Workspace', 'error')
+    }
+  }
+
   const handleSubmitNewLead = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.client) {
       addToast('Preencha o nome do contato!', 'error')
       return
     }
+    if (!activeWorkspace) {
+      addToast('Nenhum workspace ativo', 'error')
+      return
+    }
 
     try {
       await addContract({
+        workspaceId: activeWorkspace.id,
         client: formData.client,
         amount: Number(formData.amount) || 0,
         phone: formData.phone,
@@ -98,13 +148,54 @@ export function DigitalizaCRM() {
     }
   }
 
-  if (!user?.email || !ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
+  if (!user) {
+    return null
+  }
+
+  if (showOnboarding) {
     return (
       <div className="flex-1 p-4 md:p-8 flex items-center justify-center relative min-h-[calc(100vh-64px)] overflow-hidden">
         <AnimatedBackground />
-        <div className="text-center z-10 bg-surface/50 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
-          <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
-          <p className="text-textSecondary">Você não tem permissão para acessar o Centro de Comando Comercial.</p>
+        <div className="z-10 bg-surface/80 p-8 rounded-2xl border border-white/10 backdrop-blur-md w-full max-w-md">
+          <h2 className="text-2xl font-bold text-white mb-2 text-center">Bem-vindo ao CRM</h2>
+          <p className="text-textSecondary text-center mb-8">Para começar, crie um novo Workspace ou entre em um existente.</p>
+          
+          {onboardingMode === 'select' && (
+            <div className="space-y-4">
+              <Button onClick={() => setOnboardingMode('create')} className="w-full h-12 text-lg">Criar Workspace</Button>
+              <Button onClick={() => setOnboardingMode('join')} variant="secondary" className="w-full h-12 text-lg">Tenho um Código</Button>
+            </div>
+          )}
+
+          {onboardingMode === 'create' && (
+            <form onSubmit={handleCreateWorkspace} className="space-y-4 animate-in fade-in zoom-in-95">
+              <div>
+                <label className="block text-sm font-medium text-textSecondary mb-1">Nome do Workspace</label>
+                <Input value={wsName} onChange={e => setWsName(e.target.value)} placeholder="Ex: Equipe de Vendas" autoFocus />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-textSecondary mb-1">Empresa</label>
+                <Input value={wsCompany} onChange={e => setWsCompany(e.target.value)} placeholder="Sua Empresa LTDA" />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button type="button" variant="ghost" onClick={() => setOnboardingMode('select')} className="flex-1">Voltar</Button>
+                <Button type="submit" className="flex-1">Criar</Button>
+              </div>
+            </form>
+          )}
+
+          {onboardingMode === 'join' && (
+            <form onSubmit={handleJoinWorkspace} className="space-y-4 animate-in fade-in zoom-in-95">
+              <div>
+                <label className="block text-sm font-medium text-textSecondary mb-1">Código de Convite</label>
+                <Input value={wsCode} onChange={e => setWsCode(e.target.value.toUpperCase())} placeholder="Ex: QTX-8F4K" autoFocus />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button type="button" variant="ghost" onClick={() => setOnboardingMode('select')} className="flex-1">Voltar</Button>
+                <Button type="submit" className="flex-1">Entrar</Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     )
@@ -124,6 +215,7 @@ export function DigitalizaCRM() {
         {view === 'kanban' && <CRMKanban onSelectLead={setSelectedLeadId} />}
         {view === 'table' && <CRMTable onSelectLead={setSelectedLeadId} />}
         {view === 'analytics' && <CRMAnalytics />}
+        {view === 'team' && <CRMTeamManager />}
         {view === 'trash' && <CRMTrash onClose={() => setView('kanban')} />}
       </div>
 

@@ -1,11 +1,12 @@
 import { useDigitalizaStore } from '@/store/digitalizaStore'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { CRMWorkspaceSelector } from './CRMWorkspaceSelector'
 import { Users, TrendingUp, DollarSign, CheckCircle2, LayoutGrid, List, BarChart2, Plus } from 'lucide-react'
 
 interface CRMDashboardProps {
-  view: 'kanban' | 'table' | 'analytics'
-  setView: (view: 'kanban' | 'table' | 'analytics') => void
+  view: 'kanban' | 'table' | 'analytics' | 'team' | 'trash'
+  setView: (view: 'kanban' | 'table' | 'analytics' | 'team' | 'trash') => void
   onNewLead: () => void
 }
 
@@ -23,9 +24,12 @@ export function CRMDashboard({ view, setView, onNewLead }: CRMDashboardProps) {
     <div className="flex flex-col gap-6 p-4 md:p-8 shrink-0 z-10 relative">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-            Centro de Comando <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-md tracking-widest border border-primary/30">CRM</span>
-          </h1>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+              Centro de Comando <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-md tracking-widest border border-primary/30">CRM</span>
+            </h1>
+            <CRMWorkspaceSelector />
+          </div>
           <p className="text-textSecondary mt-1">Gerencie seus contatos, oportunidades e funil de vendas</p>
         </div>
         
@@ -51,6 +55,13 @@ export function CRMDashboard({ view, setView, onNewLead }: CRMDashboardProps) {
               title="Analytics"
             >
               <BarChart2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setView('team')}
+              className={`p-2 rounded-md transition-colors flex items-center justify-center ${view === 'team' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:text-white'}`}
+              title="Equipe"
+            >
+              <Users className="w-4 h-4" />
             </button>
           </div>
           
