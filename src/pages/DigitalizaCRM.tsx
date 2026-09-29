@@ -176,7 +176,7 @@ export const DigitalizaCRM = () => {
           status: formData.status,
           date: new Date().toISOString().split('T')[0],
           addedByEmail: user?.email || 'Desconhecido',
-          addedByName: user?.displayName || user?.email?.split('@')[0] || 'Desconhecido'
+          addedByName: (user as any)?.name || user?.email?.split('@')[0] || 'Desconhecido'
         })
         addToast('Novo lead adicionado!', 'success')
       }
