@@ -21,16 +21,16 @@ export function CRMDashboard({ view, setView, onNewLead }: CRMDashboardProps) {
   const conversionRate = totalContacts > 0 ? Math.round((converted / totalContacts) * 100) : 0
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 shrink-0 z-10 relative">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex flex-col gap-4 p-3 md:p-8 shrink-0 z-10 relative">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              Centro de Comando <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-md tracking-widest border border-primary/30">CRM</span>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+            <h1 className="text-xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+              Centro de Comando <span className="text-[10px] md:text-xs bg-primary/20 text-primary px-2 py-0.5 md:py-1 rounded-md tracking-widest border border-primary/30">CRM</span>
             </h1>
             <CRMWorkspaceSelector />
           </div>
-          <p className="text-textSecondary mt-1">Gerencie seus contatos, oportunidades e funil de vendas</p>
+          <p className="hidden md:block text-textSecondary mt-1">Gerencie seus contatos, oportunidades e funil de vendas</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export function CRMDashboard({ view, setView, onNewLead }: CRMDashboardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-flow-col auto-cols-[160px] md:grid-flow-row md:grid-cols-5 gap-4 overflow-x-auto pb-2 custom-scrollbar">
         <Card className="p-4 flex flex-col gap-2 border-white/5 bg-surface/50 backdrop-blur-md">
           <div className="flex items-center gap-2 text-textSecondary text-sm font-medium">
             <Users className="w-4 h-4 text-primary" />

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDigitalizaStore, CRMStatus, DigitalizaContract } from '@/store/digitalizaStore'
-import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, useDroppable, useDraggable } from '@dnd-kit/core'
+import { DndContext, DragOverlay, closestCorners, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, useDroppable, useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { Calendar, DollarSign, Building, CheckSquare } from 'lucide-react'
 
@@ -122,7 +122,8 @@ export function CRMKanban({ onSelectLead }: CRMKanbanProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
     useSensor(KeyboardSensor)
   )
 
