@@ -61,6 +61,18 @@ export const Scanner = () => {
   const { user } = useAuthStore()
   const { addToast } = useToastStore()
 
+  // Prevent background scrolling when Raio-X modal is open
+  useEffect(() => {
+    if (xrayLead) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [xrayLead])
+
   useEffect(() => {
     fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
       .then(res => res.json())
