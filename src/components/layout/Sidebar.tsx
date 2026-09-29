@@ -95,26 +95,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   }
 
 
-  const DIGITALIZA_EMAILS = [
-    'oliveiramirandaisaac@gmail.com',
-    'josehenrique9373@gmail.com',
-    'kaios8252@gmail.com',
-    'daviizcl.0003@gmail.com',
-    'el6084905@gmail.com',
-    'adrianodeoliveiracarneiro13@gmail.com',
-    'caioqsilva09@gmail.com',
-    'willrandrier@gmail.com'
-  ]
-
-  const uEmail = user?.email ? user.email.trim().toLowerCase() : ''
-  if (uEmail && DIGITALIZA_EMAILS.includes(uEmail)) {
-    menuGroups.push({
-      label: 'Digitaliza Comercial',
-      items: [
-        { to: '/digitaliza-crm', icon: Users, label: 'CRM Compartilhado', badge: 'PRO' },
-      ]
-    })
-  }
+  menuGroups.push({
+    label: 'Digitaliza Comercial',
+    items: [
+      { to: '/digitaliza-crm', icon: Users, label: 'CRM Compartilhado', badge: 'PRO' },
+    ]
+  })
 
   // Automatically expand group if a child is active
   useEffect(() => {
