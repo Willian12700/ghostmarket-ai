@@ -12,13 +12,15 @@ import { CRMTable } from '@/components/crm/CRMTable'
 import { CRMAnalytics } from '@/components/crm/CRMAnalytics'
 import { CRMLeadProfile } from '@/components/crm/CRMLeadProfile'
 
-// List of allowed emails (keep original logic)
-const ALLOWED_EMAILS = [
-  'willian12700@gmail.com',
-  'digitalizacomercial@gmail.com',
-  'renato.zimmermann@digitalizacomercial.com.br',
-  'comercial@digitalizacomercial.com.br',
-  'comercial1@digitalizacomercial.com.br'
+export const ALLOWED_EMAILS = [
+  'oliveiramirandaisaac@gmail.com',
+  'josehenrique9373@gmail.com',
+  'kaios8252@gmail.com',
+  'daviizcl.0003@gmail.com',
+  'el6084905@gmail.com',
+  'adrianodeoliveiracarneiro13@gmail.com',
+  'caioqsilva09@gmail.com',
+  'willrandrier@gmail.com'
 ]
 
 export function DigitalizaCRM() {
