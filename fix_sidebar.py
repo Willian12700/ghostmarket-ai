@@ -1,16 +1,19 @@
 import codecs
-import re
 
 with codecs.open('src/components/layout/Sidebar.tsx', 'r', 'utf-8') as f:
     content = f.read()
 
-# Remove all DIGITALIZA_EMAILS blocks
-pattern = r"\s*const DIGITALIZA_EMAILS = \[[\s\S]*?\]\s*if \(user\?\.email && DIGITALIZA_EMAILS\.includes\(user\.email\.toLowerCase\(\)\)\) \{\s*menuGroups\.push\(\{\s*label: 'Digitaliza Comercial',.*?\]\s*\}\)\s*\}"
+# We will just split by "const DIGITALIZA_EMAILS" and rebuild the file
+parts = content.split('  const DIGITALIZA_EMAILS = [')
 
-content = re.sub(pattern, "", content)
+# parts[0] has everything before the first block
+# the last block we can identify where it ends
+# The block ends after "  }" (closing the if user?.email)
+# Actually, let's just use regular expressions without fancy stuff.
+import re
+clean_content = re.sub(r'\s*const DIGITALIZA_EMAILS = \[\s*[\s\S]*?CRM Compartilhado.*?\n\s*\]\n\s*\}\)\n\s*\}', '', content)
 
-# Inject just one instance
-replacement = '''
+inject = '''
   const DIGITALIZA_EMAILS = [
     'oliveiramirandaisaac@gmail.com',
     'josehenrique9373@gmail.com',
@@ -32,7 +35,7 @@ replacement = '''
   }
 '''
 
-content = re.sub(r'(?=\s*// Automatically expand group if a child is active)', replacement, content, count=1)
+final_content = clean_content.replace('// Automatically expand group', inject + '\n  // Automatically expand group')
 
 with codecs.open('src/components/layout/Sidebar.tsx', 'w', 'utf-8') as f:
-    f.write(content)
+    f.write(final_content)
