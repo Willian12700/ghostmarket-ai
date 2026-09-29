@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import codecs
 
 content = '''import { useState, useEffect } from 'react'
@@ -35,11 +36,11 @@ function DroppableColumn({ col, children, count }: { col: typeof COLUMNS[0], chi
   return (
     <div 
       ref={setNodeRef}
-      className={lex-1 min-w-[280px] bg-panel/50 border rounded-xl flex flex-col transition-colors }
+      className={lex-1 min-w-[280px] bg-panel/50 border rounded-xl flex flex-col transition-colors \}
     >
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={px-2 py-0.5 rounded text-xs font-semibold border }>
+          <div className={px-2 py-0.5 rounded text-xs font-semibold border \}>
             {col.title}
           </div>
         </div>
