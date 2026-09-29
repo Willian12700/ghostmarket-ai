@@ -183,6 +183,17 @@ export const AdminPanel = () => {
         }
       })
 
+      // Include new CRM closed sales
+      const dCrmQuery = query(collection(db, 'digitaliza_crm'), where('userId', 'in', queryIds))
+      const dCrmSnap = await getDocs(dCrmQuery)
+      dCrmSnap.forEach(doc => {
+        const c = doc.data()
+        const s = (c.status || '').toLowerCase()
+        if (s === 'fechado') {
+          totalValue += (Number(c.value) || 0)
+        }
+      })
+
       setUserDashboardValue(totalValue)
     } catch (error) {
       console.error('Error loading details', error)
