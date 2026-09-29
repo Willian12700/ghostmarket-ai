@@ -33,11 +33,11 @@ function DroppableColumn({ col, children, count }: { col: typeof COLUMNS[0], chi
   return (
     <div 
       ref={setNodeRef}
-      className={lex-1 min-w-[280px] bg-panel/50 border rounded-xl flex flex-col transition-colors \}
+      className={`flex-1 min-w-[280px] bg-panel/50 border rounded-xl flex flex-col transition-colors ${isOver ? 'border-primary shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-primary/5' : 'border-border'}`}
     >
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={px-2 py-0.5 rounded text-xs font-semibold border \}>
+          <div className={`px-2 py-0.5 rounded text-xs font-semibold border ${col.color}`}>
             {col.title}
           </div>
         </div>
@@ -214,7 +214,7 @@ export const DigitalizaCRM = () => {
         <AnimatedBackground />
         <div className="text-center z-10">
           <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
-          <p className="text-textSecondary">Você não tem permissão para acessar o CRM da Digitaliza Comercial.</p>
+          <p className="text-textSecondary">VocÃª nÃ£o tem permissÃ£o para acessar o CRM da Digitaliza Comercial.</p>
         </div>
       </div>
     )
@@ -276,11 +276,11 @@ export const DigitalizaCRM = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-textSecondary mb-1">Nome da Empresa / Cliente</label>
-                <Input value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} placeholder="Ex: Padaria do Zé" autoFocus />
+                <Input value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} placeholder="Ex: Padaria do ZÃ©" autoFocus />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-textSecondary mb-1">Possível Valor (R$)</label>
+                  <label className="block text-sm font-medium text-textSecondary mb-1">PossÃ­vel Valor (R$)</label>
                   <Input type="number" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} placeholder="1500" />
                 </div>
                 <div>
@@ -305,13 +305,13 @@ export const DigitalizaCRM = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-textSecondary mb-1">Cidade</label>
-                  <Input value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} placeholder="São Paulo" />
+                  <Input value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} placeholder="SÃ£o Paulo" />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/5">
                 <Button type="button" variant="ghost" onClick={() => {setIsModalOpen(false); setEditingId(null)}}>Cancelar</Button>
-                <Button type="submit">{editingId ? 'Salvar Alterações' : 'Adicionar ao Board'}</Button>
+                <Button type="submit">{editingId ? 'Salvar AlteraÃ§Ãµes' : 'Adicionar ao Board'}</Button>
               </div>
             </form>
           </div>
