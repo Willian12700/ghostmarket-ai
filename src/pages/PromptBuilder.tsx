@@ -99,6 +99,9 @@ export const PromptBuilder = () => {
       niche: 'SaaS / Tecnologia',
       tech: 'React / Vite',
       design: 'Dark Mode',
+      primaryColor: '',
+      secondaryColor: '',
+      logoUrl: '',
       sections: { hero: true, about: false, benefits: true, catalog: false, socialProof: false, testimonials: true, faq: true, pricing: false, cta: true, footer: true } as Record<string, boolean>,
       features: { auth: false, database: false, payments: false, pix: false, api: false, dashboard: false, ai: false, whatsapp: true, delivery: false } as Record<string, boolean>,
       whatsappNumber: ''
@@ -215,6 +218,9 @@ A estética deve ser:
 * Forte visualmente e fotográfica
 
 **Design System sugerido:** ${targetDesign}
+${formData.primaryColor ? `**Cor Principal:** ${formData.primaryColor}` : ''}
+${formData.secondaryColor ? `**Cor Secundária:** ${formData.secondaryColor}` : ''}
+${formData.logoUrl ? `**Logo (URL para renderizar no header):** ${formData.logoUrl}` : ''}
 Utilize tipografia moderna e marcante para títulos, combinada com uma fonte extremamente legível para textos. Evite fontes excessivamente decorativas.`;
 
       prompt += brandImagesText;
@@ -487,6 +493,67 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
                   value={brandImages}
                   onChange={e => setBrandImages(e.target.value)}
                 />
+              </div>
+              <div className="space-y-4 pt-4">
+                <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-primary" /> Identidade Visual & Cores (Opcional)
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-panel border-2 border-border rounded-2xl p-4">
+                    <label className="text-xs font-bold text-textSecondary uppercase tracking-widest block mb-2">Logo (URL da Imagem)</label>
+                    <Input className="bg-background border-border text-white h-12" placeholder="https://..." value={formData.logoUrl} onChange={e => setFormData({...formData, logoUrl: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-panel border-2 border-border rounded-2xl p-4">
+                      <label className="text-xs font-bold text-textSecondary uppercase tracking-widest block mb-2">Cor Principal</label>
+                      <div className="flex gap-2">
+                        <input type="color" className="w-12 h-12 rounded cursor-pointer bg-transparent border-0 p-0" value={formData.primaryColor || '#8b5cf6'} onChange={e => setFormData({...formData, primaryColor: e.target.value})} />
+                        <Input className="bg-background border-border text-white h-12 uppercase flex-1 px-2 text-sm" placeholder="#HEX" value={formData.primaryColor} onChange={e => setFormData({...formData, primaryColor: e.target.value})} />
+                      </div>
+                    </div>
+                    <div className="bg-panel border-2 border-border rounded-2xl p-4">
+                      <label className="text-xs font-bold text-textSecondary uppercase tracking-widest block mb-2">Cor Secundária</label>
+                      <div className="flex gap-2">
+                        <input type="color" className="w-12 h-12 rounded cursor-pointer bg-transparent border-0 p-0" value={formData.secondaryColor || '#10b981'} onChange={e => setFormData({...formData, secondaryColor: e.target.value})} />
+                        <Input className="bg-background border-border text-white h-12 uppercase flex-1 px-2 text-sm" placeholder="#HEX" value={formData.secondaryColor} onChange={e => setFormData({...formData, secondaryColor: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Plus className="w-5 h-5 text-primary" />
+                  <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Produtos e Serviços Específicos (Opcional)</label>
+                </div>
+                <p className="text-sm text-textSecondary ml-2 mb-4">Adicione os itens principais que você quer que a IA monte na seção de Catálogo.</p>
+                <div className="space-y-6">
+                  {products.map((prod, idx) => (
+                    <div key={idx} className="p-6 bg-panel border border-border rounded-3xl relative group">
+                      <button onClick={() => removeProduct(idx)} className="absolute top-4 right-4 p-2 bg-danger/10 text-danger hover:bg-danger/20 rounded-xl md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <div>
+                          <label className="text-xs font-bold text-textSecondary uppercase tracking-widest ml-2">Nome do Produto</label>
+                          <Input value={prod.name} onChange={e => updateProduct(idx, 'name', e.target.value)} placeholder="Ex: Hambúrguer Clássico" className="mt-1 bg-background text-white border-border" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-textSecondary uppercase tracking-widest ml-2">Preço</label>
+                          <Input value={prod.price} onChange={e => updateProduct(idx, 'price', e.target.value)} placeholder="Ex: R$ 25,00" className="mt-1 bg-background text-white border-border" />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="text-xs font-bold text-textSecondary uppercase tracking-widest ml-2">Link da Imagem (Opcional)</label>
+                          <Input value={prod.image} onChange={e => updateProduct(idx, 'image', e.target.value)} placeholder="https://exemplo.com/imagem.png" className="mt-1 bg-background text-white border-border" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button onClick={addProduct} variant="secondary" className="w-full h-14 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-colors bg-transparent hover:bg-primary/5 rounded-2xl text-white">
+                    <Plus className="w-5 h-5 mr-2" /> Adicionar Produto
+                  </Button>
+                </div>
               </div>
             </motion.div>
           )}
