@@ -29,7 +29,7 @@ export const PropostaPdf = () => {
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-primary mb-1">
-              {user?.displayName || 'GhostMarket Agency'}
+              {user?.name || 'GhostMarket Agency'}
             </div>
             <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
@@ -107,7 +107,7 @@ export const PropostaPdf = () => {
         {/* Footer */}
         <div className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>Esta proposta é válida por 7 dias a partir da data de geração.</p>
-          <p className="mt-2 font-bold">{user?.displayName || 'GhostMarket Agency'}</p>
+          <p className="mt-2 font-bold">{user?.name || 'GhostMarket Agency'}</p>
         </div>
 
       </div>

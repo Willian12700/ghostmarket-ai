@@ -43,6 +43,7 @@ const FEATURE_OPTIONS = [
 export const PromptBuilder = () => {
   const { addToast } = useToastStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   const [promptStyle, setPromptStyle] = useState<'manual' | 'google' | null>(null)
   const [step, setStep] = useState(1)
