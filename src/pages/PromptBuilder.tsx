@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { Wand2, Copy, Check, Code, LayoutTemplate, Palette, Settings2, Zap, MonitorSmartphone, ArrowRight, ArrowLeft, MapPin, Plus, Trash2, Cpu, FileCode2, ImageIcon } from 'lucide-react'
@@ -68,6 +68,20 @@ export const PromptBuilder = () => {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const leadName = searchParams.get('leadName')
+    const leadCategory = searchParams.get('leadCategory')
+    const leadCity = searchParams.get('leadCity')
+    const leadPhone = searchParams.get('leadPhone')
+    const leadWebsite = searchParams.get('leadWebsite')
+    
+    if (leadName) {
+      setPromptStyle('google')
+      const compiledData = `Nome: ${leadName}\nCategoria: ${leadCategory || 'Não informado'}\nCidade: ${leadCity || 'Não informado'}\nTelefone: ${leadPhone || 'Não informado'}\nSite Atual: ${leadWebsite || 'Nenhum (Criar do zero)'}`
+      setGoogleData(compiledData)
+    }
+  }, [searchParams])
 
   const [googleData, setGoogleData] = useState('')
   const [googleComplexity, setGoogleComplexity] = useState<'static' | 'dynamic' | null>(null)

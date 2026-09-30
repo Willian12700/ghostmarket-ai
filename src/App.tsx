@@ -42,6 +42,7 @@ import { PersonaHistory } from '@/pages/tiktok/PersonaHistory'
 import { ViralScripts } from '@/pages/tiktok/ViralScripts'
 import { AdCopy } from '@/pages/tiktok/AdCopy'
 import { OfferIntelligence } from '@/pages/OfferIntelligence'
+import { PropostaPdf } from '@/pages/PropostaPdf'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { useAuthStore } from '@/store/authStore'
@@ -122,6 +123,7 @@ function App() {
 
             <Route path="/s/:siteId" element={<SiteViewer />} />
             <Route path="/demo" element={<Demo />} />
+              <Route path="/proposta" element={<PropostaPdf />} />
             <Route path="/report/:siteId" element={<ClientReport />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

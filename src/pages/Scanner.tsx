@@ -1,6 +1,6 @@
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 import { useState, useEffect } from 'react'
-import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert, Check, Plus, MessageSquare, Globe as GlobeIcon, Star, Sparkles, X, Building2, SearchCode, AlertTriangle, AtSign } from 'lucide-react'
+import { Search, MapPin, Phone, Smartphone, Filter, ShieldAlert, Check, Plus, MessageSquare, Globe as GlobeIcon, Star, Sparkles, X, Building2, SearchCode, AlertTriangle, AtSign, LayoutTemplate, FileText } from 'lucide-react'
 import { CreationStepper } from '@/components/ui/CreationStepper'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -492,6 +492,37 @@ export const Scanner = () => {
                         Sem Telefone
                       </Button>
                     )}
+
+                    <Button 
+                      onClick={() => {
+                        const url = new URL(window.location.origin + '/prompt-builder');
+                        url.searchParams.set('leadName', lead.name);
+                        if (lead.category) url.searchParams.set('leadCategory', lead.category);
+                        if (lead.city) url.searchParams.set('leadCity', lead.city);
+                        if (lead.phone) url.searchParams.set('leadPhone', lead.phone);
+                        if (lead.website) url.searchParams.set('leadWebsite', lead.website);
+                        window.open(url.toString(), '_blank');
+                      }}
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold shadow-[0_0_15px_rgba(79,70,229,0.2)] mb-2"
+                    >
+                      <LayoutTemplate className="w-4 h-4 mr-2" />
+                      Criar Site Automático (IA)
+                    </Button>
+
+                    <Button 
+                      onClick={() => {
+                        const url = new URL(window.location.origin + '/proposta');
+                        url.searchParams.set('leadName', lead.name);
+                        if (lead.category) url.searchParams.set('leadCategory', lead.category);
+                        if (lead.city) url.searchParams.set('leadCity', lead.city);
+                        if (lead.phone) url.searchParams.set('leadPhone', lead.phone);
+                        window.open(url.toString(), '_blank');
+                      }}
+                      className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 font-bold shadow-[0_0_15px_rgba(220,38,38,0.2)] mb-2"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Gerar Proposta PDF
+                    </Button>
                     
                     {/* Botões Secundários */}
                     <div className="flex gap-2">
