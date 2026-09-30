@@ -47,7 +47,7 @@ export const PromptBuilder = () => {
   
   const [promptStyle, setPromptStyle] = useState<'manual' | 'google' | null>(null)
   const [step, setStep] = useState(1)
-  const totalSteps = promptStyle === 'google' ? 4 : (promptStyle === 'manual' ? 6 : 1)
+  const totalSteps = promptStyle ? 6 : 1
 
   const [availableNiches, setAvailableNiches] = useState<string[]>([
     'SaaS / Tecnologia',
@@ -259,7 +259,7 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
       
       setGeneratedPrompt(prompt)
       setIsGenerating(false)
-      setStep(promptStyle === 'google' ? 4 : 6)
+      setStep(6)
     }, 1500)
   }
 
@@ -271,7 +271,7 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
   }
 
   const nextStep = () => {
-    if (promptStyle === 'google' && step === 2 && !googleComplexity) {
+    if (promptStyle === 'google' && step === 4 && !googleComplexity) {
       addToast('Escolha a complexidade do sistema!', 'error');
       return;
     }
@@ -394,8 +394,8 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
     exit: { opacity: 0, x: -20, scale: 0.95, transition: { duration: 0.3 } }
   }
 
-  const isLastStep = (promptStyle === 'google' && step === 4) || (promptStyle === 'manual' && step === 6);
-  const isGeneratingStep = (promptStyle === 'google' && step === 3) || (promptStyle === 'manual' && step === 5);
+  const isLastStep = step === 6;
+  const isGeneratingStep = step === 5;
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex flex-col bg-[#09090b] text-white selection:bg-primary/30 relative overflow-hidden">
@@ -482,7 +482,16 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
                 />
               </div>
 
-              <div className="space-y-4 pt-4">
+              </motion.div>
+            )}
+
+{promptStyle === 'google' && step === 2 && (
+<motion.div key="google2" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+<div className="text-center mb-10">
+<h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Palette className="w-7 h-7 text-green-500" /> Identidade Visual</h2>
+<p className="text-textSecondary text-lg">Cores e Logo do estabelecimento.</p>
+</div>
+<div className="space-y-4 pt-4">
                 <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4 text-primary" /> Banco de Imagens (Opcional)
                 </label>
@@ -522,7 +531,16 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4">
+              </motion.div>
+            )}
+
+{promptStyle === 'google' && step === 3 && (
+<motion.div key="google3" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
+<div className="text-center mb-10">
+<h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Plus className="w-7 h-7 text-green-500" /> Produtos e Servi�os</h2>
+<p className="text-textSecondary text-lg">Itens de cat�logo ou destaques.</p>
+</div>
+<div className="space-y-4 pt-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Plus className="w-5 h-5 text-primary" />
                   <label className="text-sm font-bold text-textSecondary uppercase tracking-widest">Produtos e Serviços Específicos (Opcional)</label>
@@ -558,21 +576,21 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
             </motion.div>
           )}
 
-          {promptStyle === 'google' && step === 2 && (
+          {promptStyle === 'google' && step === 4 && (
             <motion.div key="google2" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><MonitorSmartphone className="w-7 h-7 text-green-500" /> Complexidade do Sistema</h2>
                 <p className="text-textSecondary text-lg">Como você vai construir isso?</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <button onClick={() => { setGoogleComplexity('static'); setStep(3); }} className={`p-8 bg-panel border-2 rounded-3xl text-left group transition-all ${googleComplexity === 'static' ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]' : 'border-border hover:border-green-500/50'}`}>
+                <button onClick={() => { setGoogleComplexity('static'); setStep(5); }} className={`p-8 bg-panel border-2 rounded-3xl text-left group transition-all ${googleComplexity === 'static' ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]' : 'border-border hover:border-green-500/50'}`}>
                   <div className="w-14 h-14 bg-green-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <FileCode2 className="w-7 h-7 text-green-500" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">Básico (HTML, CSS, JS)</h3>
                   <p className="text-textSecondary">Site estático, focado apenas em mostrar informações da empresa e catálogo de serviços.</p>
                 </button>
-                <button onClick={() => { setGoogleComplexity('dynamic'); setStep(3); }} className={`p-8 bg-panel border-2 rounded-3xl text-left group transition-all ${googleComplexity === 'dynamic' ? 'border-primary shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'border-border hover:border-primary/50'}`}>
+                <button onClick={() => { setGoogleComplexity('dynamic'); setStep(5); }} className={`p-8 bg-panel border-2 rounded-3xl text-left group transition-all ${googleComplexity === 'dynamic' ? 'border-primary shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'border-border hover:border-primary/50'}`}>
                   <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <Cpu className="w-7 h-7 text-primary" />
                   </div>
@@ -583,7 +601,7 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
             </motion.div>
           )}
 
-          {promptStyle === 'google' && step === 3 && googleComplexity === 'static' && (
+          {promptStyle === 'google' && step === 5 && googleComplexity === 'static' && (
             <motion.div key="google3_static" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><LayoutTemplate className="w-7 h-7 text-green-500" /> Estrutura da Página</h2>
@@ -595,7 +613,7 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
             </motion.div>
           )}
 
-          {promptStyle === 'google' && step === 3 && googleComplexity === 'dynamic' && (
+          {promptStyle === 'google' && step === 5 && googleComplexity === 'dynamic' && (
             <motion.div key="google3_dynamic" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Settings2 className="w-7 h-7 text-primary" /> Módulos Profundos</h2>
