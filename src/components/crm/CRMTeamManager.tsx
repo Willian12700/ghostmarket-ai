@@ -18,7 +18,7 @@ export function CRMTeamManager() {
     if (!activeWorkspace) return
     const q = query(collection(db, 'crm_workspace_members'), where('workspaceId', '==', activeWorkspace.id))
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ms = snapshot.docs.map(doc => doc.data() as CRMWorkspaceMember)
+      const ms = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as CRMWorkspaceMember))
       setMembers(ms)
     })
     return () => unsubscribe()

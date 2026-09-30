@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { db } from '@/config/firebase'
-import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, where, getDocs, limit, runTransaction } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, where, getDocs, limit, runTransaction, setDoc } from 'firebase/firestore'
 
 export type CRMStatus = 'Novo' | 'Contato' | 'Qualificado' | 'Proposta' | 'Negociação' | 'Fechado' | 'Perdido'
 
@@ -125,7 +125,7 @@ export const useDigitalizaStore = create<DigitalizaState>()((set, get) => ({
     )
 
     const unsubscribe = onSnapshot(qMembers, async (snapshot) => {
-      const memberDocs = snapshot.docs.map(doc => doc.data() as CRMWorkspaceMember)
+      const memberDocs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as CRMWorkspaceMember))
       
       if (memberDocs.length === 0) {
         set({ workspaces: [], activeWorkspace: null })
@@ -222,7 +222,7 @@ export const useDigitalizaStore = create<DigitalizaState>()((set, get) => ({
 
     // Adicionar membro
     const newMemberRef = doc(collection(db, 'crm_workspace_members'))
-    await addDoc(collection(db, 'crm_workspace_members'), {
+    await setDoc(newMemberRef, {
       id: newMemberRef.id,
       userId,
       userEmail,
