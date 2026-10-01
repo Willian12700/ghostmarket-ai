@@ -501,6 +501,7 @@ export const Scanner = () => {
                         if (lead.city) url.searchParams.set('leadCity', lead.city);
                         if (lead.phone) url.searchParams.set('leadPhone', lead.phone);
                         if (lead.website) url.searchParams.set('leadWebsite', lead.website);
+                        if (lead.imageUrl) url.searchParams.set('leadImage', lead.imageUrl);
                         window.open(url.toString(), '_blank');
                       }}
                       className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold shadow-[0_0_15px_rgba(79,70,229,0.2)] mb-2"

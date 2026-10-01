@@ -76,11 +76,16 @@ export const PromptBuilder = () => {
     const leadCity = searchParams.get('leadCity')
     const leadPhone = searchParams.get('leadPhone')
     const leadWebsite = searchParams.get('leadWebsite')
+    const leadImage = searchParams.get('leadImage')
     
     if (leadName) {
       setPromptStyle('google')
       const compiledData = `Nome: ${leadName}\nCategoria: ${leadCategory || 'Não informado'}\nCidade: ${leadCity || 'Não informado'}\nTelefone: ${leadPhone || 'Não informado'}\nSite Atual: ${leadWebsite || 'Nenhum (Criar do zero)'}`
       setGoogleData(compiledData)
+      if (leadImage) {
+        setBrandImages(leadImage)
+        setFormData(prev => ({ ...prev, logoUrl: leadImage }))
+      }
     }
   }, [searchParams])
 
@@ -104,7 +109,9 @@ export const PromptBuilder = () => {
       logoUrl: '',
       sections: { hero: true, about: false, benefits: true, catalog: false, socialProof: false, testimonials: true, faq: true, pricing: false, cta: true, footer: true } as Record<string, boolean>,
       features: { auth: false, database: false, payments: false, pix: false, api: false, dashboard: false, ai: false, whatsapp: true, delivery: false } as Record<string, boolean>,
-      whatsappNumber: ''
+      whatsappNumber: '',
+      videoUrl: '',
+      videoPosition: 'hero_background'
   })
 
   const [isGenerating, setIsGenerating] = useState(false)
@@ -177,6 +184,15 @@ export const PromptBuilder = () => {
       const brandImagesText = brandImages.trim() 
         ? `\n\n# GALERIA / ASSETS VISUAIS\nUtilize os seguintes links de imagens reais no layout do site (distribua no Hero, Catálogo ou Galeria):\n${brandImages}\n` 
         : '';
+        
+      const positionMap: Record<string, string> = {
+        'hero_background': 'como fundo (background) da seção principal (Hero) no topo do site',
+        'middle': 'em uma seção de destaque no meio da página',
+        'footer': 'lá embaixo, perto do rodapé do site'
+      }
+      const videoText = formData.videoUrl.trim()
+        ? `\n\n# VÍDEO NO SITE\nIncorpore o seguinte vídeo no layout do site: ${formData.videoUrl}\nPosição exigida pelo cliente: ${positionMap[formData.videoPosition] || 'Onde achar melhor'}.\n`
+        : '';
 
       const targetNiche = formData.niche;
       const targetTone = formData.tone;
@@ -224,6 +240,7 @@ ${formData.logoUrl ? `**Logo (URL para renderizar no header):** ${formData.logoU
 Utilize tipografia moderna e marcante para títulos, combinada com uma fonte extremamente legível para textos. Evite fontes excessivamente decorativas.`;
 
       prompt += brandImagesText;
+      prompt += videoText;
 
       prompt += `\n\n---
 ${getSectionsText(formData.sections)}`;
@@ -529,6 +546,31 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
                     </div>
                   </div>
                 </div>
+
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <label className="text-sm font-bold text-textSecondary uppercase tracking-widest ml-2 flex items-center gap-2">
+                    <MonitorSmartphone className="w-4 h-4 text-primary" /> Vídeo no Site (Opcional)
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-panel border-2 border-border rounded-2xl p-4">
+                      <label className="text-xs font-bold text-textSecondary uppercase tracking-widest block mb-2">Link do Vídeo (YouTube/MP4)</label>
+                      <Input className="bg-background border-border text-white h-12" placeholder="https://..." value={formData.videoUrl} onChange={e => setFormData({...formData, videoUrl: e.target.value})} />
+                    </div>
+                    <div className="bg-panel border-2 border-border rounded-2xl p-4">
+                      <label className="text-xs font-bold text-textSecondary uppercase tracking-widest block mb-2">Posição do Vídeo</label>
+                      <select 
+                        className="w-full h-12 bg-background border-2 border-border rounded-xl px-4 text-white focus:border-primary transition-colors"
+                        value={formData.videoPosition}
+                        onChange={e => setFormData({...formData, videoPosition: e.target.value})}
+                      >
+                        <option value="hero_background">Atrás do Nome (Fundo do Início)</option>
+                        <option value="middle">No Meio da Página</option>
+                        <option value="footer">Lá em Baixo (Fim da Página)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
               </motion.div>
