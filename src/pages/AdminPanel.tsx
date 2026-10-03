@@ -44,6 +44,7 @@ export const AdminPanel = () => {
 
   const [freeAccessEmail, setFreeAccessEmail] = useState('')
   const [freeAccessPlan, setFreeAccessPlan] = useState('mensal')
+  const [freeAccessStartDate, setFreeAccessStartDate] = useState('')
   const [isGrantingAccess, setIsGrantingAccess] = useState(false)
 
   const [users, setUsers] = useState<any[]>([])
@@ -211,24 +212,34 @@ export const AdminPanel = () => {
       return
     }
 
+    
     setIsGrantingAccess(true)
     const emailToGrant = freeAccessEmail.toLowerCase().trim()
     try {
+      let grantDate = new Date().toISOString()
+      if (freeAccessPlan === 'mensal' && freeAccessStartDate) {
+        // Create date at noon to avoid timezone shift to previous day
+        const [year, month, day] = freeAccessStartDate.split('-')
+        grantDate = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0).toISOString()
+      }
+
       await setDoc(doc(db, 'allowed_users', emailToGrant), {
         email: emailToGrant,
         status: 'approved',
         plan: freeAccessPlan,
         grantedByAdmin: true,
-        grantedAt: new Date().toISOString()
+        grantedAt: grantDate,
+        startDate: grantDate
       }, { merge: true })
+
       
       // Update UI optimistically
       setUsers(prev => {
         const existing = prev.find(u => u.email === emailToGrant)
         if (existing) {
-          return prev.map(u => u.email === emailToGrant ? { ...u, isAllowed: true, plan: 'vitalicio' } : u)
+          return prev.map(u => u.email === emailToGrant ? { ...u, isAllowed: true, plan: freeAccessPlan } : u)
         } else {
-          return [{ email: emailToGrant, name: 'Desconhecido', isAllowed: true, plan: 'vitalicio' }, ...prev]
+          return [{ email: emailToGrant, name: 'Desconhecido', isAllowed: true, plan: freeAccessPlan }, ...prev]
         }
       })
       
@@ -308,6 +319,18 @@ export const AdminPanel = () => {
                 </select>
 
               </div>
+                {freeAccessPlan === 'mensal' && (
+                  <div className="w-40 pb-0">
+                    <label className="text-sm font-medium text-textSecondary mb-2 block">Data de Incio</label>
+                    <input 
+                      type="date"
+                      value={freeAccessStartDate}
+                      onChange={(e) => setFreeAccessStartDate(e.target.value)}
+                      className="w-full h-11 px-3 rounded-lg bg-surface border border-border text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    />
+                  </div>
+                )}
+
 
               <div className="flex-1">
 
