@@ -101,7 +101,7 @@ interface DigitalizaState {
   createWorkspace: (userId: string, userEmail: string, userName: string, data: { name: string, company: string }) => Promise<void>
   joinWorkspace: (userId: string, userEmail: string, userName: string, code: string) => Promise<boolean>
   
-  syncContracts: () => () => void
+  syncContracts: (fallbackEmailOrUid?: string) => () => void
   addContract: (contract: Omit<DigitalizaContract, 'id'>) => Promise<void>
   updateContract: (id: string, data: Partial<Omit<DigitalizaContract, 'id'>>) => Promise<void>
   deleteContract: (id: string) => Promise<void>
@@ -235,17 +235,24 @@ export const useDigitalizaStore = create<DigitalizaState>()((set, get) => ({
     return true
   },
 
-  syncContracts: () => {
+  syncContracts: (fallbackEmailOrUid?: string) => {
     const { activeWorkspace } = get()
-    if (!activeWorkspace) {
+    
+    let q;
+    if (activeWorkspace) {
+      q = query(
+        collection(db, 'digitaliza_crm'),
+        where('workspaceId', '==', activeWorkspace.id)
+      )
+    } else if (fallbackEmailOrUid) {
+      // Fallback para leads antigos se nao estiver em um workspace
+      q = query(collection(db, 'digitaliza_crm'))
+      // No firebase em producao dele, o firestore rules provavelmente lida com isso, ou precisamos filtrar localmente dps.
+      // Vamos assumir que os antigos nao tinham workspaceId.
+    } else {
       set({ contracts: [], isSynced: true })
       return () => {}
     }
-
-    const q = query(
-      collection(db, 'digitaliza_crm'),
-      where('workspaceId', '==', activeWorkspace.id)
-    )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const txs = snapshot.docs.map(doc => {

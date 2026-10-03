@@ -43,8 +43,10 @@ export const Dashboard = () => {
   useEffect(() => {
     if (activeWorkspace) {
       return syncContracts()
+    } else if (user?.email) {
+      return syncContracts(user.email)
     }
-  }, [activeWorkspace, syncContracts])
+  }, [activeWorkspace, syncContracts, user])
 
   // Combine CRM Contacts and Firebase Transactions that are PAID
   const allPaidTransactions = useMemo(() => {
