@@ -103,9 +103,10 @@ export const AdminPanel = () => {
     if (!selectedUser) return;
     try {
       const newStatus = !selectedUser.isSuspended;
-      if(selectedUser.uid) { await setDoc(doc(db, 'users', selectedUser.uid), { isSuspended: newStatus }, { merge: true }); }
-      await setDoc(doc(db, 'allowed_users', selectedUser.email), { status: newStatus ? 'suspended' : 'approved' }, { merge: true });, { merge: true });
+      if (selectedUser.uid) {
+        await setDoc(doc(db, 'users', selectedUser.uid), { isSuspended: newStatus }, { merge: true });
       }
+      await setDoc(doc(db, 'allowed_users', selectedUser.email), { status: newStatus ? 'suspended' : 'approved' }, { merge: true });
       setSelectedUser({ ...selectedUser, isSuspended: newStatus });
       setUsers(users.map(u => u.email === selectedUser.email ? { ...u, isSuspended: newStatus } : u));
       addToast(newStatus ? 'Acesso suspenso com sucesso.' : 'Acesso restaurado.', 'success');
@@ -216,7 +217,7 @@ export const AdminPanel = () => {
       await setDoc(doc(db, 'allowed_users', emailToGrant), {
         email: emailToGrant,
         status: 'approved',
-        plan: 'vitalicio',
+        plan: freeAccessPlan,
         grantedByAdmin: true,
         grantedAt: new Date().toISOString()
       }, { merge: true })
@@ -284,8 +285,34 @@ export const AdminPanel = () => {
               Insira o email de um usuário para liberar acesso total à plataforma GhostMarket sem necessidade de assinatura.
             </p>
             <div className="flex gap-4 items-end">
+              <div className="w-40 pb-0">
+
+                <label className="text-sm font-medium text-textSecondary mb-2 block">Plano</label>
+
+                <select 
+
+                  value={freeAccessPlan}
+
+                  onChange={(e) => setFreeAccessPlan(e.target.value)}
+
+                  className="w-full h-11 px-3 rounded-lg bg-surface border border-border text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+
+                >
+
+                  <option value="mensal">Mensal</option>
+
+                  <option value="vitalicio">Vitalício</option>
+
+                  <option value="pro">Pro</option>
+
+                </select>
+
+              </div>
+
               <div className="flex-1">
+
                 <Input 
+
                   label="E-mail do Usuário" 
                   placeholder="email@exemplo.com"
                   value={freeAccessEmail}
