@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { auth } from '@/config/firebase'
+import { auth, db } from '@/config/firebase'
+import { doc, setDoc } from 'firebase/firestore'
 
 export const Register = () => {
   const [searchParams] = useSearchParams()
@@ -46,6 +47,14 @@ export const Register = () => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
       await updateProfile(userCredential.user, { displayName: formData.name })
+      
+      // Auto-authorize user after payment
+      await setDoc(doc(db, 'allowed_users', formData.email.toLowerCase()), {
+        email: formData.email.toLowerCase(),
+        status: 'active',
+        plan: 'pro',
+        createdAt: new Date().toISOString()
+      })
       
       addToast('Conta criada com sucesso!', 'success')
       navigate('/dashboard')

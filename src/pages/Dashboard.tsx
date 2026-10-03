@@ -3,13 +3,13 @@ import { DollarSign, ShoppingCart, TrendingUp, Calendar, Zap, ArrowUpRight, Acti
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { motion } from 'framer-motion'
 
-import { useContractStore } from '@/store/contractStore'
+import { useDigitalizaStore } from '@/store/digitalizaStore'
 import { useAuthStore } from '@/store/authStore'
 import { db } from '@/config/firebase'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
 
 export const Dashboard = () => {
-  const { contracts, syncContracts } = useContractStore()
+  const { contracts, syncContracts, fetchWorkspaces, activeWorkspace } = useDigitalizaStore()
   const { user } = useAuthStore()
   const [dateFilter, setDateFilter] = useState<'hoje' | 'semana' | 'mes' | 'ano'>('semana')
   const [firebaseTransactions, setFirebaseTransactions] = useState<any[]>([])
@@ -20,21 +20,27 @@ export const Dashboard = () => {
     // Sync SaaS transactions
     const q = query(
       collection(db, 'transactions'),
-      where('userId', '==', user?.email || user?.uid)
+      where('userId', '==', user?.uid) // Use uid instead of email
     )
     const unsubscribeTxs = onSnapshot(q, (snapshot) => {
       const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       setFirebaseTransactions(txs)
     })
     
-    // Sync CRM contracts
-    const unsubscribeCrm = syncContracts(user?.email || user?.uid || '')
+    // Fetch Workspaces
+    const unsubscribeWorkspaces = fetchWorkspaces(user?.uid || '')
     
     return () => {
       unsubscribeTxs()
-      unsubscribeCrm()
+      unsubscribeWorkspaces()
     }
   }, [user])
+
+  useEffect(() => {
+    if (activeWorkspace) {
+      return syncContracts()
+    }
+  }, [activeWorkspace, syncContracts])
 
   // Combine CRM Contacts and Firebase Transactions that are PAID
   const allPaidTransactions = useMemo(() => {
