@@ -1,5 +1,6 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
 import { ArrowUpRight, ArrowDownRight, RefreshCw, ChevronDown, Info, ShoppingCart } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
 import { useDigitalizaStore } from '@/store/digitalizaStore'
@@ -9,13 +10,13 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore'
 
 // Theme Colors for Cakto Style
 const C = {
-  bg: '#090d0b',
-  cardBg: '#151917',
-  border: '#1f2421',
+  bg: '#050506',
+  cardBg: '#0b0b0e',
+  border: '#1a1a24',
   textMain: '#ffffff',
-  textMuted: '#8b8e8c',
-  green: '#00c48c',
-  greenDark: '#008b63',
+  textMuted: '#8b8e98',
+  green: '#8b5cf6', // using purple for accent
+  greenDark: '#6d28d9',
 }
 
 export const Dashboard = () => {
@@ -219,8 +220,22 @@ export const Dashboard = () => {
     return `${ds} ǭs ${ts}`
   }
 
+  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+  }
+
   return (
-    <div className="min-h-screen p-8 text-white font-sans" style={{ backgroundColor: C.bg }}>
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="min-h-screen p-8 text-white font-sans" style={{ backgroundColor: C.bg }}>
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
@@ -231,7 +246,7 @@ export const Dashboard = () => {
         <div className="flex items-center gap-3">
           {/* Produtos Dropdown */}
           <div className="relative group">
-            <span className="absolute -top-2.5 left-3 px-1 text-[11px] font-semibold bg-[#151917]" style={{ color: C.textMuted }}>Produtos</span>
+            <span className="absolute -top-2.5 left-3 px-1 text-[11px] font-semibold bg-[#0b0b0e]" style={{ color: C.textMuted }}>Produtos</span>
             <button className="flex items-center justify-between h-10 px-4 text-sm font-medium rounded-lg border w-48 transition-colors"
               style={{ backgroundColor: C.cardBg, borderColor: C.border, color: C.textMain }}>
               Todos os produtos
@@ -241,7 +256,7 @@ export const Dashboard = () => {
 
           {/* Period Dropdown */}
           <div className="relative group">
-            <span className="absolute -top-2.5 left-3 px-1 text-[11px] font-semibold bg-[#151917]" style={{ color: C.textMuted }}>Perodo</span>
+            <span className="absolute -top-2.5 left-3 px-1 text-[11px] font-semibold bg-[#0b0b0e]" style={{ color: C.textMuted }}>Perodo</span>
             <select 
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
@@ -271,8 +286,9 @@ export const Dashboard = () => {
 
       {/* METRICS ROW */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Metricas wrapped in motion.div */}
         {/* Metric 1 */}
-        <div className="rounded-xl p-5 border flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
+        <motion.div variants={itemVariants} className="rounded-xl p-5 border flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
           <div className="flex items-center gap-2 mb-2">
             <h3 className="text-sm font-medium" style={{ color: C.textMuted }}>Vendas no perodo</h3>
             <Info className="w-3.5 h-3.5 opacity-50 cursor-pointer hover:opacity-100" style={{ color: C.textMuted }} />
@@ -295,10 +311,10 @@ export const Dashboard = () => {
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Metric 2 */}
-        <div className="rounded-xl p-5 border flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
+        <motion.div variants={itemVariants} className="rounded-xl p-5 border flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
           <div className="flex items-center gap-2 mb-2">
             <h3 className="text-sm font-medium" style={{ color: C.textMuted }}>Quantidade de vendas</h3>
             <Info className="w-3.5 h-3.5 opacity-50 cursor-pointer hover:opacity-100" style={{ color: C.textMuted }} />
@@ -321,10 +337,10 @@ export const Dashboard = () => {
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Metric 3 (Custom for GhostMarket) */}
-        <div className="rounded-xl p-5 border flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
+        <motion.div variants={itemVariants} className="rounded-xl p-5 border flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
           <div className="flex items-center gap-2 mb-2">
             <h3 className="text-sm font-medium" style={{ color: C.textMuted }}>Economia gerada</h3>
             <Info className="w-3.5 h-3.5 opacity-50 cursor-pointer hover:opacity-100" style={{ color: C.textMuted }} />
@@ -343,14 +359,14 @@ export const Dashboard = () => {
                <span role="img" aria-label="ghost">👻</span>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* CHARTS ROW */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Side: Main Chart */}
-        <div className="lg:col-span-2 rounded-xl p-6 border flex flex-col h-[400px]" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
+        <motion.div variants={itemVariants} className="lg:col-span-2 rounded-xl p-6 border flex flex-col h-[400px] hover:border-purple-500/30 transition-colors duration-300" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
           <div className="mb-6">
             <h3 className="text-base font-bold" style={{ color: C.textMain }}>Receita lquida</h3>
             <p className="text-xl font-bold mt-1" style={{ color: C.textMain }}>{formatCurrency(currentRevenue)}</p>
@@ -395,10 +411,10 @@ export const Dashboard = () => {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Side: Products List */}
-        <div className="rounded-xl p-6 border flex flex-col h-[400px]" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
+        <motion.div variants={itemVariants} className="rounded-xl p-6 border flex flex-col h-[400px] hover:border-purple-500/30 transition-colors duration-300" style={{ backgroundColor: C.cardBg, borderColor: C.border }}>
           <div className="flex items-center gap-2 mb-6">
             <h3 className="text-base font-bold" style={{ color: C.textMain }}>Vendas de produtos</h3>
             <Info className="w-3.5 h-3.5 opacity-50 cursor-pointer hover:opacity-100" style={{ color: C.textMuted }} />
@@ -430,9 +446,9 @@ export const Dashboard = () => {
               ))
             )}
           </div>
-        </div>
+        </motion.div>
 
       </div>
-    </div>
+    </motion.div>
   )
 }
