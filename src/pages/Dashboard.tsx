@@ -18,9 +18,13 @@ export const Dashboard = () => {
     if (!user?.email && !user?.uid) return
     
     // Sync SaaS transactions
+    const userIdsToQuery = user?.email && user?.uid && user.email !== user.uid 
+      ? [user.uid, user.email] 
+      : [user?.uid || user?.email || '']
+
     const q = query(
       collection(db, 'transactions'),
-      where('userId', '==', user?.uid) // Use uid instead of email
+      where('userId', 'in', userIdsToQuery)
     )
     const unsubscribeTxs = onSnapshot(q, (snapshot) => {
       const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))

@@ -51,7 +51,7 @@ export const Register = () => {
       // Auto-authorize user after payment
       await setDoc(doc(db, 'allowed_users', formData.email.toLowerCase()), {
         email: formData.email.toLowerCase(),
-        status: 'active',
+        status: 'approved',
         plan: 'pro',
         createdAt: new Date().toISOString()
       })
