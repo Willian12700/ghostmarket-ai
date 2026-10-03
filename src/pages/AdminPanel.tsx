@@ -561,15 +561,28 @@ export const AdminPanel = () => {
                   </div>
 
                     {(() => {
-                      const startDateStr = selectedUser.startDate || selectedUser.grantedAt;
+                      const rawDate = selectedUser.startDate || selectedUser.grantedAt || selectedUser.createdAt;
+                      let startDate = null;
                       let startLabel = 'Desconhecida';
                       let timeRemainingLabel = '';
                       
-                      if (startDateStr) {
-                        const startDate = new Date(startDateStr);
+                      if (rawDate) {
+                        if (rawDate.toDate) {
+                          startDate = rawDate.toDate();
+                        } else if (rawDate.seconds) {
+                          startDate = new Date(rawDate.seconds * 1000);
+                        } else {
+                          startDate = new Date(rawDate);
+                        }
+                      }
+                      
+                      if (startDate && !isNaN(startDate.getTime())) {
                         startLabel = startDate.toLocaleDateString('pt-BR');
                         
-                        if (selectedUser.plan === 'mensal') {
+                        // Treat undefined plan as 'mensal' by default if they are allowed
+                        const effectivePlan = selectedUser.plan || (selectedUser.isAllowed ? 'mensal' : null);
+                        
+                        if (effectivePlan === 'mensal') {
                           const expirationDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
                           const now = new Date();
                           const diffTime = expirationDate.getTime() - now.getTime();
@@ -583,6 +596,8 @@ export const AdminPanel = () => {
                         }
                       }
                       
+                      const effectivePlanLabel = selectedUser.plan === 'vitalicio' ? 'Vitalcio' : (selectedUser.isAllowed ? `Mensal ${timeRemainingLabel}` : 'Sem Plano');
+                      
                       return (
                         <div className="bg-background border border-border rounded-xl p-4 col-span-2 grid grid-cols-2 gap-4">
                           <div>
@@ -592,7 +607,7 @@ export const AdminPanel = () => {
                           <div>
                             <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Status do Plano</div>
                             <div className="text-white font-bold text-sm truncate">
-                              {selectedUser.plan === 'vitalicio' ? 'Vitalcio' : (selectedUser.isAllowed ? `Mensal ${timeRemainingLabel}` : 'Sem Plano')}
+                              {effectivePlanLabel}
                             </div>
                           </div>
                         </div>
