@@ -540,10 +540,47 @@ export const AdminPanel = () => {
                     <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Circle className={`w-2 h-2 fill-current ${selectedUser.lastLogin && (new Date().getTime() - new Date(selectedUser.lastLogin).getTime() < 15 * 60 * 1000) ? 'text-green-500' : 'text-gray-500'}`} /> Status</div>
                     <div className="text-white font-bold">{selectedUser.lastLogin && (new Date().getTime() - new Date(selectedUser.lastLogin).getTime() < 15 * 60 * 1000) ? 'Online Agora' : 'Offline'}</div>
                   </div>
-                  <div className="bg-background border border-border rounded-xl p-4">
-                    <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Fim do Plano</div>
-                    <div className="text-white font-bold text-sm truncate">{selectedUser.plan === 'vitalicio' ? 'Vitalício' : (selectedUser.isAllowed ? 'Mensal (Ativo)' : 'Sem Plano')}</div>
-                  </div>
+
+                    {(() => {
+                      const startDateStr = selectedUser.startDate || selectedUser.grantedAt;
+                      let startLabel = 'Desconhecida';
+                      let timeRemainingLabel = '';
+                      
+                      if (startDateStr) {
+                        const startDate = new Date(startDateStr);
+                        startLabel = startDate.toLocaleDateString('pt-BR');
+                        
+                        if (selectedUser.plan === 'mensal') {
+                          const expirationDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                          const now = new Date();
+                          const diffTime = expirationDate.getTime() - now.getTime();
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                          
+                          if (diffDays > 0) {
+                            timeRemainingLabel = `(${diffDays} dias restantes)`;
+                          } else {
+                            timeRemainingLabel = '(Expirado)';
+                          }
+                        }
+                      }
+                      
+                      return (
+                        <div className="bg-background border border-border rounded-xl p-4 col-span-2 grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Incio do Plano</div>
+                            <div className="text-white font-bold text-sm truncate">{startLabel}</div>
+                          </div>
+                          <div>
+                            <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Status do Plano</div>
+                            <div className="text-white font-bold text-sm truncate">
+                              {selectedUser.plan === 'vitalicio' ? 'Vitalcio' : (selectedUser.isAllowed ? `Mensal ${timeRemainingLabel}` : 'Sem Plano')}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                  
                 </div>
 
                 <Button 
