@@ -49,6 +49,7 @@ export const AdminPanel = () => {
 
   const [users, setUsers] = useState<any[]>([])
   const [search, setSearch] = useState('')
+  const [planFilter, setPlanFilter] = useState('todos')
   const [loadingUsers, setLoadingUsers] = useState(true)
 
   const [selectedUser, setSelectedUser] = useState<any>(null)
@@ -253,7 +254,18 @@ export const AdminPanel = () => {
     }
   }
 
-  const filteredUsers = users.filter(u => u.email.includes(search.toLowerCase()) || (u.name && u.name.toLowerCase().includes(search.toLowerCase())))
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.email.includes(search.toLowerCase()) || (u.name && u.name.toLowerCase().includes(search.toLowerCase()))
+    let matchesPlan = true
+    if (planFilter === 'mensal') {
+      matchesPlan = u.plan === 'mensal' || (u.isAllowed && u.plan !== 'vitalicio')
+    } else if (planFilter === 'vitalicio') {
+      matchesPlan = u.plan === 'vitalicio'
+    } else if (planFilter === 'pro') {
+      matchesPlan = u.plan === 'pro'
+    }
+    return matchesSearch && matchesPlan
+  })
 
   return (
     <div className="space-y-6 max-w-6xl pb-10">
@@ -397,15 +409,22 @@ export const AdminPanel = () => {
               <Users className="w-5 h-5 text-primary" />
               Gestão de Usuários
             </div>
-            <div className="relative w-72">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-textSecondary" />
-              <Input 
-                placeholder="Pesquisar por email ou nome..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-background h-10"
-              />
-            </div>
+                          <div className="flex items-center gap-3 w-full justify-end">
+                <div className="flex bg-background border border-border rounded-lg overflow-hidden h-10">
+                  <button onClick={() => setPlanFilter('todos')} className={`px-4 text-sm font-medium transition-colors ${planFilter === 'todos' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:bg-white/5'}`}>Todos</button>
+                  <button onClick={() => setPlanFilter('mensal')} className={`px-4 text-sm font-medium border-l border-border transition-colors ${planFilter === 'mensal' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:bg-white/5'}`}>Mensal</button>
+                  <button onClick={() => setPlanFilter('vitalicio')} className={`px-4 text-sm font-medium border-l border-border transition-colors ${planFilter === 'vitalicio' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:bg-white/5'}`}>Vitalcio</button>
+                </div>
+                <div className="relative w-72">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-textSecondary" />
+                  <Input 
+                    placeholder="Pesquisar por email ou nome..." 
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 bg-background h-10"
+                  />
+                </div>
+              </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
