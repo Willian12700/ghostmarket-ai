@@ -111,7 +111,7 @@ export const Dashboard = () => {
           id: t.id,
           amount: Number(t.transaction_amount || t.amount || 0),
           date: timestampMs,
-          clientName: t.customer?.name || t.clientName || 'Cliente Online',
+          clientName: t.customer?.name || t.clientName || t.buyerName || 'Cliente Online',
           source: 'SaaS'
         }
       })

@@ -43,6 +43,7 @@ export const AdminPanel = () => {
   }
 
   const [freeAccessEmail, setFreeAccessEmail] = useState('')
+  const [freeAccessPlan, setFreeAccessPlan] = useState('mensal')
   const [isGrantingAccess, setIsGrantingAccess] = useState(false)
 
   const [users, setUsers] = useState<any[]>([])
@@ -102,11 +103,8 @@ export const AdminPanel = () => {
     if (!selectedUser) return;
     try {
       const newStatus = !selectedUser.isSuspended;
-      await setDoc(doc(db, 'users', selectedUser.email), { isSuspended: newStatus }, { merge: true });
-      if (selectedUser.docId) {
-        await setDoc(doc(db, 'allowed_users', selectedUser.docId), { status: newStatus ? 'suspended' : 'approved' }, { merge: true });
-      } else {
-        await setDoc(doc(db, 'allowed_users', selectedUser.email), { status: newStatus ? 'suspended' : 'approved' }, { merge: true });
+      if(selectedUser.uid) { await setDoc(doc(db, 'users', selectedUser.uid), { isSuspended: newStatus }, { merge: true }); }
+      await setDoc(doc(db, 'allowed_users', selectedUser.email), { status: newStatus ? 'suspended' : 'approved' }, { merge: true });, { merge: true });
       }
       setSelectedUser({ ...selectedUser, isSuspended: newStatus });
       setUsers(users.map(u => u.email === selectedUser.email ? { ...u, isSuspended: newStatus } : u));
