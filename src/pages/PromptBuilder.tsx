@@ -871,7 +871,36 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
                   </div>
                 </div>
               </div>
-            </motion.div>
+            
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-3 relative z-20">
+                  <span className="text-sm text-textSecondary mr-2 font-bold uppercase tracking-wider">Testar Prompt em:</span>
+                  <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="sm" className="bg-[#10a37f]/10 border-[#10a37f]/30 text-[#10a37f] hover:bg-[#10a37f] hover:text-white transition-colors gap-2 font-medium">
+                      ChatGPT
+                    </Button>
+                  </a>
+                  <a href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="sm" className="bg-[#d97757]/10 border-[#d97757]/30 text-[#d97757] hover:bg-[#d97757] hover:text-white transition-colors gap-2 font-medium">
+                      Claude
+                    </Button>
+                  </a>
+                  <a href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="sm" className="bg-[#4b90ff]/10 border-[#4b90ff]/30 text-[#4b90ff] hover:bg-[#4b90ff] hover:text-white transition-colors gap-2 font-medium">
+                      Gemini
+                    </Button>
+                  </a>
+                  <a href="https://lovable.dev/" target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="sm" className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500 hover:text-white transition-colors gap-2 font-medium">
+                      Lovable
+                    </Button>
+                  </a>
+                  <a href="https://aistudio.google.com/app/prompts/new_chat" target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="sm" className="bg-purple-500/10 border-purple-500/30 text-purple-500 hover:bg-purple-500 hover:text-white transition-colors gap-2 font-medium">
+                      Google AI Studio
+                    </Button>
+                  </a>
+                </div>
+              </motion.div>
           )}
 
         </AnimatePresence>
