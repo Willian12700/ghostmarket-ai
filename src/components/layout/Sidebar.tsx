@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, Users, Video, TrendingUp, Mail, Megaphone, BookOpen, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle, SearchCode, Crown } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
@@ -14,7 +14,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Prompt, Sites e Leads', 'TikTok Shop', 'Marketing Digital', 'Digitaliza Comercial', 'PAINEL ADM'])
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Prompt, Sites e Leads', 'Digitaliza Comercial', 'PAINEL ADM'])
 
   const toggleGroup = (groupLabel: string) => {
     setExpandedGroups(prev => 
@@ -60,24 +60,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       ]
     },
     {
-      label: 'TikTok Shop',
-      items: [
-        { to: '/tiktok/persona', icon: Users, label: 'Gerador de Persona' },
-        { to: '/tiktok/persona-history', icon: BookMarked, label: 'Histórico de Persona' },
-        { to: '/tiktok/scripts', icon: Video, label: 'Roteiros Virais' },
-        { to: '/tiktok/ads', icon: TrendingUp, label: 'Copy para Anúncios' }
-      ]
-    },
-    {
-      label: 'Marketing Digital',
-      items: [
-        { to: '/marketing/vsl', icon: Video, label: 'Fábrica de VSLs' },
-        { to: '/marketing/plr', icon: BookOpen, label: 'Máquina de PLR / E-books' },
-        { to: '/marketing/ads', icon: Megaphone, label: 'Gerador de Anúncios' },
-        { to: '/marketing/emails', icon: Mail, label: 'Funil de E-mail' }
-      ]
-    },
-    {
       label: 'Gestão',
       items: [
         { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
@@ -90,29 +72,19 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       label: 'PAINEL ADM',
       items: [
         { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' },
+        { to: '/admin/notes', icon: NotebookPen, label: 'Backlog / Notas' },
       ]
     })
   }
 
-
   menuGroups.push({
     label: 'Digitaliza Comercial',
     items: [
-      { to: '/digitaliza-crm', icon: Users, label: 'CRM Compartilhado', badge: 'PRO' },
+      { to: '/digitaliza-crm', icon: FileText, label: 'CRM Compartilhado', badge: 'PRO' },
     ]
   })
 
-  // Automatically expand group if a child is active
-  useEffect(() => {
-    menuGroups.forEach(group => {
-      const hasActiveChild = group.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'))
-      if (hasActiveChild && !expandedGroups.includes(group.label)) {
-        setExpandedGroups(prev => [...prev, group.label])
-      }
-    })
-  }, [location.pathname])
-
-  // Effect to close sidebar on route change on mobile
+  // Close sidebar on route change on mobile
   useEffect(() => {
     if (window.innerWidth < 1024) {
       onClose();
@@ -213,7 +185,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
         <div className="p-5 border-t border-border bg-surface-elevated/30 backdrop-blur-xl space-y-4">
           
-          {/* Support Button - Premium Moving Gradient */}
           <a
             href="https://wa.me/5584996162332?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20GhostMarket%20AI"
             target="_blank"

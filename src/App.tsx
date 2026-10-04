@@ -1,4 +1,5 @@
 import { AdminPanel } from './pages/AdminPanel'
+import { AdminNotes } from './pages/AdminNotes'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { MainLayout } from '@/layouts/MainLayout'
@@ -27,20 +28,12 @@ import { CnpjScanner } from '@/pages/CnpjScanner'
 import { Chatbots } from '@/pages/Chatbots'
 import { SalesScripts } from '@/pages/SalesScripts'
 import { Demo } from '@/pages/Demo'
-import { VslGenerator } from '@/pages/marketing/VslGenerator'
-import { PlrGenerator } from '@/pages/marketing/PlrGenerator'
-import { AdsGenerator } from '@/pages/marketing/AdsGenerator'
-import { EmailFunnel } from '@/pages/marketing/EmailFunnel'
 
 import { DigitalizaCRM } from '@/pages/DigitalizaCRM'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
 import { Affiliates } from '@/pages/Affiliates'
 import { Integrations } from '@/pages/Integrations'
-import { PersonaGenerator } from '@/pages/tiktok/PersonaGenerator'
-import { PersonaHistory } from '@/pages/tiktok/PersonaHistory'
-import { ViralScripts } from '@/pages/tiktok/ViralScripts'
-import { AdCopy } from '@/pages/tiktok/AdCopy'
 import { OfferIntelligence } from '@/pages/OfferIntelligence'
 import { PropostaPdf } from '@/pages/PropostaPdf'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
@@ -81,7 +74,7 @@ function App() {
             <Route path="/socios" element={<PublicPartners />} />
             <Route path="/login" element={<Login />} />
             <Route path="/trial" element={<TrialLogin />} />
-        <Route path="/pay/:productId" element={<Checkout />} />
+            <Route path="/pay/:productId" element={<Checkout />} />
             <Route path="/register" element={<Register />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             
@@ -104,26 +97,16 @@ function App() {
               <Route path="/digitaliza-crm" element={<DigitalizaCRM />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
-          <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin/notes" element={<AdminNotes />} />
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/affiliates" element={<Affiliates />} />
-              
-              {/* TikTok Shop Routes */}
-              <Route path="/tiktok/persona" element={<PersonaGenerator />} />
-              <Route path="/tiktok/persona-history" element={<PersonaHistory />} />
-              <Route path="/tiktok/scripts" element={<ViralScripts />} />
-              <Route path="/tiktok/ads" element={<AdCopy />} />
-              {/* Marketing Routes */}
-              <Route path="/marketing/vsl" element={<VslGenerator />} />
-              <Route path="/marketing/plr" element={<PlrGenerator />} />
-              <Route path="/marketing/ads" element={<AdsGenerator />} />\n              <Route path="/offers" element={<OfferIntelligence />} />
-              <Route path="/marketing/emails" element={<EmailFunnel />} />
-
+              <Route path="/offers" element={<OfferIntelligence />} />
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />
             <Route path="/demo" element={<Demo />} />
-              <Route path="/proposta" element={<PropostaPdf />} />
+            <Route path="/proposta" element={<PropostaPdf />} />
             <Route path="/report/:siteId" element={<ClientReport />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
