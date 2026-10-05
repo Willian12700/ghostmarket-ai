@@ -336,7 +336,7 @@ export const AdminPanel = () => {
               </div>
                 {freeAccessPlan === 'mensal' && (
                   <div className="w-40 pb-0">
-                    <label className="text-sm font-medium text-textSecondary mb-2 block">Data de Incio</label>
+                    <label className="text-sm font-medium text-textSecondary mb-2 block">Data de Início</label>
                     <input 
                       type="date"
                       value={freeAccessStartDate}
@@ -416,7 +416,7 @@ export const AdminPanel = () => {
                 <div className="flex bg-background border border-border rounded-lg overflow-hidden h-10">
                   <button onClick={() => setPlanFilter('todos')} className={`px-4 text-sm font-medium transition-colors ${planFilter === 'todos' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:bg-white/5'}`}>Todos</button>
                   <button onClick={() => setPlanFilter('mensal')} className={`px-4 text-sm font-medium border-l border-border transition-colors ${planFilter === 'mensal' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:bg-white/5'}`}>Mensal</button>
-                  <button onClick={() => setPlanFilter('vitalicio')} className={`px-4 text-sm font-medium border-l border-border transition-colors ${planFilter === 'vitalicio' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:bg-white/5'}`}>Vitalcio</button>
+                  <button onClick={() => setPlanFilter('vitalicio')} className={`px-4 text-sm font-medium border-l border-border transition-colors ${planFilter === 'vitalicio' ? 'bg-primary/20 text-primary' : 'text-textSecondary hover:bg-white/5'}`}>Vitalício</button>
                 </div>
                 <div className="relative w-72">
                   <Search className="w-4 h-4 absolute left-3 top-3 text-textSecondary" />
@@ -599,12 +599,12 @@ export const AdminPanel = () => {
                         }
                       }
                       
-                      const effectivePlanLabel = selectedUser.plan === 'vitalicio' ? 'Vitalcio' : (selectedUser.isAllowed ? `Mensal ${timeRemainingLabel}` : 'Sem Plano');
+                      const effectivePlanLabel = selectedUser.plan === 'vitalicio' ? 'Vitalício' : (selectedUser.isAllowed ? `Mensal ${timeRemainingLabel}` : 'Sem Plano');
                       
                       return (
                         <div className="bg-background border border-border rounded-xl p-4 col-span-2 grid grid-cols-2 gap-4">
                           <div>
-                            <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Incio do Plano</div>
+                            <div className="text-textSecondary text-xs mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Início do Plano</div>
                             <div className="text-white font-bold text-sm truncate">{startLabel}</div>
                           </div>
                           <div>

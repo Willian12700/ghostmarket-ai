@@ -580,7 +580,7 @@ No celular: Menu hambúrguer, botões grandes e fáceis de tocar, cards adaptado
 <motion.div key="google3" variants={stepVariants} initial="initial" animate="animate" exit="exit" className="space-y-10 py-6">
 <div className="text-center mb-10">
 <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3"><Plus className="w-7 h-7 text-green-500" /> Produtos e Servi�os</h2>
-<p className="text-textSecondary text-lg">Itens de cat�logo ou destaques.</p>
+<p className="text-textSecondary text-lg">Itens de catélogo ou destaques.</p>
 </div>
 <div className="space-y-4 pt-4">
                 <div className="flex items-center gap-2 mb-2">

@@ -49,7 +49,7 @@ export const SalesScripts = () => {
         },
         {
           title: "Objeo: Vou pensar e te falo",
-          text: "Tranquilo! S um aviso ttico: o Plano Vitalcio  uma janela temporria s pra validar essa nova verso do sistema. Na semana que vem, a gente vira a chave para mensalidade. Quem entrou agora, no paga nunca mais. Se quiser segurar sua vaga, a hora  agora."
+          text: "Tranquilo! S um aviso ttico: o Plano Vitalício  uma janela temporria s pra validar essa nova verso do sistema. Na semana que vem, a gente vira a chave para mensalidade. Quem entrou agora, no paga nunca mais. Se quiser segurar sua vaga, a hora  agora."
         }
       ]
     },

@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ArrowUpRight, ArrowDownRight, RefreshCw, ChevronDown, Info, ShoppingCart } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
@@ -217,7 +217,7 @@ export const Dashboard = () => {
   const formatDateHeader = (d: Date) => {
     const ds = d.toLocaleDateString('pt-BR')
     const ts = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-    return `${ds} ǭs ${ts}`
+    return `${ds} os ${ts}`
   }
 
   
@@ -240,7 +240,7 @@ export const Dashboard = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight" style={{ color: C.textMain }}>Dashboard</h1>
-          <p className="text-sm mt-1" style={{ color: C.textMuted }}>Ǜltima atualizaǜo: {formatDateHeader(lastUpdate)}</p>
+          <p className="text-sm mt-1" style={{ color: C.textMuted }}>Ultima atualização: {formatDateHeader(lastUpdate)}</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -356,7 +356,7 @@ export const Dashboard = () => {
               Voc economiza mais usando a nossa plataforma.
             </div>
             <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center">
-               <span role="img" aria-label="ghost">👻</span>
+               <span role="img" aria-label="ghost">??</span>
             </div>
           </div>
         </motion.div>
@@ -429,7 +429,7 @@ export const Dashboard = () => {
               productSales.map((item, i) => (
                 <div key={i} className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-purple-900/20 border border-purple-500/20 flex items-center justify-center shrink-0">
-                     <span role="img" aria-label="ghost">👻</span>
+                     <span role="img" aria-label="ghost">??</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm truncate" style={{ color: C.textMain }}>{item.name}</p>
