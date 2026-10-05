@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { NicheManager } from '@/components/admin/NicheManager'
+import { CheckoutStats } from '@/components/admin/CheckoutStats'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export const AdminPanel = () => {
@@ -291,11 +292,13 @@ export const AdminPanel = () => {
           <Button onClick={() => setShowBroadcastModal(true)} className="gap-2 h-auto flex-1 sm:flex-none justify-center">
             <Megaphone className="w-4 h-4" />
             Aviso Global
-          </Button>
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <Card className="border-primary/50 shadow-[0_0_20px_rgba(139,92,246,0.15)] bg-gradient-to-br from-panel to-primary/5">
+        <CheckoutStats />
+
+        <Card className="border-primary/50 shadow-[0_0_20px_rgba(139,92,246,0.15)] bg-gradient-to-br from-panel to-primary/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-primary">
             <UserCheck className="w-5 h-5" />
@@ -722,3 +725,4 @@ export const AdminPanel = () => {
 </div>
   )
 }
+

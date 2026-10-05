@@ -7,6 +7,7 @@ import { AppPreview } from '@/components/ui/AppPreview'
 import { SpotlightCard } from '@/components/ui/SpotlightCard'
 import { InteractiveDemo } from '@/components/ui/InteractiveDemo'
 import { CHECKOUT_URLS } from '@/config/cakto'
+import { trackCheckoutClick } from '@/utils/analytics'
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion'
 
 function AnimatedNumber({ value, suffix = '', prefix = '' }: { value: number, suffix?: string, prefix?: string }) {
@@ -359,7 +360,7 @@ export const Landing = () => {
                     </li>
                   ))}
                 </ul>
-                <a href={CHECKOUT_URLS.mensal} className="w-full">
+                <a href={CHECKOUT_URLS.mensal} className="w-full" onClick={() => { trackCheckoutClick('mensal'); }}>
                   <Button variant="secondary" className="w-full h-14 text-base font-bold bg-white/5 hover:bg-white/10 border-white/10">Começar Agora</Button>
                 </a>
               </SpotlightCard>
@@ -383,7 +384,7 @@ export const Landing = () => {
                     </li>
                   ))}
                 </ul>
-                <a href={CHECKOUT_URLS.anual} className="w-full">
+                <a href={CHECKOUT_URLS.anual} className="w-full" onClick={() => { trackCheckoutClick('anual'); }}>
                   <Button className="w-full h-14 text-base font-bold shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-shadow">
                     Garantir Acesso Vitalício
                   </Button>
