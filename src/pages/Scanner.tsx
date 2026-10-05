@@ -499,7 +499,7 @@ export const Scanner = () => {
                     {/* WhatsApp Botão Principal */}
                     {lead.phone ? (
                       <a 
-                        href={`https://wa.me/55${lead.phone}?text=${generateWhatsAppMessage(lead)}`} 
+                        href={`https://api.whatsapp.com/send?phone=55${lead.phone}&text=${generateWhatsAppMessage(lead)}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="w-full"

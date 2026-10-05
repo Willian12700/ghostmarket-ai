@@ -258,7 +258,7 @@ export const CnpjScanner = () => {
                         </p>
                         {result.ddd_telefone_1 && (
                           <a
-                            href={`https://wa.me/55${result.ddd_telefone_1.replace(/\D/g, '')}`}
+                            href={`https://api.whatsapp.com/send?phone=55${result.ddd_telefone_1.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="bg-[#25D366] hover:bg-[#128C7E] text-white p-3 rounded-lg flex items-center justify-center transition-colors shadow-lg shadow-[#25D366]/20"

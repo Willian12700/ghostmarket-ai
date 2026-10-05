@@ -545,7 +545,7 @@ export const AdminPanel = () => {
                     <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex flex-col gap-2">
                       <h4 className="text-red-400 font-bold flex items-center gap-2"><ShieldAlert className="w-4 h-4"/> Risco de Churn (Cancelamento)</h4>
                       <p className="text-sm text-red-200">A IA detectou que este usuário não faz login há mais de 7 dias. Grande risco de não renovar a assinatura!</p>
-                      <a href={`https://wa.me/5584996162332?text=Oi ${selectedUser.name}, vi que você não acessa o sistema há um tempo, precisa de ajuda?`} target="_blank" rel="noopener noreferrer">
+                      <a href={`https://api.whatsapp.com/send?phone=5584996162332&text=Oi ${selectedUser.name}, vi que você não acessa o sistema há um tempo, precisa de ajuda?`} target="_blank" rel="noopener noreferrer">
                         <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white mt-2">
                           <MessageSquare className="w-4 h-4 mr-2" /> Recuperar no WhatsApp
                         </Button>

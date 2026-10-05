@@ -186,7 +186,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         <div className="p-5 border-t border-border bg-surface-elevated/30 backdrop-blur-xl space-y-4">
           
           <a
-            href="https://wa.me/5584996162332?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20GhostMarket%20AI"
+            href="https://api.whatsapp.com/send?phone=5584996162332&text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20GhostMarket%20AI"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:-translate-y-0.5 active:scale-95 bg-accent border border-accent/50 relative overflow-hidden group"
