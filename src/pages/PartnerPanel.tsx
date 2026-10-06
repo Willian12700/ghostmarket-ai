@@ -109,7 +109,7 @@ export const PartnerPanel = () => {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8 w-full">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8 w-full">
       <div className="flex items-center gap-4">
         <div className="p-3 bg-primary/20 rounded-xl">
           <Key className="w-8 h-8 text-primary" />
@@ -127,7 +127,7 @@ export const PartnerPanel = () => {
         <CardContent className="space-y-6">
           <div>
             <label className="text-sm text-white/70 mb-3 block">Duração do Teste:</label>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               {[5, 10, 15].map(min => (
                 <button
                   key={min}
@@ -170,7 +170,7 @@ export const PartnerPanel = () => {
                     <th className="px-6 py-4 font-medium">Código</th>
                     <th className="px-6 py-4 font-medium">Duração</th>
                     <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">Criado em</th>
+                    <th className="px-6 py-4 font-medium">Código</th>
                     <th className="px-6 py-4 font-medium text-right">Ação</th>
                   </tr>
                 </thead>
@@ -198,7 +198,7 @@ export const PartnerPanel = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-white/50">
-                        {code.createdAt?.toDate ? new Date(code.createdAt.toDate()).toLocaleString('pt-BR') : 'Agora'}
+                        {code.createdAt?.toDate ? new Date(code.createdAt.toDate()).toLocaleString('pt-BR') : 'Açãora'}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button 
