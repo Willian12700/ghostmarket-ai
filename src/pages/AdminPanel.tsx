@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { NicheManager } from '@/components/admin/NicheManager'
 import { CheckoutStats } from '@/components/admin/CheckoutStats'
+import { ActionLogs } from '@/components/admin/ActionLogs'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export const AdminPanel = () => {
@@ -404,6 +405,7 @@ export const AdminPanel = () => {
           </Card>
 
         <NicheManager />
+          <ActionLogs />
 
       <Card className="border-border bg-panel">
         <CardHeader>

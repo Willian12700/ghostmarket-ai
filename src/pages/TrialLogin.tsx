@@ -46,7 +46,8 @@ export const TrialLogin = () => {
       }
 
       // Activate the code! 5 minutes from now.
-      const expiresAt = Date.now() + 5 * 60 * 1000;
+      const durationMinutes = data.durationMinutes || 5;
+      const expiresAt = Date.now() + durationMinutes * 60 * 1000;
       await updateDoc(docRef, {
         activatedAt: serverTimestamp(),
         uid,
@@ -95,7 +96,7 @@ export const TrialLogin = () => {
           <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mb-4 border border-primary/30 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
             <Ghost className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-black text-white text-center">Acesso VIP (5 Minutos)</h1>
+          <h1 className="text-2xl font-black text-white text-center">Acesso VIP Temporário</h1>
           <p className="text-textSecondary text-center mt-2 text-sm">Insira o cdigo de 6 dgitos fornecido no WhatsApp para testar a mquina.</p>
         </div>
 

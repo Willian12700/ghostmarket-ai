@@ -28,6 +28,7 @@ import { CnpjScanner } from '@/pages/CnpjScanner'
 import { Chatbots } from '@/pages/Chatbots'
 import { SalesScripts } from '@/pages/SalesScripts'
 import { Demo } from '@/pages/Demo'
+import { PartnerPanel } from '@/pages/PartnerPanel'
 
 import { DigitalizaCRM } from '@/pages/DigitalizaCRM'
 import { Contracts } from '@/pages/Contracts'
@@ -98,6 +99,7 @@ function App() {
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/socio" element={<PartnerPanel />} />
               <Route path="/admin/notes" element={<AdminNotes />} />
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/affiliates" element={<Affiliates />} />

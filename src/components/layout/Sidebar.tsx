@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen , Key } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
@@ -29,7 +29,18 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     navigate('/login')
   }
 
-  const menuGroups = [
+  
+  const isPartner = user?.email === 'souza.abencoado4@gmail.com'
+  const isAdmin = user?.email === 'willrandrier@gmail.com'
+
+  const menuGroups = isPartner ? [
+    {
+      label: 'PAINEL SÓCIO',
+      items: [
+        { to: '/socio', icon: Key, label: 'Gerar Códigos VIP' }
+      ]
+    }
+  ] : [
     {
       label: 'Painel',
       items: [
@@ -67,7 +78,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     }
   ]
 
-  if (user?.email === 'willrandrier@gmail.com') {
+  if (isAdmin) {
     menuGroups.push({
       label: 'PAINEL ADM',
       items: [
@@ -228,7 +239,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 {user?.name || 'Usuário Elite'}
               </p>
               <p className="text-[10px] font-black text-accent truncate uppercase tracking-widest">
-                {user?.email === 'willrandrier@gmail.com' ? 'Administrador' : 'Membro Elite'}
+                {isAdmin ? 'Administrador' : isPartner ? 'Sócio Ghost' : 'Membro Elite'}
               </p>
             </div>
           </div>
