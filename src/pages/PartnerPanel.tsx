@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/config/firebase';
 import { collection, query, where, orderBy, onSnapshot, setDoc, doc, serverTimestamp } from 'firebase/firestore';
@@ -23,6 +23,7 @@ export const PartnerPanel = () => {
   const { addToast } = useToastStore();
   const [duration, setDuration] = useState<number>(5);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [lastGenerated, setLastGenerated] = useState<string | null>(null);
   const [codes, setCodes] = useState<GeneratedCode[]>([]);
 
   useEffect(() => {
@@ -90,7 +91,8 @@ export const PartnerPanel = () => {
         timestamp: serverTimestamp()
       });
 
-      addToast(`Código de ${duration} minutos gerado!`, 'success');
+      setLastGenerated(code);
+        addToast(`Código gerado com sucesso!`, 'success');
     } catch (e) {
       console.error(e);
       addToast('Erro ao gerar código', 'error');
@@ -150,6 +152,29 @@ export const PartnerPanel = () => {
           >
             {isGenerating ? 'Gerando...' : 'Gerar Código'}
           </Button>
+
+          {lastGenerated && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="mt-6 p-6 rounded-2xl border border-primary/30 bg-primary/10 flex flex-col items-center gap-4 text-center"
+            >
+              <div>
+                <p className="text-primary font-medium text-sm mb-1">Código gerado com sucesso!</p>
+                <p className="text-4xl font-black text-white tracking-widest font-mono select-all">
+                  {lastGenerated}
+                </p>
+              </div>
+              <Button 
+                onClick={() => copyToClipboard(lastGenerated)} 
+                variant="secondary" 
+                className="gap-2 bg-white text-black hover:bg-white/90"
+              >
+                <Copy className="w-4 h-4" />
+                Copiar Código
+              </Button>
+            </motion.div>
+          )}
         </CardContent>
       </Card>
 
@@ -170,7 +195,7 @@ export const PartnerPanel = () => {
                     <th className="px-6 py-4 font-medium">Código</th>
                     <th className="px-6 py-4 font-medium">Duração</th>
                     <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">Código</th>
+                    <th className="px-6 py-4 font-medium">Criado em</th>
                     <th className="px-6 py-4 font-medium text-right">Ação</th>
                   </tr>
                 </thead>
@@ -198,7 +223,7 @@ export const PartnerPanel = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-white/50">
-                        {code.createdAt?.toDate ? new Date(code.createdAt.toDate()).toLocaleString('pt-BR') : 'Açãora'}
+                        {code.createdAt?.toDate ? new Date(code.createdAt.toDate()).toLocaleString('pt-BR') : 'Agora'}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button 
