@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen , Key } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen, Key, PieChart } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
@@ -43,7 +43,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       ]
     },
     {
-      label: 'Inteligência de Mercado',
+      label: 'InteligÃªncia de Mercado',
       items: [
         { to: '/offers', icon: BellRing, label: 'Tracker de Ofertas' }
       ]
@@ -60,12 +60,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
         { to: '/chatbots', icon: Bot, label: 'Chatbots de IA' },
         { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
-        { to: '/cnpj', icon: SearchCode, label: 'Dossiê CNPJ' },
+        { to: '/cnpj', icon: SearchCode, label: 'DossiÃª CNPJ' },
         { to: '/scripts', icon: MessageCircle, label: 'Scripts X1' },
       ]
     },
     {
-      label: 'Gestão',
+      label: 'GestÃ£o',
       items: [
         { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
       ]
@@ -73,11 +73,11 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   ]
 
   if (isPartner) {
-      menuGroups = menuGroups.filter(g => !['Gestǜo', 'Gestão', 'Digitaliza Comercial', 'PAINEL ADM'].includes(g.label));
+      menuGroups = menuGroups.filter(g => !['GestÇœo', 'GestÃ£o', 'Digitaliza Comercial', 'PAINEL ADM'].includes(g.label));
       menuGroups.unshift({
-          label: 'PAINEL SÓCIO',
+          label: 'PAINEL SÃ“CIO',
           items: [
-              { to: '/socio', icon: Key, label: 'Gerar Códigos VIP' }
+              { to: '/socio', icon: Key, label: 'Gerar Códigos VIP' }, { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' }
           ]
       });
   }
@@ -86,8 +86,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     menuGroups.push({
       label: 'PAINEL ADM',
       items: [
-        { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' },
-        { to: '/admin/notes', icon: NotebookPen, label: 'Backlog / Notas' },
+        { to: '/admin', icon: ShieldAlert, label: 'LiberaÃ§Ã£o de Acesso' },
+        { to: '/admin/notes', icon: NotebookPen, label: 'Backlog / Notas' }, { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' },
       ]
     })
   }
@@ -240,10 +240,10 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </div>
             <div className="flex-1 min-w-0 relative z-10">
               <p className="text-sm font-bold text-textPrimary truncate">
-                {user?.name || 'Usuário Elite'}
+                {user?.name || 'UsuÃ¡rio Elite'}
               </p>
               <p className="text-[10px] font-black text-accent truncate uppercase tracking-widest">
-                {isAdmin ? 'Administrador' : isPartner ? 'Sócio Ghost' : 'Membro Elite'}
+                {isAdmin ? 'Administrador' : isPartner ? 'SÃ³cio Ghost' : 'Membro Elite'}
               </p>
             </div>
           </div>
@@ -253,3 +253,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     </>
   )
 }
+
+
+
