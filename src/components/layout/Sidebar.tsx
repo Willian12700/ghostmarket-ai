@@ -30,17 +30,11 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   }
 
   
-  const isPartner = user?.email === 'souza.abencoado4@gmail.com'
-  const isAdmin = user?.email === 'willrandrier@gmail.com'
+  const isPartner = user?.email === 'souza.abencoado4@gmail.com';
+  const isAdmin = user?.email === 'willrandrier@gmail.com';
 
-  const menuGroups = isPartner ? [
-    {
-      label: 'PAINEL SÓCIO',
-      items: [
-        { to: '/socio', icon: Key, label: 'Gerar Códigos VIP' }
-      ]
-    }
-  ] : [
+  let menuGroups = [
+
     {
       label: 'Painel',
       items: [
@@ -77,6 +71,16 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       ]
     }
   ]
+
+  if (isPartner) {
+      menuGroups = menuGroups.filter(g => !['Gestǜo', 'Gestão', 'Digitaliza Comercial', 'PAINEL ADM'].includes(g.label));
+      menuGroups.unshift({
+          label: 'PAINEL SÓCIO',
+          items: [
+              { to: '/socio', icon: Key, label: 'Gerar Códigos VIP' }
+          ]
+      });
+  }
 
   if (isAdmin) {
     menuGroups.push({
