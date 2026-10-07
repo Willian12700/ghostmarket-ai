@@ -373,7 +373,7 @@ document.addEventListener('keydown', e => {
       }
     } catch (error) {
       console.error(error)
-      addToast('Erro ao publicar', 'error')
+      addToast('Erro ao publicar: ' + (error as Error).message, 'error')
     } finally {
       setIsPublishing(false)
     }
