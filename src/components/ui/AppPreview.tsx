@@ -276,9 +276,9 @@ export const AppPreview = () => {
 
                 <div className="flex flex-col gap-3">
                   {[
-                    { name: "Lucas Fernandes...", tag: "SAAS", val: "+R$ 29,99" },
-                    { name: "Marina Designer...", tag: "SAAS", val: "+R$ 29,99" },
-                    { name: "Agência Vórtice", tag: "SAAS", val: "+R$ 29,99" },
+                    { name: "Lucas Fernandes...", tag: "SAAS", val: "+R$ 19,99" },
+                    { name: "Marina Designer...", tag: "SAAS", val: "+R$ 19,99" },
+                    { name: "Agência Vórtice", tag: "SAAS", val: "+R$ 19,99" },
                     { name: "Roberto Mendes...", tag: "SAAS", val: "+R$ 200,00", blur: true }
                   ].map((notif, i) => (
                     <motion.div 

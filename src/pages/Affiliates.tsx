@@ -73,7 +73,7 @@ export const Affiliates = () => {
           
           <div className="mb-8 relative z-10">
             <div className="text-5xl font-extrabold text-white tracking-tight">
-              R$ 45,15
+              R$ 17,49
             </div>
             <p className="text-sm text-textSecondary mt-2">Sua comissão (35%) a cada venda do Plano Vitalício.</p>
           </div>
@@ -101,7 +101,7 @@ export const Affiliates = () => {
           
           <div className="mb-8 relative z-10">
             <div className="text-5xl font-extrabold text-white tracking-tight">
-              R$ 14,99
+              R$ 9,99
             </div>
             <p className="text-sm text-textSecondary mt-2">Sua comissão (50%) a cada venda do Plano Mensal.</p>
           </div>

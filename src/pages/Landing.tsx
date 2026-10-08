@@ -351,7 +351,7 @@ export const Landing = () => {
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
               <SpotlightCard className="p-10 flex flex-col h-full border-white/10 bg-[#0b0714]">
                 <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-wider">Mensal</h3>
-                <div className="text-4xl font-bold text-white mb-6">R$ 29,99 <span className="text-lg text-[#8A8A94] font-medium">/mês</span></div>
+                <div className="text-4xl font-bold text-white mb-6">R$ 19,99 <span className="text-lg text-[#8A8A94] font-medium">/mês</span></div>
                 <ul className="space-y-5 mb-10 flex-1">
                   {['Acesso completo', 'Gerador avançado', 'Prospecção inteligente', 'Scanner de Leads', 'Dashboard analítico', 'CRM integrado'].map((feature, i) => (
                     <li key={i} className="flex items-start text-[#8A8A94] font-medium">
@@ -374,8 +374,8 @@ export const Landing = () => {
                   Mais Vendido
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-wider">Vitalício</h3>
-                <div className="text-4xl font-bold text-white mb-2 tracking-tight">12x R$ 13,41</div>
-                <p className="text-sm text-[#8A8A94] mb-8 font-medium">Ou R$ 129,99 à vista</p>
+                <div className="text-4xl font-bold text-white mb-2 tracking-tight">12x R$ 5,17</div>
+                <p className="text-sm text-[#8A8A94] mb-8 font-medium">Ou R$ 49,99 à vista</p>
                 <ul className="space-y-5 mb-10 flex-1">
                   {['Acesso vitalício ao sistema', 'Todas as atualizações gratuitas', 'Suporte VIP prioritário', 'Sem mensalidades recorrentes', 'Acesso completo para sempre'].map((feature, i) => (
                     <li key={i} className="flex items-center text-white font-medium">

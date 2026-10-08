@@ -95,7 +95,7 @@ export const PublicPartners = () => {
             <div className="mb-10 relative z-10">
               <p className="text-sm text-textSecondary mb-2 font-medium">Sua Comissão:</p>
               <div className="text-5xl md:text-6xl font-black text-white tracking-tight">
-                R$ 14,99
+                R$ 9,99
               </div>
               <p className="text-sm text-primary font-medium mt-3 bg-primary/10 inline-block px-3 py-1 rounded-full">Por cada venda deste plano (50%)</p>
             </div>
@@ -126,7 +126,7 @@ export const PublicPartners = () => {
             <div className="mb-10 relative z-10">
               <p className="text-sm text-textSecondary mb-2 font-medium">Sua Comissão:</p>
               <div className="text-5xl md:text-6xl font-black text-white tracking-tight">
-                R$ 45,15
+                R$ 17,49
               </div>
               <p className="text-sm text-white font-bold mt-3 bg-primary/40 inline-block px-3 py-1 rounded-full border border-primary/50">Por cada venda deste plano (35%)</p>
             </div>
