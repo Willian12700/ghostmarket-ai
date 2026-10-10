@@ -9,9 +9,9 @@ import { handleCheckoutRedirect } from '@/utils/analytics';
 const CFG = {
   zapSuporte: "5575000000000",
   checkoutGhost: "https://pay.cakto.com.br/fiqwtse_1119916?affiliate=psuf2rhA",
-  checkoutMentoria: "https://www.ghostmarket.cyou/s/mentoriadaghost",
+  checkoutMentoria: "https://pay.cakto.com.br/yonkyi5_1119928",
   precoGhost: "R$ 19,99",
-  precoMentoria: "R$ 10,90"
+  precoMentoria: "R$ 49,99"
 };
 
 const Q = [
@@ -440,20 +440,16 @@ export const QuizPublic = () => {
                     return (
                       <div key="ment" className={`bg-[#120e1d] border ${isDest ? 'border-purple-500 ring-1 ring-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.15)]' : 'border-purple-900/50'} rounded-2xl p-6`}>
                         {isDest && <div className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2">Recomendação Principal</div>}
-                        <h3 className="text-xl font-bold mb-3">Mentoria: Como Vender Sites</h3>
+                        <h3 className="text-xl font-bold mb-3">Ghost AI <span className="text-purple-400">� Vital�cio</span></h3>
                         <ul className="space-y-2 text-purple-200/70 text-sm mb-5">
-                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Passo a passo para os primeiros clientes</li>
-                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Como precificar, apresentar e fechar</li>
-                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Como atrair clientes todas as semanas</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Acesso ilimitado e para sempre � plataforma</li>\n                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Atualiza��es gratuitas e novos agentes de IA</li>\n                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Economize R$ 190 por ano, sem mensalidades</li>
                         </ul>
                         <div className="text-2xl font-extrabold mb-4">{CFG.precoMentoria}<span className="text-sm font-normal text-purple-200/50">/mês</span></div>
                         <a 
                           href={CFG.checkoutMentoria}
-                          onClick={(e) => handleCheckoutRedirect(e, 'Mentoria', CFG.checkoutMentoria)}
+                          onClick={(e) => handleCheckoutRedirect(e, 'Vital�cio', CFG.checkoutMentoria)}
                           className="block text-center w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]"
-                        >
-                          Quero a Mentoria
-                        </a>
+                        >\n                          Quero o Plano Vital�cio\n                        </a>
                       </div>
                     )
                   }
