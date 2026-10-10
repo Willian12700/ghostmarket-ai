@@ -352,7 +352,7 @@ export const AdminPanel = () => {
 
                 <Input 
 
-                  label="E-mail do Usuário" 
+                  label="E-mail do Usu�rio" 
                   placeholder="email@exemplo.com"
                   value={freeAccessEmail}
                   onChange={(e) => setFreeAccessEmail(e.target.value)}
@@ -412,7 +412,7 @@ export const AdminPanel = () => {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
-              Gestão de Usuários
+              Gestão de Usu�rios
             </div>
                           <div className="flex items-center gap-3 w-full justify-end">
                 <div className="flex bg-background border border-border rounded-lg overflow-hidden h-10">
@@ -437,7 +437,7 @@ export const AdminPanel = () => {
             <table className="w-full text-left text-sm text-gray-300">
               <thead className="bg-background text-textSecondary font-medium">
                 <tr>
-                  <th className="px-6 py-4">Usuário</th>
+                  <th className="px-6 py-4">Usu�rio</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">�Último Acesso</th>
                     <th className="px-6 py-4">Origem</th>
@@ -518,7 +518,7 @@ export const AdminPanel = () => {
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-white leading-tight">{selectedUser.name || 'Usuário'}</h3>
+                    <h3 className="font-bold text-white leading-tight">{selectedUser.name || 'Usu�rio'}</h3>
                     <p className="text-xs text-textSecondary">{selectedUser.email}</p>
                   </div>
                 </div>
@@ -535,7 +535,7 @@ export const AdminPanel = () => {
                         useAuthStore.getState().setUser({
                           uid: selectedUser.uid || selectedUser.email,
                           email: selectedUser.email,
-                          name: selectedUser.name || 'Usuário',
+                          name: selectedUser.name || 'Usu�rio',
                           photoURL: selectedUser.photoURL || ''
                         });
                         navigate('/');
