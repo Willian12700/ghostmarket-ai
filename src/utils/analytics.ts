@@ -1,14 +1,20 @@
-﻿import { db } from "@/config/firebase";
+import { db } from "@/config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export const trackCheckoutClick = async (planType: string) => {
   try {
     const searchParams = new URLSearchParams(window.location.search);
     const ref = searchParams.get('ref') || 'direct';
+    const utmSource = searchParams.get('utm_source') || localStorage.getItem('utm_source') || 'direct';
+    const utmMedium = searchParams.get('utm_medium') || localStorage.getItem('utm_medium') || '';
+    const utmCampaign = searchParams.get('utm_campaign') || localStorage.getItem('utm_campaign') || '';
     
     await addDoc(collection(db, 'checkout_clicks'), {
       plan: planType,
       source: ref,
+      utm_source: utmSource,
+      utm_medium: utmMedium,
+      utm_campaign: utmCampaign,
       timestamp: serverTimestamp(),
       userAgent: navigator.userAgent,
     });
@@ -20,11 +26,29 @@ export const trackCheckoutClick = async (planType: string) => {
 export const handleCheckoutRedirect = (e: React.MouseEvent<HTMLAnchorElement>, plan: string, url: string) => {
   e.preventDefault();
   
-  // Track and redirect with a max timeout of 500ms so the user doesn't wait if Firestore is slow
   Promise.race([
     trackCheckoutClick(plan),
     new Promise(resolve => setTimeout(resolve, 500))
   ]).finally(() => {
-    window.location.href = url;
+    try {
+      const checkoutUrl = new URL(url);
+      const searchParams = new URLSearchParams(window.location.search);
+      
+      const utmSource = searchParams.get('utm_source') || localStorage.getItem('utm_source');
+      const utmMedium = searchParams.get('utm_medium') || localStorage.getItem('utm_medium');
+      const utmCampaign = searchParams.get('utm_campaign') || localStorage.getItem('utm_campaign');
+      
+      if (utmSource) checkoutUrl.searchParams.set('utm_source', utmSource);
+      if (utmSource) checkoutUrl.searchParams.set('src', utmSource); // Cakto usually supports src or sck
+      if (utmSource) checkoutUrl.searchParams.set('sck', utmSource);
+      if (utmMedium) checkoutUrl.searchParams.set('utm_medium', utmMedium);
+      if (utmCampaign) checkoutUrl.searchParams.set('utm_campaign', utmCampaign);
+      
+      window.location.href = checkoutUrl.toString();
+    } catch (err) {
+      window.location.href = url;
+    }
   });
 };
+
+
