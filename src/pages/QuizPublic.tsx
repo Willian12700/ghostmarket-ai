@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { db } from '@/config/firebase';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, ChevronRight, Loader2, Play, Phone, User, AlertCircle, PhoneCall } from 'lucide-react';
+import { handleCheckoutRedirect } from '@/utils/analytics';
 
 const CFG = {
   zapSuporte: "5575000000000",
@@ -30,23 +33,24 @@ const GT = [
 
 export const QuizPublic = () => {
   const [searchParams] = useSearchParams();
-  const [step, setStep] = useState('inicio'); // inicio, quiz, load, res
+  const [step, setStep] = useState('inicio'); // inicio, quiz, lead, load, res
   const [nome, setNome] = useState('');
   const [zap, setZap] = useState('');
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState('');
   const [result, setResult] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState('');
   
   const questionStartTime = useRef(Date.now());
   const [loadStep, setLoadStep] = useState(0);
   const [scoreAnim, setScoreAnim] = useState(0);
 
   const trackEvent = async (eventType: string, meta: any = {}) => {
-    if (!sessionId) return;
     try {
+      // Allow capturing even before session is explicitly attached if need be
       await addDoc(collection(db, 'quiz_events'), {
-        session_id: sessionId,
+        session_id: sessionId || 'anonymous',
         event_type: eventType,
         timestamp: serverTimestamp(),
         metadata: meta
@@ -57,23 +61,13 @@ export const QuizPublic = () => {
   };
 
   useEffect(() => {
-    // Initial view
-    trackEvent('quiz_view');
+    trackEvent('quiz_view', { source: searchParams.get('utm_source') || 'direto' });
   }, []);
 
-  const handleStart = async () => {
-    const n = nome.trim();
-    const z = zap.replace(/\D/g, "");
-    if (n.length < 2 || z.length < 10) {
-      alert("Digite seu nome e um telefone válido com DDD.");
-      return;
-    }
-    
-    // Create session
+  const handleStartQuiz = async () => {
+    // Create an anonymous session first to track quiz progress
     try {
       const docRef = await addDoc(collection(db, 'quiz_sessions'), {
-        name: n,
-        phone: z,
         status: 'Iniciado',
         current_question: 1,
         questions_answered: 0,
@@ -91,12 +85,9 @@ export const QuizPublic = () => {
         session_id: docRef.id,
         event_type: 'quiz_started',
         timestamp: serverTimestamp(),
-        metadata: { name: n, phone: z }
       });
-      
     } catch (e) {
       console.error(e);
-      // fallback if DB fails, allow user to proceed
     }
 
     setStep('quiz');
@@ -106,7 +97,7 @@ export const QuizPublic = () => {
   const handleAnswer = async (k: number, t: any, optionText: string) => {
     const timeSpent = Date.now() - questionStartTime.current;
     const newAnswers = [...answers];
-    newAnswers[currentQ] = { k, t };
+    newAnswers[currentQ] = { k, t, optionText };
     setAnswers(newAnswers);
 
     if (sessionId) {
@@ -139,9 +130,35 @@ export const QuizPublic = () => {
         setCurrentQ(currentQ + 1);
         questionStartTime.current = Date.now();
       } else {
-        doLoadAndCalc(newAnswers);
+        setStep('lead');
       }
-    }, 240);
+    }, 300);
+  };
+
+  const handleLeadSubmit = async () => {
+    const n = nome.trim();
+    const z = zap.replace(/\D/g, "");
+    if (n.length < 2 || z.length < 10) {
+      setErrorMsg("Digite seu nome e um telefone válido com DDD.");
+      return;
+    }
+    setErrorMsg("");
+
+    if (sessionId) {
+      try {
+        await updateDoc(doc(db, 'quiz_sessions', sessionId), {
+          name: n,
+          phone: z,
+          lead_captured_at: serverTimestamp(),
+          status: 'Lead'
+        });
+        await trackEvent('lead_captured', { name: n, phone: z });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    doLoadAndCalc(answers);
   };
 
   const doLoadAndCalc = (finalAnswers: any[]) => {
@@ -214,166 +231,248 @@ export const QuizPublic = () => {
     }, 20);
   };
 
-  const onOfferClick = (offerName: string) => {
-    trackEvent('quiz_offer_clicked', { offer: offerName });
+  // Variants for animations
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    in: { opacity: 1, y: 0 },
+    out: { opacity: 0, y: -20 }
   };
+  const pageTransition: any = { type: "tween", ease: "easeInOut", duration: 0.3 };
 
   return (
-    <div className="quiz-wrap" style={{ minHeight: '100vh', background: '#07060b', color: '#f3f0ff', fontFamily: 'Sora, system-ui, sans-serif', paddingBottom: '56px', backgroundImage: 'radial-gradient(60% 40% at 50% 0, #2b1659 0, transparent 70%)' }}>
-      <style dangerouslySetInnerHTML={{__html: `
-        .q-wrap { max-width: 560px; margin: 0 auto; padding: 22px 18px 56px; }
-        .q-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-        .q-logo { font-weight: 800; letter-spacing: 0.04em; color: #a78bfa; }
-        .q-cnt { font-size: 13px; color: #9d94b8; }
-        .q-h1 { font-size: clamp(26px, 7vw, 34px); line-height: 1.15; margin: 0 0 12px; font-weight: 800; }
-        .q-h2 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; }
-        .q-p { color: #9d94b8; margin: 0 0 16px; }
-        .q-btn { display: block; width: 100%; text-align: center; border: 0; border-radius: 12px; padding: 16px; font: inherit; font-weight: 800; color: #fff; background: linear-gradient(135deg, #7c3aed, #a855f7); cursor: pointer; text-decoration: none; font-size: 16px; margin-bottom: 10px; }
-        .q-btn.ghost { background: transparent; border: 1px solid #2a2145; color: #f3f0ff; font-weight: 600; }
-        .q-bar { height: 6px; background: #2a2145; border-radius: 9px; overflow: hidden; margin-bottom: 22px; }
-        .q-bar i { display: block; height: 100%; width: 0; background: #8b5cf6; transition: width 0.4s; }
-        .q-opt { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; background: #120e1d; border: 1px solid #2a2145; color: #f3f0ff; border-radius: 14px; padding: 15px; margin: 0 0 10px; font: inherit; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s; }
-        .q-opt:hover { border-color: #8b5cf6; }
-        .q-opt b { font-size: 22px; line-height: 1; }
-        .q-opt span { flex: 1; }
-        .q-opt small { display: block; color: #9d94b8; font-size: 12px; }
-        .q-hint { font-size: 13px; color: #a78bfa; margin: 0 0 16px; }
-        .q-input { width: 100%; background: #120e1d; border: 1px solid #2a2145; color: #f3f0ff; border-radius: 12px; padding: 15px; font: inherit; margin: 0 0 10px; }
-        .q-tag { display: inline-block; background: #1c1433; border: 1px solid #8b5cf6; color: #a78bfa; border-radius: 99px; padding: 4px 12px; font-size: 13px; margin-bottom: 12px; }
-        .q-box { background: #120e1d; border: 1px solid #2a2145; border-radius: 16px; padding: 20px; margin: 0 0 16px; }
-        .q-box.dest { border-color: #8b5cf6; box-shadow: 0 0 0 1px #8b5cf6 inset; }
-        .q-box h3 { margin: 0 0 6px; font-size: 18px; }
-        .q-box ul { margin: 0 0 14px; padding-left: 18px; color: #9d94b8; }
-        .q-preco { font-size: 26px; font-weight: 800; margin: 6px 0 12px; }
-        .q-small { font-size: 12px; color: #9d94b8; text-align: center; }
-        .q-cover { text-align: center; padding-top: 28px; }
-        .q-cover .mark { width: 96px; height: 96px; display: block; margin: 0 auto 6px; filter: drop-shadow(0 8px 24px rgba(124,58,237,0.4)); }
-        .q-cover .wm { font-weight: 800; letter-spacing: 0.18em; color: #a78bfa; margin-bottom: 22px; }
-        .q-cover input { text-align: center; }
-        .q-score { text-align: center; margin: 6px 0 18px; }
-        .q-ring { width: 150px; height: 150px; border-radius: 50%; margin: 0 auto 10px; display: grid; place-items: center; background: conic-gradient(#8b5cf6 var(--p, 0%), #2a2145 0); }
-        .q-ring div { width: 122px; height: 122px; border-radius: 50%; background: #07060b; display: grid; place-items: center; font-size: 34px; font-weight: 800; }
-        .q-row { margin: 0 0 12px; }
-        .q-row label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
-        .q-row.low label { color: #fca5a5; }
-        .q-row .q-bar i { background: #a78bfa; }
-        .q-row.low .q-bar i { background: #f87171; }
-        .q-ld { padding: 0; margin: 20px 0; }
-        .q-ld li { list-style: none; color: #9d94b8; padding: 8px 0; opacity: 0.3; transition: opacity 0.4s; }
-        .q-ld li.on { opacity: 1; color: #f3f0ff; }
-      `}}/>
-      <div className="q-wrap">
+    <div className="min-h-screen bg-[#07060b] text-[#f3f0ff] font-sans pb-14 bg-[radial-gradient(60%_40%_at_50%_0,#2b1659_0,transparent_70%)]">
+      <div className="max-w-[560px] mx-auto px-5 pt-6 pb-14">
         {step !== 'inicio' && (
-          <div className="q-top">
-            <div className="q-logo">GHOST MARKET</div>
-            <div className="q-cnt">{step === 'quiz' ? `Pergunta ${currentQ + 1} de ${Q.length}` : ''}</div>
-          </div>
-        )}
-
-        {step === 'inicio' && (
-          <section className="q-cover">
-            <svg className="mark" viewBox="0 0 64 64" role="img" aria-label="Logo Ghost Market">
-              <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#c4b5fd"/><stop offset="1" stopColor="#7c3aed"/></linearGradient></defs>
-              <path d="M12 56V28C12 15 21 6 32 6s20 9 20 22v28l-7-6-6 6-7-6-7 6-7-6z" fill="url(#lg)"/>
-              <circle cx="25" cy="28" r="4" fill="#07060b"/><circle cx="39" cy="28" r="4" fill="#07060b"/>
-            </svg>
-            <div className="wm">GHOST MARKET</div>
-            <h1 className="q-h1">Seja bem-vindo ao quiz do Ghost Market</h1>
-            <p className="q-p">Para darmos início, digite seu nome (não precisa ser completo) e o seu número de telefone.</p>
-            <input className="q-input" value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome" autoComplete="given-name" />
-            <input className="q-input" value={zap} onChange={e => setZap(e.target.value)} placeholder="Seu telefone com DDD" inputMode="tel" autoComplete="tel" />
-            <button className="q-btn" onClick={handleStart}>Começar o quiz</button>
-            <p className="q-small">Leva cerca de 1 minuto. Você recebe sua nota e seu plano.</p>
-          </section>
-        )}
-
-        {step === 'quiz' && (
-          <section>
-            <div className="q-bar"><i style={{ width: `${(currentQ / Q.length) * 100}%` }}></i></div>
-            <h2 className="q-h2">{Q[currentQ].q}</h2>
-            <p className="q-hint">{Q[currentQ].h}</p>
-            <div>
-              {Q[currentQ].o.map((opt, k) => (
-                <button key={k} className="q-opt" onClick={() => handleAnswer(k, typeof opt[2] === 'number' ? opt[2] : null, opt[1] as string)}>
-                  <b>{opt[0]}</b>
-                  <span>
-                    {opt[1]}
-                    {typeof opt[2] === 'string' && <small>{opt[2]}</small>}
-                  </span>
-                </button>
-              ))}
+          <header className="flex justify-between items-center mb-6">
+            <div className="font-extrabold tracking-wider text-purple-400">GHOST MARKET</div>
+            <div className="text-sm text-purple-200/60">
+              {step === 'quiz' ? `Pergunta ${currentQ + 1} de ${Q.length}` : step === 'lead' ? 'Quase lá...' : ''}
             </div>
-          </section>
+          </header>
         )}
 
-        {step === 'load' && (
-          <section>
-            <h1 className="q-h1">Analisando suas respostas...</h1>
-            <ul className="q-ld">
-              <li className={loadStep >= 1 ? 'on' : ''}>Calculando sua nota de prontidão</li>
-              <li className={loadStep >= 2 ? 'on' : ''}>Identificando seu maior gargalo</li>
-              <li className={loadStep >= 3 ? 'on' : ''}>Montando seu plano personalizado</li>
-            </ul>
-          </section>
-        )}
+        <AnimatePresence mode="wait">
+          {step === 'inicio' && (
+            <motion.section key="inicio" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="text-center pt-10">
+              <svg className="w-24 h-24 mx-auto mb-4 drop-shadow-[0_8px_24px_rgba(124,58,237,0.4)]" viewBox="0 0 64 64" role="img" aria-label="Logo Ghost Market">
+                <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#c4b5fd"/><stop offset="1" stopColor="#7c3aed"/></linearGradient></defs>
+                <path d="M12 56V28C12 15 21 6 32 6s20 9 20 22v28l-7-6-6 6-7-6-7 6-7-6z" fill="url(#lg)"/>
+                <circle cx="25" cy="28" r="4" fill="#07060b"/><circle cx="39" cy="28" r="4" fill="#07060b"/>
+              </svg>
+              <div className="font-extrabold tracking-widest text-purple-400 mb-8">GHOST MARKET</div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight mb-4">Descubra seu gargalo de vendas</h1>
+              <p className="text-purple-200/70 mb-8 max-w-md mx-auto">Responda a um breve diagnóstico e descubra o que está travando seus resultados e qual o plano exato para escalar.</p>
+              
+              <button 
+                onClick={handleStartQuiz}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-br from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-[0.98]"
+              >
+                <span>Começar Diagnóstico Gratuito</span>
+                <Play className="w-5 h-5 fill-current" />
+              </button>
+              <p className="text-xs text-purple-200/50 mt-4">Leva menos de 2 minutos. 100% gratuito.</p>
+            </motion.section>
+          )}
 
-        {step === 'res' && result && (
-          <section>
-            <div className="q-score">
-              <div className="q-ring" style={{ '--p': `${scoreAnim}%` } as any}>
-                <div>{result.nota}</div>
+          {step === 'quiz' && (
+            <motion.section key={`q-${currentQ}`} initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <div className="h-1.5 bg-purple-950 rounded-full overflow-hidden mb-8">
+                <motion.div 
+                  className="h-full bg-purple-500 rounded-full"
+                  initial={{ width: `${(currentQ / Q.length) * 100}%` }}
+                  animate={{ width: `${((currentQ + 1) / Q.length) * 100}%` }}
+                  transition={{ duration: 0.5 }}
+                />
               </div>
-              <span className="q-tag">
-                Perfil: {["iniciante", "em evolução", "pronto para escalar"][result.exp]}
-              </span>
-            </div>
-            <h1 className="q-h1">{nome}, seu gargalo é: {GT[result.g][0]}</h1>
-            <p className="q-p">{GT[result.g][1]}</p>
-            <div style={{ marginBottom: '20px' }}>
-              {result.bars.map((v: number, k: number) => (
-                <div key={k} className={`q-row ${k === result.g ? 'low' : ''}`}>
-                  <label><span>{G[k]}</span><span>{v}%</span></label>
-                  <div className="q-bar"><i style={{ width: `${v}%` }}></i></div>
-                </div>
-              ))}
-            </div>
+              <h2 className="text-2xl font-bold mb-2 leading-tight">{Q[currentQ].q}</h2>
+              <p className="text-sm text-purple-400 mb-6">{Q[currentQ].h}</p>
+              <div className="flex flex-col gap-3">
+                {Q[currentQ].o.map((opt, k) => (
+                  <button 
+                    key={k} 
+                    onClick={() => handleAnswer(k, typeof opt[2] === 'number' ? opt[2] : null, opt[1] as string)}
+                    className="flex items-center gap-4 text-left w-full p-4 bg-[#120e1d] border border-purple-900/50 rounded-xl hover:border-purple-500 hover:bg-[#1a1429] transition-all group active:scale-[0.99]"
+                  >
+                    <span className="text-3xl">{opt[0]}</span>
+                    <span className="flex-1 flex flex-col">
+                      <span className="font-semibold">{opt[1]}</span>
+                      {typeof opt[2] === 'string' && <span className="text-xs text-purple-200/60 mt-1">{opt[2]}</span>}
+                    </span>
+                    <ChevronRight className="w-5 h-5 text-purple-900 group-hover:text-purple-400 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </motion.section>
+          )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* If exp===0 or g===1, mentoria is first, else ghost is first */}
-              {((result.exp === 0 || result.g === 1) ? ['ment', 'ghost'] : ['ghost', 'ment']).map(order => {
-                if (order === 'ghost') {
-                  return (
-                    <div key="ghost" className={`q-box ${!(result.exp === 0 || result.g === 1) ? 'dest' : ''}`}>
-                      <h3>Ghost AI</h3>
-                      <ul><li>Propostas de site prontas em minutos</li><li>Textos da página de venda e de abordagem para clientes</li><li>Respostas para objeções e follow-up depois da proposta</li></ul>
-                      <div className="q-preco">{CFG.precoGhost}</div>
-                      <a className="q-btn" href={CFG.checkoutGhost} target="_blank" rel="noopener noreferrer" onClick={() => onOfferClick('Ghost AI')}>Quero a Ghost AI</a>
+          {step === 'lead' && (
+            <motion.section key="lead" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="pt-4">
+              <h1 className="text-3xl font-extrabold mb-3 leading-tight">Análise concluída!</h1>
+              <p className="text-purple-200/70 mb-8">Para liberar seu plano de ação personalizado e descobrir seu gargalo, informe para onde devemos enviar o resumo:</p>
+              
+              <div className="space-y-4 mb-8">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <User className="w-5 h-5 text-purple-400/50" />
+                  </div>
+                  <input 
+                    className="w-full bg-[#120e1d] border border-purple-900/50 focus:border-purple-500 text-white rounded-xl pl-12 pr-4 py-4 outline-none transition-colors"
+                    value={nome} 
+                    onChange={e => setNome(e.target.value)} 
+                    placeholder="Seu primeiro nome" 
+                    autoComplete="given-name" 
+                  />
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Phone className="w-5 h-5 text-purple-400/50" />
+                  </div>
+                  <input 
+                    className="w-full bg-[#120e1d] border border-purple-900/50 focus:border-purple-500 text-white rounded-xl pl-12 pr-4 py-4 outline-none transition-colors"
+                    value={zap} 
+                    onChange={e => setZap(e.target.value)} 
+                    placeholder="Seu WhatsApp (com DDD)" 
+                    inputMode="tel" 
+                    autoComplete="tel" 
+                  />
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div className="flex items-center gap-2 text-red-400 text-sm mb-4">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <button 
+                onClick={handleLeadSubmit}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-br from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-[0.98]"
+              >
+                Ver Meu Resultado Agora
+              </button>
+            </motion.section>
+          )}
+
+          {step === 'load' && (
+            <motion.section key="load" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="pt-10 flex flex-col items-center">
+              <Loader2 className="w-12 h-12 text-purple-500 animate-spin mb-6" />
+              <h1 className="text-2xl font-bold mb-8">Processando diagnóstico...</h1>
+              <ul className="space-y-4 w-full max-w-sm">
+                <li className={`flex items-center gap-3 transition-opacity duration-500 ${loadStep >= 1 ? 'opacity-100 text-white' : 'opacity-30 text-purple-200/50'}`}>
+                  {loadStep > 1 ? <Check className="w-5 h-5 text-green-400" /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
+                  Calculando nota de prontidão
+                </li>
+                <li className={`flex items-center gap-3 transition-opacity duration-500 ${loadStep >= 2 ? 'opacity-100 text-white' : 'opacity-30 text-purple-200/50'}`}>
+                  {loadStep > 2 ? <Check className="w-5 h-5 text-green-400" /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
+                  Identificando gargalo principal
+                </li>
+                <li className={`flex items-center gap-3 transition-opacity duration-500 ${loadStep >= 3 ? 'opacity-100 text-white' : 'opacity-30 text-purple-200/50'}`}>
+                  {loadStep > 3 ? <Check className="w-5 h-5 text-green-400" /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
+                  Montando plano personalizado
+                </li>
+              </ul>
+            </motion.section>
+          )}
+
+          {step === 'res' && result && (
+            <motion.section key="res" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <div className="text-center mb-6">
+                <div className="w-36 h-36 mx-auto rounded-full grid place-items-center bg-purple-950 p-2 mb-4" style={{ background: `conic-gradient(#8b5cf6 ${scoreAnim}%, #2a2145 0)` }}>
+                  <div className="w-full h-full rounded-full bg-[#07060b] grid place-items-center text-4xl font-extrabold shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+                    {result.nota}
+                  </div>
+                </div>
+                <span className="inline-block bg-[#1c1433] border border-purple-500/50 text-purple-300 rounded-full px-4 py-1.5 text-sm font-medium tracking-wide">
+                  Perfil: {["Iniciante", "Em evolução", "Pronto para escalar"][result.exp]}
+                </span>
+              </div>
+              
+              <h1 className="text-2xl sm:text-3xl font-extrabold mb-3 leading-tight">
+                {nome ? `${nome}, seu` : 'Seu'} gargalo é: <span className="text-purple-400">{GT[result.g][0]}</span>
+              </h1>
+              <p className="text-purple-200/70 mb-8">{GT[result.g][1]}</p>
+              
+              <div className="mb-10 bg-[#120e1d] p-5 rounded-2xl border border-purple-900/50">
+                {result.bars.map((v: number, k: number) => (
+                  <div key={k} className="mb-4 last:mb-0">
+                    <div className={`flex justify-between text-sm mb-1.5 font-medium ${k === result.g ? 'text-red-400' : 'text-purple-200'}`}>
+                      <span>{G[k]}</span>
+                      <span>{v}%</span>
                     </div>
-                  )
-                } else {
-                  return (
-                    <div key="ment" className={`q-box ${(result.exp === 0 || result.g === 1) ? 'dest' : ''}`}>
-                      <h3>Mentoria: como vender sites</h3>
-                      <ul><li>Passo a passo para conseguir os primeiros clientes</li><li>Como precificar, apresentar e fechar</li><li>Como atrair clientes todas as semanas</li></ul>
-                      <div className="q-preco">{CFG.precoMentoria}</div>
-                      <a className="q-btn" href={CFG.checkoutMentoria} target="_blank" rel="noopener noreferrer" onClick={() => onOfferClick('Mentoria')}>Quero a mentoria</a>
+                    <div className="h-2 bg-[#2a2145] rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }} 
+                        animate={{ width: `${v}%` }} 
+                        transition={{ duration: 1, delay: 0.2 }}
+                        className={`h-full rounded-full ${k === result.g ? 'bg-red-500' : 'bg-purple-500'}`}
+                      />
                     </div>
-                  )
-                }
-              })}
-            </div>
-            <a 
-              className="q-btn ghost" 
-              style={{ marginTop: '16px' }}
-              href={`https://wa.me/${CFG.zapSuporte}?text=${encodeURIComponent(`Oi! Sou ${nome}. Fiz o diagnóstico da Ghost AI (nota ${result.nota}, gargalo: ${GT[result.g][0]}). Meu telefone: ${zap}. Origem: ${searchParams.get('utm_source') || 'direto'}.`)}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              onClick={() => onOfferClick('WhatsApp')}
-            >
-              Tirar dúvidas no WhatsApp
-            </a>
-          </section>
-        )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-5">
+                {((result.exp === 0 || result.g === 1) ? ['ment', 'ghost'] : ['ghost', 'ment']).map(order => {
+                  if (order === 'ghost') {
+                    const isDest = !(result.exp === 0 || result.g === 1);
+                    return (
+                      <div key="ghost" className={`bg-[#120e1d] border ${isDest ? 'border-purple-500 ring-1 ring-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.15)]' : 'border-purple-900/50'} rounded-2xl p-6`}>
+                        {isDest && <div className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2">Recomendação Principal</div>}
+                        <h3 className="text-xl font-bold mb-3">Ghost AI</h3>
+                        <ul className="space-y-2 text-purple-200/70 text-sm mb-5">
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Propostas de site prontas em minutos</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Textos da página de venda e de abordagem</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Respostas para objeções e follow-up</li>
+                        </ul>
+                        <div className="text-2xl font-extrabold mb-4">{CFG.precoGhost}<span className="text-sm font-normal text-purple-200/50">/mês</span></div>
+                        <a 
+                          href={CFG.checkoutGhost}
+                          onClick={(e) => handleCheckoutRedirect(e, 'Ghost AI', CFG.checkoutGhost)}
+                          className="block text-center w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]"
+                        >
+                          Quero a Ghost AI
+                        </a>
+                      </div>
+                    )
+                  } else {
+                    const isDest = (result.exp === 0 || result.g === 1);
+                    return (
+                      <div key="ment" className={`bg-[#120e1d] border ${isDest ? 'border-purple-500 ring-1 ring-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.15)]' : 'border-purple-900/50'} rounded-2xl p-6`}>
+                        {isDest && <div className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2">Recomendação Principal</div>}
+                        <h3 className="text-xl font-bold mb-3">Mentoria: Como Vender Sites</h3>
+                        <ul className="space-y-2 text-purple-200/70 text-sm mb-5">
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Passo a passo para os primeiros clientes</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Como precificar, apresentar e fechar</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Como atrair clientes todas as semanas</li>
+                        </ul>
+                        <div className="text-2xl font-extrabold mb-4">{CFG.precoMentoria}<span className="text-sm font-normal text-purple-200/50">/mês</span></div>
+                        <a 
+                          href={CFG.checkoutMentoria}
+                          onClick={(e) => handleCheckoutRedirect(e, 'Mentoria', CFG.checkoutMentoria)}
+                          className="block text-center w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]"
+                        >
+                          Quero a Mentoria
+                        </a>
+                      </div>
+                    )
+                  }
+                })}
+              </div>
+
+              <a 
+                href={`https://wa.me/${CFG.zapSuporte}?text=${encodeURIComponent(`Oi! Sou ${nome}. Fiz o diagnóstico da Ghost AI (nota ${result.nota}, gargalo: ${GT[result.g][0]}). Meu telefone: ${zap}. Origem: ${searchParams.get('utm_source') || 'direto'}.`)}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={() => trackEvent('quiz_offer_clicked', { offer: 'WhatsApp' })}
+                className="flex items-center justify-center gap-2 w-full mt-6 bg-transparent border border-purple-900/80 hover:bg-[#1a1429] hover:border-purple-500 text-purple-200 font-semibold py-3.5 px-6 rounded-xl transition-all"
+              >
+                <PhoneCall className="w-4 h-4" />
+                <span>Tirar dúvidas no WhatsApp</span>
+              </a>
+            </motion.section>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
