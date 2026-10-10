@@ -4,7 +4,6 @@ import { db } from '@/config/firebase';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, Loader2, Play, Phone, User, AlertCircle, PhoneCall } from 'lucide-react';
-import { handleCheckoutRedirect } from '@/utils/analytics';
 
 const CFG = {
   zapSuporte: "5575000000000",
