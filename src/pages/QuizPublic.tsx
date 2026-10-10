@@ -425,10 +425,9 @@ export const QuizPublic = () => {
                           <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Textos da página de venda e de abordagem</li>
                           <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Respostas para objeções e follow-up</li>
                         </ul>
-                        <div className="text-2xl font-extrabold mb-4">{CFG.precoGhost}<span className="text-sm font-normal text-purple-200/50">/mês</span></div>
+                        <div className="text-2xl font-extrabold mb-4">{CFG.precoGhost}<span className="text-sm font-normal text-purple-200/50">/m�s</span></div>
                         <a 
-                          href={CFG.checkoutGhost}
-                          onClick={(e) => handleCheckoutRedirect(e, 'Ghost AI', CFG.checkoutGhost)}
+                          href="/" onClick={(e) => { e.preventDefault(); trackEvent('quiz_offer_clicked', { offer: 'Ghost AI' }); window.location.href = '/'; }}
                           className="block text-center w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]"
                         >
                           Quero a Ghost AI
@@ -444,10 +443,9 @@ export const QuizPublic = () => {
                         <ul className="space-y-2 text-purple-200/70 text-sm mb-5">
                           <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Acesso ilimitado e para sempre � plataforma</li>\n                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Atualiza��es gratuitas e novos agentes de IA</li>\n                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Economize R$ 190 por ano, sem mensalidades</li>
                         </ul>
-                        <div className="text-2xl font-extrabold mb-4">{CFG.precoMentoria}<span className="text-sm font-normal text-purple-200/50">/mês</span></div>
+                        <div className="text-2xl font-extrabold mb-4">{CFG.precoMentoria}<span className="text-sm font-normal text-purple-200/50">/m�s</span></div>
                         <a 
-                          href={CFG.checkoutMentoria}
-                          onClick={(e) => handleCheckoutRedirect(e, 'Vital�cio', CFG.checkoutMentoria)}
+                          href="/" onClick={(e) => { e.preventDefault(); trackEvent('quiz_offer_clicked', { offer: 'Vital�cio' }); window.location.href = '/'; }}
                           className="block text-center w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]"
                         >\n                          Quero o Plano Vital�cio\n                        </a>
                       </div>
