@@ -50,9 +50,7 @@ function App() {
   // Usando a chave diretamente para não depender de bugs do Windows com arquivos .env
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyD0zkPrRCRBSTC7egqgVw2AkZMNVrVm_9s'
 
-  useEffect(() => {
-    initAuthListener()
-  }, [initAuthListener])
+  useEffect(() => { initAuthListener(); const p=new URLSearchParams(window.location.search); const s=p.get('utm_source'); const m=p.get('utm_medium'); const c=p.get('utm_campaign'); if(s)localStorage.setItem('utm_source',s); if(m)localStorage.setItem('utm_medium',m); if(c)localStorage.setItem('utm_campaign',c); }, [initAuthListener])
 
   if (isLoading) {
     return (

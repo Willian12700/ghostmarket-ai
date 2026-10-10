@@ -1,14 +1,19 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/App.tsx', 'utf8');
 
-if (!content.includes('OfferIntelligence')) {
-    const importStr = "import { OfferIntelligence } from '@/pages/OfferIntelligence'\nimport { ErrorBoundary }";
-    content = content.replace("import { ErrorBoundary }", importStr);
+let content = fs.readFileSync('src/App.tsx', 'utf8');
+const replacement =   useEffect(() => {
+    initAuthListener()
     
-    const routeStr = `<Route path="/ads" element={<AdsGenerator />} />
-            <Route path="/offers" element={<OfferIntelligence />} />`;
-    content = content.replace('<Route path="/ads" element={<AdsGenerator />} />', routeStr);
+    // Captura UTMs da URL e salva no localStorage
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get('utm_source');
+    const medium = params.get('utm_medium');
+    const campaign = params.get('utm_campaign');
     
-    fs.writeFileSync('src/App.tsx', content, 'utf8');
-    console.log('App.tsx updated');
-}
+    if (source) localStorage.setItem('utm_source', source);
+    if (medium) localStorage.setItem('utm_medium', medium);
+    if (campaign) localStorage.setItem('utm_campaign', campaign);
+  }, [initAuthListener]);
+
+content = content.replace(/  useEffect\(\(\) => \{\n    initAuthListener\(\)\n  \}, \[initAuthListener\]\)/g, replacement);
+fs.writeFileSync('src/App.tsx', content, 'utf8');

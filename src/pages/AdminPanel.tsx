@@ -439,8 +439,9 @@ export const AdminPanel = () => {
                 <tr>
                   <th className="px-6 py-4">Usuário</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Último Acesso</th>
-                  <th className="px-6 py-4 text-right">Ação</th>
+                  <th className="px-6 py-4">�Último Acesso</th>
+                    <th className="px-6 py-4">Origem</th>
+                    <th className="px-6 py-4 text-right">A��o</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

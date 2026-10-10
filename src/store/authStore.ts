@@ -5,15 +5,29 @@ import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 
 const syncUserToFirestore = async (user: User) => {
-  if (user.isAnonymous) return; // Evita salvar no banco antes de validar o código de teste
+  if (user.isAnonymous) return;
   
   try {
-    await setDoc(doc(db, 'users', user.email || user.uid), {
+    const { getDoc } = await import('firebase/firestore');
+    const userRef = doc(db, 'users', user.email || user.uid);
+    const snap = await getDoc(userRef);
+    
+    let utmData = {};
+    if (!snap.exists()) {
+      utmData = {
+        utm_source: localStorage.getItem('utm_source') || 'direto',
+        utm_medium: localStorage.getItem('utm_medium') || '',
+        utm_campaign: localStorage.getItem('utm_campaign') || ''
+      };
+    }
+
+    await setDoc(userRef, {
       uid: user.uid,
       email: user.email || '',
       name: user.displayName || user.email?.split('@')[0] || 'User',
       photoURL: user.photoURL || '',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      ...utmData
     }, { merge: true })
   } catch(e) {
     console.error('Error syncing user', e)
