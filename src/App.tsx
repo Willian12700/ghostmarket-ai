@@ -42,6 +42,7 @@ import { ToastContainer } from '@/components/ui/ToastContainer'
 import { useAuthStore } from '@/store/authStore'
 import { QuizPublic } from '@/pages/QuizPublic'
 import { QuizAnalytics } from '@/pages/QuizAnalytics'
+import { VipGroup } from '@/pages/VipGroup'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -106,6 +107,8 @@ function App() {
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/affiliates" element={<Affiliates />} />
               <Route path="/offers" element={<OfferIntelligence />} />
+              <Route path="/vip" element={<VipGroup />} />
+              <Route path="/grupo-vip" element={<VipGroup />} />
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />

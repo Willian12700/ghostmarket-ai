@@ -32,6 +32,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   
   const isPartner = user?.email === 'souza.abencoado4@gmail.com';
   const isAdmin = user?.email === 'willrandrier@gmail.com';
+  const isTrial = Boolean(user?.isAnonymous || localStorage.getItem('trial_expires_at'));
 
   let menuGroups = [
 
@@ -39,7 +40,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       label: 'Painel',
       items: [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Resumo Global' },
-        { to: '/ranking', icon: Trophy, label: 'Top Global' }
+        { to: '/ranking', icon: Trophy, label: 'Top Global' },
+        ...(!isTrial ? [{ to: '/vip', icon: MessageCircle, label: 'Grupo VIP', badge: 'WHATSAPP' }] : [])
       ]
     },
     {

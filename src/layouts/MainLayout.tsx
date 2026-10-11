@@ -22,6 +22,8 @@ const pageInfo: Record<string, { title: string; description: string }> = {
   '/contracts': { title: 'Gestão de Contratos', description: 'Gerencie seus clientes, contratos e valores em um único painel.' },
   '/integrations': { title: 'Integração API', description: 'Conecte seu gateway de pagamento para sincronizar suas vendas automaticamente.' },
   '/settings': { title: 'Minha Agência', description: 'Personalize o GhostMarket com as cores e logo da sua marca (White-Label).' },
+  '/vip': { title: 'Comunidade VIP', description: 'Acesse o grupo oficial e exclusivo para membros no WhatsApp.' },
+  '/grupo-vip': { title: 'Comunidade VIP', description: 'Acesse o grupo oficial e exclusivo para membros no WhatsApp.' },
 }
 
 export const MainLayout = () => {
