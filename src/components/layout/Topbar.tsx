@@ -25,9 +25,15 @@ export const Topbar = ({ title, description, onMenuClick }: TopbarProps) => {
       return
     }
 
+    const userIds = Array.from(new Set([user.uid, user.email].filter((id): id is string => Boolean(id && id.trim()))))
+    if (userIds.length === 0) {
+      setLoading(false)
+      return
+    }
+
     const q = query(
       collection(db, 'notifications'),
-      where('userId', 'in', [user.uid, user.email])
+      where('userId', 'in', userIds)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

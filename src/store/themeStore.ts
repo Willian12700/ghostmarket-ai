@@ -26,12 +26,14 @@ const defaultTheme: ThemeConfig = {
 }
 
 const adjustHexColor = (color: string, amount: number) => {
-  return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+  if (!color || typeof color !== 'string' || !color.startsWith('#')) return '#8B5CF6';
+  return '#' + color.replace(/^#/, '').replace(/../g, c => ('0'+Math.min(255, Math.max(0, parseInt(c, 16) + amount)).toString(16)).substr(-2));
 }
 
 const applyThemeToDOM = (theme: ThemeConfig) => {
-  document.documentElement.style.setProperty('--color-primary', theme.primaryColor)
-  document.documentElement.style.setProperty('--color-primary-light', adjustHexColor(theme.primaryColor, 30))
+  const pColor = (theme?.primaryColor && typeof theme.primaryColor === 'string' && theme.primaryColor.startsWith('#')) ? theme.primaryColor : '#8B5CF6';
+  document.documentElement.style.setProperty('--color-primary', pColor)
+  document.documentElement.style.setProperty('--color-primary-light', adjustHexColor(pColor, 30))
   
   const appTheme = theme.appTheme || 'default'
   

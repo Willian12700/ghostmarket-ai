@@ -27,6 +27,18 @@ const latLngToVector3 = (lat: number, lng: number, radius: number): THREE.Vector
   return new THREE.Vector3(x, y, z);
 };
 
+import { Component, ReactNode } from 'react';
+
+class GlobeErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false }
+  static getDerivedStateFromError() { return { hasError: true } }
+  componentDidCatch(err: any) { console.warn("PhotorealisticGlobe error (falling back):", err) }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
 const FallbackGlobe = () => (
   <group>
     <mesh>
@@ -223,9 +235,11 @@ const Scene = ({ leads, onAnimationComplete }: Props) => {
       
       <Stars radius={300} depth={60} count={10000} factor={7} saturation={0} fade speed={1} />
       
-      <Suspense fallback={<FallbackGlobe />}>
-        <PhotorealisticGlobe />
-      </Suspense>
+      <GlobeErrorBoundary fallback={<FallbackGlobe />}>
+        <Suspense fallback={<FallbackGlobe />}>
+          <PhotorealisticGlobe />
+        </Suspense>
+      </GlobeErrorBoundary>
       
       <LeadMarkers leads={leads} />
       <HUD leads={leads} />

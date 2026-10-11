@@ -31,14 +31,15 @@ export const Dashboard = () => {
   useEffect(() => {
     if (!user?.email && !user?.uid) return
     
-    const userIdsToQuery = user?.email && user?.uid && user.email !== user.uid 
-      ? [user.uid, user.email] 
-      : [user?.uid || user?.email || '']
+    const userIdsToQuery = Array.from(new Set([user?.uid, user?.email].filter((id): id is string => Boolean(id && id.trim()))))
+    if (userIdsToQuery.length === 0) return
 
     const q = query(collection(db, 'transactions'), where('userId', 'in', userIdsToQuery))
     const unsubscribeTxs = onSnapshot(q, (snapshot) => {
       const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       setFirebaseTransactions(txs)
+    }, (err) => {
+      console.warn("Transactions onSnapshot error (handled):", err)
     })
     
     const unsubscribeWorkspaces = fetchWorkspaces(user?.uid || '')
@@ -72,12 +73,14 @@ export const Dashboard = () => {
       .map(c => {
         let rawMs = Date.now()
         if (c.date) {
-          if (c.date.includes('/')) {
+          if (typeof c.date === 'string' && c.date.includes('/')) {
             const parts = c.date.split('/')
             if (parts.length === 3) rawMs = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime()
-          } else if (c.date.includes('-')) {
+          } else if (typeof c.date === 'string' && c.date.includes('-')) {
             const parts = c.date.split('-')
             if (parts.length === 3) rawMs = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime()
+          } else if (typeof (c.date as any)?.toMillis === 'function') {
+            rawMs = (c.date as any).toMillis()
           } else {
             rawMs = new Date(c.date).getTime()
           }
