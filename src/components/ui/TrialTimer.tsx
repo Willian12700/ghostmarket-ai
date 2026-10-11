@@ -8,6 +8,12 @@ export const TrialTimer = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
+    // Se o usuário estiver logado com conta real, limpa timer residual e encerra
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      localStorage.removeItem('trial_expires_at')
+      return
+    }
+
     const expiresAt = localStorage.getItem('trial_expires_at')
     if (!expiresAt) return
 

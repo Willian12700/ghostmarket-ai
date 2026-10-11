@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen, Key, PieChart } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -14,7 +14,13 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Prompt, Sites e Leads', 'Digitaliza Comercial', 'PAINEL ADM'])
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([
+    'Painel',
+    'Prompt, Sites e Leads',
+    'Digitaliza Comercial',
+    'PAINEL ADM',
+    'PAINEL SÓCIO'
+  ])
 
   const toggleGroup = (groupLabel: string) => {
     setExpandedGroups(prev => 
@@ -29,10 +35,19 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     navigate('/login')
   }
 
-  
   const isPartner = user?.email === 'souza.abencoado4@gmail.com';
   const isAdmin = user?.email === 'willrandrier@gmail.com';
-  const isTrial = Boolean(user?.isAnonymous || localStorage.getItem('trial_expires_at'));
+  const hasRealEmail = Boolean(user?.email && user.email.includes('@') && !user.email.startsWith('Teste VIP'));
+
+  // Somente usuários anônimos / códigos de teste temporário são trial
+  const isTrial = Boolean(!isAdmin && !isPartner && !hasRealEmail && (user?.isAnonymous || user?.email?.startsWith('Teste VIP')));
+
+  // Limpa resquício antigo de teste do navegador se o usuário estiver logado com conta real
+  if (hasRealEmail || isAdmin || isPartner) {
+    if (typeof window !== 'undefined' && localStorage.getItem('trial_expires_at')) {
+      localStorage.removeItem('trial_expires_at');
+    }
+  }
 
   let menuGroups = [
 
@@ -40,8 +55,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       label: 'Painel',
       items: [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Resumo Global' },
+        ...(!isTrial ? [{ to: '/vip', icon: MessageCircle, label: 'Grupo VIP', badge: 'WHATSAPP' }] : []),
         { to: '/ranking', icon: Trophy, label: 'Top Global' },
-        ...(!isTrial ? [{ to: '/vip', icon: MessageCircle, label: 'Grupo VIP', badge: 'WHATSAPP' }] : [])
       ]
     },
     {
@@ -141,6 +156,36 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </div>
 
         <div className="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
+          {!isTrial && (
+            <div className="mb-6">
+              <NavLink
+                to="/vip"
+                className={({ isActive }) => cn(
+                  "flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 group relative overflow-hidden shadow-xl",
+                  isActive
+                    ? "bg-gradient-to-r from-emerald-500/20 via-purple-500/20 to-transparent border-emerald-500/50 text-white shadow-[0_0_25px_rgba(16,185,129,0.3)]"
+                    : "bg-gradient-to-br from-[#130b2b] via-[#091510] to-[#040406] border-emerald-500/30 hover:border-emerald-500/60 text-white hover:scale-[1.01]"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                    <MessageCircle className="w-5 h-5 fill-emerald-400/20 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-white tracking-wide">Grupo VIP</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
+                    </div>
+                    <p className="text-[10px] text-emerald-400/90 font-semibold">WhatsApp Oficial</p>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-black font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-[0_0_12px_rgba(16,185,129,0.6)]">
+                  Entrar
+                </span>
+              </NavLink>
+            </div>
+          )}
+
           <div className="space-y-6">
             {menuGroups.map((group, groupIndex) => (
               <div key={groupIndex} className="space-y-1">
@@ -187,7 +232,12 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                         )} />
                         <span>{item.label}</span>
                         {(item as any).badge && (
-                          <span className="ml-auto text-[10px] bg-primary text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(139,92,246,0.5)]">
+                          <span className={cn(
+                            "ml-auto text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider",
+                            (item as any).badge === 'WHATSAPP'
+                              ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]"
+                              : "bg-primary text-white shadow-[0_0_10px_rgba(139,92,246,0.5)]"
+                          )}>
                             {(item as any).badge}
                           </span>
                         )}

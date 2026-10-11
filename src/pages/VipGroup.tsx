@@ -7,7 +7,10 @@ const WHATSAPP_VIP_LINK = "https://chat.whatsapp.com/KUhl1XpzbOIIkzAvZPqhKT"
 
 export const VipGroup = () => {
   const { user } = useAuthStore()
-  const isTrial = user?.isAnonymous || !!localStorage.getItem('trial_expires_at')
+  const isAdmin = user?.email === 'willrandrier@gmail.com'
+  const isPartner = user?.email === 'souza.abencoado4@gmail.com'
+  const hasRealEmail = Boolean(user?.email && user.email.includes('@') && !user.email.startsWith('Teste VIP'))
+  const isTrial = Boolean(!isAdmin && !isPartner && !hasRealEmail && (user?.isAnonymous || user?.email?.startsWith('Teste VIP')))
 
   if (isTrial) {
     return (
