@@ -247,16 +247,123 @@ const Scene = ({ leads, onAnimationComplete }: Props) => {
   );
 };
 
+const isWebGLSupported = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(
+      window.WebGLRenderingContext && 
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+    );
+  } catch (e) {
+    return false;
+  }
+};
+
+class CanvasCatchBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err: any) {
+    console.warn("WebGL Canvas failed, falling back to 2D Radar:", err);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+const RadarFallback2D = ({ leads, onAnimationComplete }: Props) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onAnimationComplete();
+    }, 2800);
+    return () => clearTimeout(timer);
+  }, [onAnimationComplete]);
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[#030305] w-screen h-screen flex flex-col items-center justify-center p-6 overflow-hidden">
+      {/* Background cyber grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f133815_1px,transparent_1px),linear-gradient(to_bottom,#1f133815_1px,transparent_1px)] bg-[size:32px_32px]" />
+      
+      {/* Radar rings */}
+      <div className="relative w-72 h-72 sm:w-96 sm:h-96 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full border border-purple-500/20 animate-pulse" />
+        <div className="absolute inset-8 rounded-full border border-purple-500/30" />
+        <div className="absolute inset-16 rounded-full border border-purple-500/40" />
+        <div className="absolute inset-24 rounded-full border border-purple-500/50" />
+        
+        {/* Sweep line */}
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <div className="w-1/2 h-0.5 bg-gradient-to-r from-transparent to-purple-400 origin-right translate-x-[-50%] shadow-[0_0_15px_rgba(168,85,247,0.8)]" />
+        </motion.div>
+
+        {/* Center dot */}
+        <div className="w-4 h-4 rounded-full bg-purple-500 shadow-[0_0_20px_rgba(168,85,247,1)] relative z-10" />
+
+        {/* Radar blips */}
+        {leads.slice(0, 10).map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 1, 0.4], scale: [0, 1.2, 1] }}
+            transition={{ delay: 0.2 * i, duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
+            style={{
+              top: `${20 + ((i * 37) % 60)}%`,
+              left: `${20 + ((i * 53) % 60)}%`,
+            }}
+            className="absolute w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.9)]"
+          />
+        ))}
+      </div>
+
+      {/* HUD Info */}
+      <div className="relative z-10 mt-8 text-center flex flex-col items-center">
+        <div className="text-purple-400 font-mono text-xs uppercase tracking-widest mb-1">
+          GHOSTMARKET // RADAR DE LEADS
+        </div>
+        <h2 className="text-2xl font-black text-white tracking-wide mb-2">
+          Varredura em Andamento...
+        </h2>
+        <div className="text-purple-200/70 font-mono text-sm mb-4">
+          Leads Encontrados: <span className="text-white font-bold">{leads.length}</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <motion.div 
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 2.5, ease: "easeInOut" }}
+            className="h-full bg-gradient-to-r from-purple-600 to-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.8)]"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const GlobalLeadScanner = ({ leads, onAnimationComplete }: Props) => {
+  const [webGLOk] = useState(() => isWebGLSupported());
+
+  if (!webGLOk) {
+    return <RadarFallback2D leads={leads} onAnimationComplete={onAnimationComplete} />;
+  }
+
   // Start facing Brazil (lat: -15, lng: -50)
   const startPos = latLngToVector3(-15, -50, 6.0);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#030305] w-screen h-screen flex flex-col overflow-hidden">
-      <Canvas camera={{ position: [startPos.x, startPos.y, startPos.z], fov: 45 }}>
-        <Scene leads={leads} onAnimationComplete={onAnimationComplete} />
-      </Canvas>
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(3,3,5,0.9)_100%)] z-[5]"></div>
-    </div>
+    <CanvasCatchBoundary fallback={<RadarFallback2D leads={leads} onAnimationComplete={onAnimationComplete} />}>
+      <div className="fixed inset-0 z-[100] bg-[#030305] w-screen h-screen flex flex-col overflow-hidden">
+        <Canvas camera={{ position: [startPos.x, startPos.y, startPos.z], fov: 45 }}>
+          <Scene leads={leads} onAnimationComplete={onAnimationComplete} />
+        </Canvas>
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(3,3,5,0.9)_100%)] z-[5]"></div>
+      </div>
+    </CanvasCatchBoundary>
   );
 };
