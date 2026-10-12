@@ -43,6 +43,8 @@ import { useAuthStore } from '@/store/authStore'
 import { QuizPublic } from '@/pages/QuizPublic'
 import { QuizAnalytics } from '@/pages/QuizAnalytics'
 import { VipGroup } from '@/pages/VipGroup'
+import { Videos } from '@/pages/Videos'
+import { VideoWatch } from '@/pages/VideoWatch'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -90,6 +92,8 @@ function App() {
               <Route path="/prompt-builder" element={<PromptBuilder />} />
               <Route path="/builder" element={<SiteBuilder />} />
               <Route path="/image-to-link" element={<ImageToLink />} />
+              <Route path="/videos" element={<Videos />} />
+              <Route path="/video-links" element={<Videos />} />
               <Route path="/sites" element={<HostedSites />} />
               <Route path="/finance" element={<Finance />} />
               <Route path="/products" element={<Products />} />
@@ -112,6 +116,8 @@ function App() {
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />
+            <Route path="/v/:videoId" element={<VideoWatch />} />
+            <Route path="/watch/:videoId" element={<VideoWatch />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/proposta" element={<PropostaPdf />} />
             <Route path="/report/:siteId" element={<ClientReport />} />

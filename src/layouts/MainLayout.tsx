@@ -24,6 +24,7 @@ const pageInfo: Record<string, { title: string; description: string }> = {
   '/settings': { title: 'Minha Agência', description: 'Personalize o GhostMarket com as cores e logo da sua marca (White-Label).' },
   '/vip': { title: 'Comunidade VIP', description: 'Acesse o grupo oficial e exclusivo para membros no WhatsApp.' },
   '/grupo-vip': { title: 'Comunidade VIP', description: 'Acesse o grupo oficial e exclusivo para membros no WhatsApp.' },
+  '/videos': { title: 'Vídeos e Links', description: 'Hospede vídeos na nuvem e gere links rápidos de reprodução e compartilhamento.' },
 }
 
 export const MainLayout = () => {
