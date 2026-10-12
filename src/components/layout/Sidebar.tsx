@@ -74,7 +74,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/builder', icon: LayoutTemplate, label: 'Hospedar Novo Site' },
         { to: '/ide', icon: Code, label: 'Ghost IDE (BETA)', badge: 'NOVO' },
         { to: '/image-to-link', icon: ImageIcon, label: 'Converter Imagem (URL)' },
-        { to: '/videos', icon: Video, label: 'Vídeos e Links', badge: 'PRO' },
+        { to: '/videos', icon: Video, label: 'Vídeos e Links', badge: 'EM BREVE' },
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
         { to: '/chatbots', icon: Bot, label: 'Chatbots de IA' },
         { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
