@@ -45,6 +45,7 @@ import { QuizAnalytics } from '@/pages/QuizAnalytics'
 import { VipGroup } from '@/pages/VipGroup'
 import { Videos } from '@/pages/Videos'
 import { VideoWatch } from '@/pages/VideoWatch'
+import { AiCodeWorkspace } from '@/pages/AiCodeWorkspace'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -85,6 +86,8 @@ function App() {
             
             <Route element={<MainLayout />}>
               <Route path="/ide" element={<CloudIde />} />
+              <Route path="/code-workspace" element={<AiCodeWorkspace />} />
+              <Route path="/ai-code-workspace" element={<AiCodeWorkspace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/creator" element={<Creator />} />

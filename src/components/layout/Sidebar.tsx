@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, Video, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen, Key, PieChart } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, Video, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen, Key, PieChart, CodeXml } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
@@ -73,6 +73,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         { to: '/prompt-builder', icon: Code, label: 'Prompt Builder' },
         { to: '/builder', icon: LayoutTemplate, label: 'Hospedar Novo Site' },
         { to: '/ide', icon: Code, label: 'Ghost IDE (BETA)', badge: 'NOVO' },
+        { to: '/code-workspace', icon: CodeXml, label: 'AI Code Workspace', badge: 'NOVO' },
         { to: '/image-to-link', icon: ImageIcon, label: 'Converter Imagem (URL)' },
         { to: '/videos', icon: Video, label: 'Vídeos e Links', badge: 'EM BREVE' },
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
