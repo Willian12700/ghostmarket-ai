@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, Video, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen, Key, PieChart, CodeXml } from 'lucide-react'
+import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, Video, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen, Key, PieChart, CodeXml, GraduationCap } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
@@ -55,6 +55,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       label: 'Painel',
       items: [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Resumo Global' },
+        { to: '/tutoriais', icon: GraduationCap, label: 'Tutoriais & Aulas', badge: 'VÍDEOS' },
         ...(!isTrial ? [{ to: '/vip', icon: MessageCircle, label: 'Grupo VIP', badge: 'WHATSAPP' }] : []),
         { to: '/ranking', icon: Trophy, label: 'Top Global' },
       ]
@@ -106,6 +107,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       label: 'PAINEL ADM',
       items: [
         { to: '/admin', icon: ShieldAlert, label: 'LiberaÃ§Ã£o de Acesso' },
+        { to: '/tutoriais?action=new', icon: Video, label: 'Publicar Tutorial' },
         { to: '/admin/notes', icon: NotebookPen, label: 'Backlog / Notas' }, { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' },
       ]
     })
