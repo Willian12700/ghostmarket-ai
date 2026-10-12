@@ -8,11 +8,15 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
-  RefreshCw
+  RefreshCw,
+  MessageSquare,
+  Send,
+  Wand2
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCodeWorkspaceStore } from '@/store/codeWorkspaceStore'
 import { useToastStore } from '@/store/toastStore'
+import { useAuthStore } from '@/store/authStore'
 
 export const ResultPromptPanel = () => {
   const {
@@ -20,14 +24,19 @@ export const ResultPromptPanel = () => {
     patchedCode,
     patchExplanation,
     mode,
+    setMode,
     targetTool,
     setCode,
     selectedSiteId,
     projectName,
     applyToProjectSite,
-    analysisResult
+    analysisResult,
+    refineCode,
+    isAnalyzing,
+    runExecution
   } = useCodeWorkspaceStore()
 
+  const { user } = useAuthStore()
   const { addToast } = useToastStore()
 
   const [copiedPrompt, setCopiedPrompt] = useState(false)
@@ -35,6 +44,8 @@ export const ResultPromptPanel = () => {
   const [activeTab, setActiveTab] = useState<'full' | 'structured'>('full')
   const [isApplying, setIsApplying] = useState(false)
   const [appliedSuccess, setAppliedSuccess] = useState(false)
+  const [refineText, setRefineText] = useState('')
+  const [isRefining, setIsRefining] = useState(false)
 
   const handleCopyPrompt = () => {
     if (!generatedPrompt?.fullPromptText) return
@@ -89,6 +100,36 @@ export const ResultPromptPanel = () => {
       addToast('Erro ao aplicar alterações no site.', 'error')
     } finally {
       setIsApplying(false)
+    }
+  }
+
+  const handleRefine = async () => {
+    if (!refineText.trim()) return
+    setIsRefining(true)
+    try {
+      await refineCode(refineText.trim())
+      setRefineText('')
+      addToast('Código refinado com sucesso pela IA!', 'success')
+    } catch (err) {
+      addToast('Erro ao refinar código. Verifique sua conexão ou chave de API.', 'error')
+    } finally {
+      setIsRefining(false)
+    }
+  }
+
+  const handleReplaceInEditor = () => {
+    if (!patchedCode) return
+    setCode(patchedCode)
+    addToast('Código atualizado no editor principal!', 'success')
+  }
+
+  const handleGenerateCodeDirectly = async () => {
+    setMode('fix_code')
+    try {
+      await runExecution({ uid: user?.uid || 'guest_user', email: user?.email })
+      addToast('Código corrigido gerado diretamente na tela!', 'success')
+    } catch (err) {
+      addToast('Erro ao gerar código na tela.', 'error')
     }
   }
 
@@ -179,8 +220,8 @@ export const ResultPromptPanel = () => {
             <>
               <Button
                 variant="secondary"
-                onClick={() => patchedCode && setCode(patchedCode)}
-                className="h-8 px-3 text-xs rounded-xl flex items-center gap-1.5"
+                onClick={handleReplaceInEditor}
+                className="h-8 px-3 text-xs rounded-xl flex items-center gap-1.5 border-purple-500/30 hover:border-purple-500/60"
                 title="Substituir código atual no editor"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -220,6 +261,24 @@ export const ResultPromptPanel = () => {
       <div className="p-5 space-y-6">
         {mode === 'generate_prompt' && generatedPrompt ? (
           <div className="space-y-4">
+            {/* Dica de Uso e Ação Rápida */}
+            <div className="p-3.5 bg-purple-500/10 border border-purple-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-purple-200">
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>
+                  O prompt gerado inclui uma <strong>diretiva imperativa</strong> que obriga o ChatGPT/Claude a entregar o código completo pronto, sem resumos teóricos.
+                </span>
+              </div>
+              <Button
+                variant="secondary"
+                onClick={handleGenerateCodeDirectly}
+                className="text-xs h-7 px-3 rounded-lg border-purple-500/40 text-purple-300 hover:text-white shrink-0"
+              >
+                <Wand2 className="w-3 h-3 mr-1" />
+                <span>Ver Código Pronto Aqui</span>
+              </Button>
+            </div>
+
             {/* View Mode Toggle */}
             <div className="flex items-center gap-2 border-b border-white/5 pb-3">
               <button
@@ -342,6 +401,45 @@ export const ResultPromptPanel = () => {
               <pre className="bg-[#05030a] border border-purple-500/20 rounded-2xl p-4 sm:p-6 text-xs text-white font-mono leading-relaxed overflow-x-auto max-h-[480px] custom-scrollbar whitespace-pre-wrap select-all">
                 {patchedCode}
               </pre>
+            </div>
+
+            {/* Barra de Refinamento Iterativo com IA */}
+            <div className="p-4 bg-[#06040e] border border-purple-500/20 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Refinar ou Solicitar Mais Ajustes neste Código</span>
+                </span>
+                <span className="text-[10px] text-textMuted">Execução em tempo real</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={refineText}
+                  onChange={(e) => setRefineText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleRefine()
+                    }
+                  }}
+                  placeholder="Ex: Mude a cor do botão para verde esmeralda e adicione animação hover..."
+                  className="flex-1 bg-[#030208] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition-colors"
+                />
+                <Button
+                  onClick={handleRefine}
+                  disabled={isRefining || isAnalyzing || !refineText.trim()}
+                  className="bg-primary hover:bg-primaryLight text-white font-bold text-xs h-10 px-5 rounded-xl flex items-center gap-1.5 shrink-0 shadow-[0_0_15px_rgba(139,92,246,0.3)] disabled:opacity-50"
+                >
+                  {isRefining || isAnalyzing ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isRefining || isAnalyzing ? 'Refinando...' : 'Refinar com IA'}</span>
+                </Button>
+              </div>
             </div>
 
             {/* Modo 3: Aplicar Alteração Direta no Site */}

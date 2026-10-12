@@ -68,6 +68,7 @@ interface CodeWorkspaceState {
   fetchHistory: (userId: string) => Promise<void>
   runExecution: (user: { uid: string; email?: string }) => Promise<void>
   applyToProjectSite: () => Promise<void>
+  refineCode: (refineInstruction: string) => Promise<void>
   loadTaskFromHistory: (task: WorkspaceTaskHistory) => void
   deleteTaskFromHistory: (taskId: string) => Promise<void>
   clearWorkspace: () => void
@@ -220,7 +221,7 @@ export const useCodeWorkspaceStore = create<CodeWorkspaceState>((set, get) => ({
   },
 
   runExecution: async (user: { uid: string; email?: string }) => {
-    const { code, instruction, language, targetTool, mode, projectName, selectedSiteId } = get()
+    const { code, instruction, language, targetTool, mode, projectName, selectedSiteId, geminiApiKey } = get()
     if (!code.trim() || !instruction.trim()) return
 
     set({ isAnalyzing: true })
@@ -229,7 +230,7 @@ export const useCodeWorkspaceStore = create<CodeWorkspaceState>((set, get) => ({
       // 1. Análise arquitetural e estática
       const analysis = analyzeCodeArchitecture(code, language, instruction)
 
-      // 2. Geração do Prompt Técnico estruturado
+      // 2. Geração do Prompt Técnico estruturado com diretivas imperativas
       const promptResult = generateTechnicalPrompt({
         projectName: projectName || 'Projeto Web',
         code,
@@ -239,11 +240,8 @@ export const useCodeWorkspaceStore = create<CodeWorkspaceState>((set, get) => ({
         analysis
       })
 
-      // 3. Proposta de correção ou patch
-      let patchResult: { patchedCode: string; explanation: string } | null = null
-      if (mode === 'fix_code' || mode === 'apply_changes') {
-        patchResult = generateCodePatchOrFix(code, instruction, analysis)
-      }
+      // 3. Proposta de correção ou patch (executa IA Gemini ou motor inteligente)
+      const patchResult = await generateCodePatchOrFix(code, instruction, analysis, geminiApiKey)
 
       // 4. Salvar registro no Firestore
       const taskId = `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
@@ -321,6 +319,26 @@ export const useCodeWorkspaceStore = create<CodeWorkspaceState>((set, get) => ({
       }))
     } catch (err) {
       console.error('Erro ao aplicar código ao site:', err)
+      throw err
+    }
+  },
+
+  refineCode: async (refineInstruction: string) => {
+    const { code, patchedCode, language, geminiApiKey } = get()
+    const baseCode = patchedCode || code
+    if (!baseCode.trim() || !refineInstruction.trim()) return
+
+    set({ isAnalyzing: true })
+    try {
+      const analysis = analyzeCodeArchitecture(baseCode, language, refineInstruction)
+      const result = await generateCodePatchOrFix(baseCode, refineInstruction, analysis, geminiApiKey)
+      set({
+        isAnalyzing: false,
+        patchedCode: result.patchedCode,
+        patchExplanation: result.explanation
+      })
+    } catch (err) {
+      set({ isAnalyzing: false })
       throw err
     }
   },

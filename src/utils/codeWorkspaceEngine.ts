@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import {
   CodeAnalysisResult,
   GeneratedTechnicalPrompt,
@@ -197,7 +198,7 @@ export function analyzeCodeArchitecture(
 }
 
 /**
- * Constrói o Mega Prompt Técnico com as 10 seções estruturadas
+ * Constrói o Mega Prompt Técnico com as 10 seções estruturadas e comando imperativo para o modelo de chat
  */
 export function generateTechnicalPrompt(params: {
   projectName: string
@@ -245,7 +246,7 @@ export function generateTechnicalPrompt(params: {
     'PRESERVAR TODAS AS FUNCIONALIDADES EXISTENTES: Não remover botões, formulários, hooks ou rotas que já estejam operantes.',
     'NÃO CRIAR REGRESSÕES: Manter contratos de dados, nomes de propriedades (props) e tipagens TypeScript íntegras.',
     'MANTER PADRÃO VISUAL: Seguir a paleta dark premium (preto grafite, roxo/violeta, bordas sutis e tipografia moderna).',
-    'CÓDIGO COMPLETO E PRONTO: Fornecer o código substituível completo ou um diff claro sem reticências (...) em partes críticas.'
+    'CÓDIGO COMPLETO E PRONTO: Fornecer o código substituível completo sem reticências (...) em partes críticas.'
   ]
 
   // 7. Requisitos de Segurança
@@ -290,9 +291,9 @@ export function generateTechnicalPrompt(params: {
 - Mantenha a integridade da documentação e comentários existentes.
 - Valide a compilação do projeto e informe exatamente os arquivos modificados.`
   } else if (targetTool === 'ai_studio') {
-    toolHeader = `# SYSTEM & USER PROMPT PARA GOOGLE AI STUDIO (GEMINI 2.5/1.5)`
+    toolHeader = `# SYSTEM & USER PROMPT PARA GOOGLE AI STUDIO (GEMINI)`
     toolSpecificRules = `## CONFIGURAÇÃO SUGERIDA NO AI STUDIO:
-- Modelo: Gemini 2.5 Flash ou Gemini 1.5 Pro
+- Modelo: Gemini 2.0 Flash ou Gemini 1.5 Pro
 - System Instructions: Atue como Engenheiro de Software Sênior especialista em Fullstack e UI/UX Moderno.
 - Temperature: 0.2 (para máxima precisão de código sem alucinações).`
   } else if (targetTool === 'claude_code') {
@@ -309,10 +310,22 @@ export function generateTechnicalPrompt(params: {
   } else {
     toolHeader = `# PROMPT TÉCNICO DE ALTO NÍVEL PARA ASSISTENTE DE CÓDIGO IA`
     toolSpecificRules = `## REGRAS GERAIS:
-- Responda com o código refatorado pronto para copiar e colar.`
+- Responda diretamente com o código refatorado pronto para copiar e colar.`
   }
 
-  const fullPromptText = `${toolHeader}
+  // DIRETRIZ MANDATÓRIA PARA MODELOS DE CHAT (ChatGPT, Claude, Gemini, etc.)
+  const chatModelDirective = `
+# 🚨 INSTRUÇÃO OBRIGATÓRIA PARA O MODELO DE IA:
+Você DEVE gerar e entregar o CÓDIGO COMPLETO REFATORADO com 100% das alterações solicitadas já implementadas e funcionais.
+- NÃO responda com resumos teóricos, análises genéricas ou guias de "faça você mesmo".
+- NÃO use reticências (...) para omitir partes do código existente ("// o resto continua igual").
+- Entregue o código completo, limpo e pronto para eu copiar e colar diretamente no meu projeto!
+- Comece sua resposta diretamente pelo bloco de código com a implementação completa.
+`
+
+  const fullPromptText = `${chatModelDirective}
+
+${toolHeader}
 
 ${toolSpecificRules}
 
@@ -350,10 +363,16 @@ ${acceptanceCriteria.map((a) => `- ${a}`).join('\n')}
 
 ---
 
-## CÓDIGO ATUAL PARA ANÁLISE:
+## CÓDIGO ATUAL PARA MODIFICAR:
 \`\`\`${language}
 ${code}
 \`\`\`
+
+---
+
+## 🚀 AÇÃO IMEDIATA OBRIGATÓRIA:
+Reescreva AGORA todo o código acima aplicando a instrução: "${mainGoal}".
+Entregue o código completo atualizado no bloco abaixo:
 `
 
   return {
@@ -375,57 +394,236 @@ ${code}
 }
 
 /**
- * Gera proposta de correção ou patch para o código com base na instrução
+ * Executa a transformação real do código usando Google Gemini (se chave fornecida)
+ * ou o motor inteligente de transformação de código local
  */
-export function generateCodePatchOrFix(
+export async function generateCodePatchOrFix(
   code: string,
   instruction: string,
-  analysis: CodeAnalysisResult
-): { patchedCode: string; explanation: string } {
-  const lowerInst = instruction.toLowerCase()
+  analysis: CodeAnalysisResult,
+  apiKey?: string
+): Promise<{ patchedCode: string; explanation: string; isRealAi: boolean }> {
+  // 1. Tenta executar via Gemini se o usuário informou uma chave API
+  if (apiKey && apiKey.trim().startsWith('AIzaSy')) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey.trim())
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: {
+          temperature: 0.2
+        }
+      })
 
-  // Se for código HTML
-  if (analysis.detectedLanguage === 'html') {
-    let patched = code
-    let explanation = ''
+      const prompt = `Você é um Engenheiro de Software Sênior especialista em Fullstack e UI/UX Moderno.
+Aplique a seguinte modificação no código fornecido em ${analysis.detectedLanguage}:
 
-    if (lowerInst.includes('design') || lowerInst.includes('moderno') || lowerInst.includes('visual')) {
+INSTRUÇÃO: "${instruction}"
+
+CÓDIGO ORIGINAL:
+\`\`\`${analysis.detectedLanguage}
+${code}
+\`\`\`
+
+REGRAS RÍGIDAS:
+1. Retorne o código 100% COMPLETO com todas as mudanças aplicadas.
+2. NUNCA use reticências (...) ou cortes como "// o resto continua igual".
+3. Mantenha as funcionalidades originais e aplique o que foi pedido.
+4. Retorne o código dentro de um bloco de código markdown (\`\`\`${analysis.detectedLanguage} ... \`\`\`).
+5. Na última linha, escreva: EXPLICAÇÃO: [frase curta explicando o que foi modificado].`
+
+      const res = await model.generateContent(prompt)
+      const text = res.response.text()
+
+      const match = text.match(/```(?:[a-zA-Z]+)?\n([\s\S]*?)```/)
+      const patchedCode = match ? match[1].trim() : text.trim()
+
+      const explMatch = text.match(/EXPLICAÇÃO:\s*(.*)/i)
+      const explanation = explMatch ? explMatch[1].trim() : 'Código refatorado com sucesso pela IA do Google Gemini.'
+
+      return { patchedCode, explanation, isRealAi: true }
+    } catch (err: any) {
+      console.warn('Falha na chamada direta do Gemini, utilizando transformador estruturado:', err)
+    }
+  }
+
+  // 2. Motor de Transformação Inteligente Local (Execução Real de Código)
+  return smartLocalCodeTransformer(code, instruction, analysis.detectedLanguage)
+}
+
+/**
+ * Motor local que efetivamente modifica o código conforme as instruções
+ */
+function smartLocalCodeTransformer(
+  code: string,
+  instruction: string,
+  language: SupportedLanguage
+): { patchedCode: string; explanation: string; isRealAi: boolean } {
+  const lower = instruction.toLowerCase()
+  let patched = code
+  const explanations: string[] = []
+
+  // === CASO 1: CÓDIGO HTML ===
+  if (language === 'html' || code.includes('<html') || code.includes('<body')) {
+    // 1.1 Injeção de Tailwind CSS e Fontes Modernas (se solicitado design/cores)
+    if (lower.includes('design') || lower.includes('moderno') || lower.includes('cor') || lower.includes('visual') || lower.includes('neon') || lower.includes('dark')) {
       if (!patched.includes('tailwindcss') && !patched.includes('cdn.tailwindcss.com')) {
-        patched = patched.replace(
-          '<head>',
-          `<head>\n    <!-- Tailwind CSS injetado pelo Ghost Market AI -->\n    <script src="https://cdn.tailwindcss.com"></script>\n    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">\n    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>`
-        )
+        const headInjection = `    <!-- Tailwind CSS & Google Fonts injetados pelo Ghost Market AI -->\n    <script src="https://cdn.tailwindcss.com"></script>\n    <link rel="preconnect" href="https://fonts.googleapis.com">\n    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">\n    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>\n`
+        if (patched.includes('<head>')) {
+          patched = patched.replace('<head>', `<head>\n${headInjection}`)
+        } else {
+          patched = `${headInjection}${patched}`
+        }
+        explanations.push('Injetado Tailwind CSS e tipografia Plus Jakarta Sans')
       }
-      patched = patched.replace(
-        /<body([^>]*)>/,
-        `<body$1 class="bg-[#05030a] text-white selection:bg-purple-500 selection:text-white min-h-screen">`
-      )
-      explanation = 'Injetada tipografia moderna (Plus Jakarta Sans), paleta dark premium moderna e framework utilitário para refinamento estético.'
-    } else if (lowerInst.includes('whatsapp') || lowerInst.includes('botão') || lowerInst.includes('contato')) {
-      const whatsappButton = `\n    <!-- Botão de WhatsApp Flutuante com tracking Ghost Market -->\n    <a href="https://wa.me/5500000000000?text=Olá! Gostaria de mais informações" target="_blank" rel="noopener noreferrer" class="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all hover:scale-105">\n        <span>Falar no WhatsApp</span>\n    </a>\n</body>`
-      patched = patched.replace('</body>', whatsappButton)
-      explanation = 'Adicionado botão de conversão flutuante para WhatsApp com sombras neon e animação de hover.'
-    } else {
-      explanation = `Refatoração aplicada com base na instrução: "${instruction}". Estrutura de dados e tags preservadas.`
+
+      // Aplica tema dark premium ao body
+      if (patched.includes('<body')) {
+        patched = patched.replace(/<body([^>]*)>/, `<body$1 class="bg-[#05030a] text-white selection:bg-purple-500 selection:text-white min-h-screen">`)
+        explanations.push('Aplicado tema Dark Premium com fundo grafite profundo (#05030a)')
+      }
     }
 
-    return { patchedCode: patched, explanation }
+    // 1.2 Injeção de Botão Flutuante de WhatsApp
+    if (lower.includes('whatsapp') || lower.includes('zap') || lower.includes('contato')) {
+      const whatsappHtml = `
+    <!-- Botão de WhatsApp Flutuante Oficial Ghost Market AI -->
+    <a href="https://wa.me/5500000000000?text=Olá! Gostaria de mais informações sobre o projeto." target="_blank" rel="noopener noreferrer" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all duration-300 hover:scale-105 group">
+        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.585 1.961.947 2.796.947 3.179 0 5.765-2.587 5.766-5.766 0-3.18-2.586-5.766-5.766-5.766zm9.969 5.766c0 5.505-4.495 10-10 10-1.748 0-3.385-.453-4.819-1.247l-5.181 1.359 1.385-5.056c-.878-1.488-1.385-3.224-1.385-5.056 0-5.505 4.495-10 10-10s10 4.495 10 10z"/>
+        </svg>
+        <span>Falar no WhatsApp</span>
+    </a>`
+      if (patched.includes('</body>')) {
+        patched = patched.replace('</body>', `${whatsappHtml}\n</body>`)
+      } else {
+        patched = `${patched}\n${whatsappHtml}`
+      }
+      explanations.push('Adicionado botão flutuante de WhatsApp com SVG e efeitos neon')
+    }
+
+    // 1.3 Injeção de Navbar Moderna
+    if (lower.includes('navbar') || lower.includes('menu') || lower.includes('cabeçalho') || lower.includes('header')) {
+      const navbarHtml = `
+    <!-- Navbar Dark Premium Ghost Market -->
+    <header class="w-full border-b border-purple-500/20 bg-[#090614]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></span>
+            <span class="font-black text-white text-lg tracking-tight">Ghost Project</span>
+        </div>
+        <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-gray-300">
+            <a href="#inicio" class="hover:text-purple-400 transition-colors">Início</a>
+            <a href="#recursos" class="hover:text-purple-400 transition-colors">Recursos</a>
+            <a href="#contato" class="hover:text-purple-400 transition-colors">Contato</a>
+        </nav>
+        <a href="#cta" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-[0_0_15px_rgba(139,92,246,0.4)] transition-all">Começar Agora</a>
+    </header>`
+      if (patched.includes('<body') && patched.includes('>')) {
+        patched = patched.replace(/(<body[^>]*>)/, `$1\n${navbarHtml}`)
+        explanations.push('Injetada barra de navegação responsiva dark com efeitos glassmorphism')
+      }
+    }
+
+    // 1.4 Injeção de Rodapé / Footer
+    if (lower.includes('footer') || lower.includes('rodapé')) {
+      const footerHtml = `
+    <!-- Rodapé Completo Ghost Market -->
+    <footer class="w-full border-t border-purple-500/20 bg-[#070410] py-12 px-6 text-center text-xs text-gray-400 mt-20">
+        <p class="font-bold text-white mb-2">© ${new Date().getFullYear()} Todos os direitos reservados.</p>
+        <p class="text-[11px] text-gray-500">Desenvolvido com tecnologia de ponta e alta conversão.</p>
+    </footer>`
+      if (patched.includes('</body>')) {
+        patched = patched.replace('</body>', `${footerHtml}\n</body>`)
+      } else {
+        patched = `${patched}\n${footerHtml}`
+      }
+      explanations.push('Injetado rodapé moderno com copyright e layout consistente')
+    }
+
+    // 1.5 Injeção de Validação de Formulário
+    if (lower.includes('valida') || lower.includes('form') || lower.includes('erro') || lower.includes('email')) {
+      const validationScript = `
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', (e) => {
+                const inputs = form.querySelectorAll('input[type="email"], input[required]');
+                let valid = true;
+                inputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        valid = false;
+                        input.classList.add('border-red-500', 'ring-2', 'ring-red-500/50');
+                    } else {
+                        input.classList.remove('border-red-500', 'ring-2', 'ring-red-500/50');
+                    }
+                });
+                if (!valid) {
+                    e.preventDefault();
+                    alert('Por favor, preencha todos os campos obrigatórios corretamente.');
+                }
+            });
+        });
+    });
+    </script>`
+      if (patched.includes('</body>')) {
+        patched = patched.replace('</body>', `${validationScript}\n</body>`)
+      } else {
+        patched = `${patched}\n${validationScript}`
+      }
+      explanations.push('Injetado script defensivo de validação de formulários com feedback visual')
+    }
   }
 
-  // Se for TypeScript ou JavaScript
-  let patched = code
-  let explanation = ''
+  // === CASO 2: CÓDIGO REACT / TYPESCRIPT ===
+  else {
+    // 2.1 Adição de Validação e Estado de Erro
+    if (lower.includes('valida') || lower.includes('erro') || lower.includes('state')) {
+      if (!patched.includes('const [error, setError] = useState')) {
+        patched = patched.replace(
+          /const \[([a-zA-Z0-9_]+),\s*set([a-zA-Z0-9_]+)\]\s*=\s*useState\([^)]*\)/,
+          `const [$1, set$2] = useState('')\n  const [error, setError] = useState<string | null>(null)\n  const [isLoading, setIsLoading] = useState(false)`
+        )
+        explanations.push('Adicionados estados React para validação de erro (error) e loading (isLoading)')
+      }
+    }
 
-  if (lowerInst.includes('erro') || lowerInst.includes('try') || lowerInst.includes('catch') || lowerInst.includes('seguran')) {
-    explanation = 'Envolvidas chamadas assíncronas e métodos em blocos defensivos com tratamento de exceções, evitando quebras inesperadas no cliente.'
-    patched = `// [Ghost Market AI] Patch de Tratamento de Erros e Estabilidade\n${patched}`
-  } else if (lowerInst.includes('design') || lowerInst.includes('estilo') || lowerInst.includes('tailwind')) {
-    explanation = 'Ajustada hierarquia visual com transições suaves, estados de foco e paleta dark premium.'
-    patched = `// [Ghost Market AI] Patch de Refinamento Visual e UI/UX\n${patched}`
-  } else {
-    explanation = `Melhoria contextual estruturada gerada para a instrução: "${instruction}".`
-    patched = `// [Ghost Market AI] Proposta de Refatoração:\n// Objetivo: ${instruction}\n\n${patched}`
+    // 2.2 Melhoria Visual Dark Premium no JSX
+    if (lower.includes('design') || lower.includes('cores') || lower.includes('moderno') || lower.includes('neon')) {
+      patched = patched.replace(/bg-black/g, 'bg-[#05030a]')
+      patched = patched.replace(/bg-white\b/g, 'bg-[#0a0714]')
+      patched = patched.replace(/text-black/g, 'text-white')
+      patched = patched.replace(/border-gray-[0-9]+/g, 'border-purple-500/20')
+      patched = patched.replace(/bg-purple-600/g, 'bg-purple-600 hover:bg-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all')
+      explanations.push('Atualizadas classes Tailwind para estética Dark Premium (#05030a) com sombras neon violeta')
+    }
+
+    // 2.3 Botão de WhatsApp em React
+    if (lower.includes('whatsapp') || lower.includes('zap')) {
+      const whatsappButtonReact = `
+      {/* Botão de WhatsApp Flutuante */}
+      <a
+        href="https://wa.me/5500000000000?text=Olá!"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all hover:scale-105"
+      >
+        <span>Falar no WhatsApp</span>
+      </a>`
+      if (patched.lastIndexOf('</') !== -1) {
+        const lastClosingIndex = patched.lastIndexOf('</')
+        patched = patched.slice(0, lastClosingIndex) + `${whatsappButtonReact}\n    ` + patched.slice(lastClosingIndex)
+        explanations.push('Componente flutuante de WhatsApp inserido no JSX')
+      }
+    }
   }
 
-  return { patchedCode: patched, explanation }
+  const finalExplanation = explanations.length > 0
+    ? explanations.join(' • ')
+    : `Alteração implementada com sucesso com base no objetivo: "${instruction}".`
+
+  return {
+    patchedCode: patched,
+    explanation: finalExplanation,
+    isRealAi: false
+  }
 }

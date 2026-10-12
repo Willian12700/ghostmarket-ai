@@ -1,10 +1,15 @@
+import { useState } from 'react'
 import {
   Wand2,
   Cpu,
   Sparkles,
   Layers,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Key,
+  ExternalLink,
+  Check,
+  Zap
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCodeWorkspaceStore } from '@/store/codeWorkspaceStore'
@@ -66,11 +71,28 @@ export const InstructionPanel = () => {
     isAnalyzing,
     runExecution,
     code,
-    selectedSiteId
+    selectedSiteId,
+    geminiApiKey,
+    setGeminiApiKey
   } = useCodeWorkspaceStore()
 
   const { user } = useAuthStore()
   const { addToast } = useToastStore()
+
+  const [showKeyConfig, setShowKeyConfig] = useState(false)
+  const [tempKey, setTempKey] = useState(geminiApiKey)
+
+  const handleSaveKey = () => {
+    setGeminiApiKey(tempKey.trim())
+    setShowKeyConfig(false)
+    if (tempKey.trim().startsWith('AIzaSy')) {
+      addToast('Chave Gemini salva! As alterações agora serão geradas ao vivo pelo modelo Gemini 1.5 Flash.', 'success')
+    } else if (!tempKey.trim()) {
+      addToast('Chave removida. Usando motor inteligente estruturado.', 'info')
+    } else {
+      addToast('Chave salva. Verifique se o formato está correto (deve iniciar com AIzaSy).', 'info')
+    }
+  }
 
   const handleExecute = async () => {
     if (!code.trim()) {
@@ -105,6 +127,61 @@ export const InstructionPanel = () => {
 
   return (
     <div className="bg-[#0a0714] border border-purple-500/20 rounded-2xl p-5 shadow-xl space-y-6">
+      {/* Barra de Status da IA (Gemini ao Vivo vs Motor Local) */}
+      <div className="p-3 bg-[#06040e] border border-purple-500/20 rounded-xl space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            {geminiApiKey ? (
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 text-purple-400" />
+            )}
+            <span className="font-bold text-white">
+              {geminiApiKey ? 'IA Generativa Gemini 1.5 Flash Conectada' : 'Motor Estruturado Ativo'}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setShowKeyConfig(!showKeyConfig)}
+            className="text-[11px] font-bold text-purple-400 hover:text-purple-300 underline flex items-center gap-1"
+          >
+            <Key className="w-3 h-3" />
+            <span>{geminiApiKey ? 'Gerenciar Chave' : 'Conectar Chave Grátis'}</span>
+          </button>
+        </div>
+
+        {showKeyConfig && (
+          <div className="pt-2 border-t border-white/5 space-y-2 animate-fade-in">
+            <p className="text-[11px] text-textSecondary leading-relaxed">
+              Obtenha sua chave gratuita do Gemini (100% grátis sem cartão de crédito) no{' '}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-300 hover:underline inline-flex items-center gap-0.5"
+              >
+                Google AI Studio <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              :
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="password"
+                value={tempKey}
+                onChange={(e) => setTempKey(e.target.value)}
+                placeholder="Cole sua chave AIzaSy..."
+                className="flex-1 bg-[#030208] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+              />
+              <Button
+                onClick={handleSaveKey}
+                className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs h-8 px-3 rounded-lg"
+              >
+                <Check className="w-3 h-3 mr-1" /> Salvar
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
       {/* 1. Escolha do Modo de Operação */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
