@@ -11,6 +11,7 @@ import {
   Globe,
   Copy,
   Check,
+  ExternalLink,
   Film
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -387,9 +388,28 @@ export const VideoUploadModal = ({ isOpen, onClose, onSuccess }: VideoUploadModa
 
               {/* Error Alert */}
               {errorMessage && (
-                <div className="flex items-center gap-2 p-3 bg-error/10 border border-error/20 rounded-xl text-error text-xs">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{errorMessage}</span>
+                <div className="p-4 bg-error/10 border border-error/30 rounded-2xl text-xs space-y-3">
+                  <div className="flex items-start gap-2.5 text-error">
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <span className="font-semibold leading-relaxed">{errorMessage}</span>
+                  </div>
+
+                  {errorMessage.includes('Firebase Storage') && (
+                    <div className="pt-2 border-t border-error/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <span className="text-[11px] text-textSecondary">
+                        Basta clicar em "Começar" no Console do Firebase:
+                      </span>
+                      <a
+                        href="https://console.firebase.google.com/project/ghostmarket-ai-2cc26/storage"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-colors shrink-0"
+                      >
+                        <span>Ativar Storage no Console</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 

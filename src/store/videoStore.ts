@@ -15,7 +15,6 @@ import {
 import {
   ref,
   uploadBytesResumable,
-  uploadBytes,
   getDownloadURL,
   deleteObject,
   UploadTask
@@ -98,26 +97,18 @@ export const useVideoStore = create<VideoState>((set, get) => ({
     })
 
     try {
-      // 1. Extração de metadados e miniatura no navegador
+      // 1. Extração de metadados e miniatura no navegador (instantâneo)
       const meta = await extractVideoMetadataAndThumbnail(file)
 
-      // 2. Upload da miniatura se disponível
-      let thumbnailUrl = ''
-      let thumbnailPath = ''
+      // 2. Usar miniatura gerada localmente em base64 (elimina requisições extras)
+      const thumbnailUrl = meta.thumbnailPreviewUrl || ''
 
-      if (meta.thumbnailBlob) {
-        updateProg({
-          progress: 10,
-          bytesTransferred: 0,
-          totalBytes: file.size,
-          status: 'uploading_thumb'
-        })
-
-        thumbnailPath = `thumbnails/${user.uid}/${videoId}.jpg`
-        const thumbRef = ref(storage, thumbnailPath)
-        await uploadBytes(thumbRef, meta.thumbnailBlob, { contentType: 'image/jpeg' })
-        thumbnailUrl = await getDownloadURL(thumbRef)
-      }
+      updateProg({
+        progress: 15,
+        bytesTransferred: 0,
+        totalBytes: file.size,
+        status: 'uploading_video'
+      })
 
       // 3. Upload resumable do arquivo de vídeo principal
       const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -132,11 +123,37 @@ export const useVideoStore = create<VideoState>((set, get) => ({
 
       // Retorna uma Promise que resolve quando o upload concluir
       const videoItem = await new Promise<VideoItem>((resolve, reject) => {
+        let hasTransferredAnyByte = false
+
+        // Timeout watchdog: se em 15s não transferir nenhum byte, detecta bucket inexistente/CORS
+        const watchdog = setTimeout(() => {
+          if (!hasTransferredAnyByte) {
+            uploadTask.cancel()
+            const storageError = new Error(
+              'O Firebase Storage ainda não foi ativado no Console do Firebase para o projeto ghostmarket-ai-2cc26. Acesse console.firebase.google.com/project/ghostmarket-ai-2cc26/storage e clique em "Começar" para ativar o bucket.'
+            )
+            updateProg({
+              progress: 0,
+              bytesTransferred: 0,
+              totalBytes: file.size,
+              status: 'error',
+              error: storageError.message
+            })
+            set({ currentUploadTask: null })
+            reject(storageError)
+          }
+        }, 15000)
+
         uploadTask.on(
           'state_changed',
           (snapshot) => {
+            if (snapshot.bytesTransferred > 0) {
+              hasTransferredAnyByte = true
+              clearTimeout(watchdog)
+            }
+
             const rawProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-            // Mapeia o progresso entre 15% e 95% para acomodar etapas inicial e final
+            // Mapeia o progresso entre 15% e 95%
             const mappedProgress = Math.round(15 + (rawProgress * 0.8))
 
             updateProg({
@@ -147,18 +164,28 @@ export const useVideoStore = create<VideoState>((set, get) => ({
             })
           },
           (error) => {
+            clearTimeout(watchdog)
             console.error('Erro no upload resumable:', error)
+
+            let formattedMsg = error.message
+            if (error.code === 'storage/unknown' || error.message.includes('unknown') || error.code === 'storage/bucket-not-found') {
+              formattedMsg = 'O Firebase Storage ainda não foi ativado no Console do Firebase (projeto ghostmarket-ai-2cc26). Acesse o Console do Firebase > Storage e clique em "Começar" para criar o bucket.'
+            } else if (error.code === 'storage/unauthorized') {
+              formattedMsg = 'Permissão negada no Firebase Storage. Verifique se as regras do Storage permitem escrita para usuários autenticados.'
+            }
+
             updateProg({
               progress: 0,
               bytesTransferred: 0,
               totalBytes: file.size,
               status: 'error',
-              error: error.message
+              error: formattedMsg
             })
             set({ currentUploadTask: null })
-            reject(error)
+            reject(new Error(formattedMsg))
           },
           async () => {
+            clearTimeout(watchdog)
             try {
               updateProg({
                 progress: 98,
@@ -179,7 +206,7 @@ export const useVideoStore = create<VideoState>((set, get) => ({
                 storagePath,
                 downloadUrl,
                 thumbnailUrl: thumbnailUrl || meta.thumbnailPreviewUrl || '',
-                thumbnailPath,
+                thumbnailPath: '',
                 size: file.size,
                 duration: meta.duration || 0,
                 width: meta.width || 0,
