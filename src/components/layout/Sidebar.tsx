@@ -27,7 +27,9 @@ import {
   CodeXml,
   GraduationCap,
   Command,
-  ArrowUpRight
+  ArrowUpRight,
+  Sparkles,
+  Megaphone
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
@@ -84,6 +86,7 @@ export const Sidebar = ({ isOpen, onClose, onOpenCommandPalette }: SidebarProps)
       label: 'Visão Geral',
       items: [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Resumo Global' },
+        { to: '/atualizacoes', icon: Sparkles, label: 'Novidades & Updates' },
         { to: '/tutoriais', icon: GraduationCap, label: 'Tutoriais & Aulas' },
         { to: '/ranking', icon: Trophy, label: 'Ranking Global' }
       ]
@@ -131,6 +134,7 @@ export const Sidebar = ({ isOpen, onClose, onOpenCommandPalette }: SidebarProps)
       label: 'Administração',
       items: [
         { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' },
+        { to: '/atualizacoes', icon: Megaphone, label: 'Disparar Atualizações' },
         { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' },
         { to: '/tutoriais?action=new', icon: Video, label: 'Publicar Tutorial' },
         { to: '/admin/notes', icon: NotebookPen, label: 'Backlog & Notas' }

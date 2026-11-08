@@ -40,6 +40,8 @@ const pageInfo: Record<string, { title: string; description: string }> = {
   '/ranking': { title: 'Top Global', description: 'Ranking oficial dos membros que mais faturam na comunidade GhostMarket.' },
   '/tutoriais': { title: 'Tutoriais & Aulas', description: 'Treinamentos práticos passo a passo para dominar todas as ferramentas da plataforma.' },
   '/tutorials': { title: 'Tutoriais & Aulas', description: 'Treinamentos práticos passo a passo para dominar todas as ferramentas da plataforma.' },
+  '/atualizacoes': { title: 'Central de Atualizações & Novidades', description: 'Mural oficial de lançamentos e painel de disparo de notificações de atualização.' },
+  '/updates': { title: 'Central de Atualizações & Novidades', description: 'Mural oficial de lançamentos e painel de disparo de notificações de atualização.' },
   '/vip': { title: 'Comunidade VIP', description: 'Acesse o grupo oficial e exclusivo para membros Elite no WhatsApp.' },
   '/grupo-vip': { title: 'Comunidade VIP', description: 'Acesse o grupo oficial e exclusivo para membros Elite no WhatsApp.' },
   '/integrations': { title: 'Integrações & Webhooks', description: 'Conecte seu gateway de pagamento para sincronizar suas vendas automaticamente.' },

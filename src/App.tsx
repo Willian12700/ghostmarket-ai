@@ -45,6 +45,7 @@ import { Videos } from '@/pages/Videos'
 import { VideoWatch } from '@/pages/VideoWatch'
 import { AiCodeWorkspace } from '@/pages/AiCodeWorkspace'
 import { Tutorials } from '@/pages/Tutorials'
+import { Updates } from '@/pages/Updates'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -119,6 +120,8 @@ function App() {
               <Route path="/grupo-vip" element={<VipGroup />} />
               <Route path="/tutoriais" element={<Tutorials />} />
               <Route path="/tutorials" element={<Tutorials />} />
+              <Route path="/atualizacoes" element={<Updates />} />
+              <Route path="/updates" element={<Updates />} />
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />

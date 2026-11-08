@@ -178,17 +178,43 @@ export const Topbar = ({ title, description, onMenuClick, onOpenCommandPalette }
                               n.unread ? 'bg-zinc-900/30' : ''
                             }`}
                           >
-                            <div className="flex justify-between items-start mb-1">
-                              <h4 className={`text-xs font-semibold ${n.unread ? 'text-white' : 'text-zinc-300'}`}>
-                                {n.title}
-                              </h4>
-                              <span className="text-[10px] text-zinc-500 font-mono shrink-0 ml-2">{timeStr}</span>
+                            <div className="flex justify-between items-start mb-1 gap-2">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {n.type === 'update' && (
+                                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-[9px] font-mono font-bold text-emerald-300">
+                                    UPDATE
+                                  </span>
+                                )}
+                                <h4 className={`text-xs font-semibold ${n.unread ? 'text-white' : 'text-zinc-300'}`}>
+                                  {n.title}
+                                </h4>
+                              </div>
+                              <span className="text-[10px] text-zinc-500 font-mono shrink-0">{timeStr}</span>
                             </div>
                             <p className="text-xs text-zinc-400 leading-relaxed">{n.text}</p>
+                            {n.route && (
+                              <Link
+                                to={n.route}
+                                onClick={() => setShowNotifications(false)}
+                                className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
+                              >
+                                <span>Conferir novidade →</span>
+                              </Link>
+                            )}
                           </div>
                         )
                       })
                     )}
+                  </div>
+
+                  <div className="p-2.5 border-t border-zinc-800 bg-zinc-950/80 flex items-center justify-between">
+                    <Link
+                      to="/atualizacoes"
+                      onClick={() => setShowNotifications(false)}
+                      className="w-full text-center py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-emerald-300 transition-colors"
+                    >
+                      🚀 Ver Central de Atualizações (v3.0)
+                    </Link>
                   </div>
                 </motion.div>
               </>

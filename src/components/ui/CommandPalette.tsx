@@ -69,6 +69,16 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
         keywords: 'inicio home vendas faturamento painel'
       },
       {
+        id: 'updates',
+        title: 'Central de Atualizações & Novidades (v3.0)',
+        description: 'Veja tudo que foi adicionado na plataforma e dispare notificações de atualização',
+        to: '/atualizacoes',
+        category: 'Painel Principal',
+        icon: Sparkles,
+        badge: 'V3.0',
+        keywords: 'atualizacoes novidades changelog notificacoes versao'
+      },
+      {
         id: 'creator',
         title: 'Creator IA',
         description: 'Gere abordagens irresistíveis e scripts personalizados para WhatsApp',
