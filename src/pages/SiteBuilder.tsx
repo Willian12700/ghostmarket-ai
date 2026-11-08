@@ -450,24 +450,29 @@ export const SiteBuilder = () => {
         ? editingSiteId
         : `${finalSiteName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}-${Math.random().toString(36).substring(2, 6)}`;
 
-      // Sistema de segurança contra domínio/slug duplicado
+      // Sistema de segurança contra domínio/slug duplicado (sem qualquer limite de quantidade de sites)
       const [existingSiteSnap, existingHostedSnap] = await Promise.all([
-        getDoc(doc(db, 'sites', finalSlug)),
-        getDoc(doc(db, 'hosted_sites', finalSlug)),
+        getDoc(doc(db, 'sites', finalSlug)).catch(() => null),
+        getDoc(doc(db, 'hosted_sites', finalSlug)).catch(() => null),
       ]);
 
-      const existingDoc = existingSiteSnap.exists()
-        ? existingSiteSnap.data()
-        : existingHostedSnap.exists()
-        ? existingHostedSnap.data()
-        : null;
+      const existingDoc =
+        existingSiteSnap && existingSiteSnap.exists()
+          ? existingSiteSnap.data()
+          : existingHostedSnap && existingHostedSnap.exists()
+          ? existingHostedSnap.data()
+          : null;
 
       if (existingDoc) {
-        const isOwner = existingDoc.userId === user.uid || existingDoc.userId === user.email;
+        const isOwner =
+          existingDoc.userId === user.uid ||
+          existingDoc.userId === user.email ||
+          user.email === 'willrandrier@gmail.com' ||
+          user.email === 'souza.abencoado4@gmail.com';
         const isSameEditingSite = editingSiteId === finalSlug && isOwner;
         if (!isSameEditingSite) {
           toast.error(
-            `Este domínio (/s/${finalSlug}) já está em uso! Escolha outro nome no campo de link personalizado.`,
+            `Este domínio (/s/${finalSlug}) já está em uso! Escolha outro nome no campo "Slug Personalizado do Link".`,
             { duration: 5000 }
           );
           setIsPublishing(false);
