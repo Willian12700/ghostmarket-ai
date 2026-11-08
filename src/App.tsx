@@ -46,6 +46,7 @@ import { VideoWatch } from '@/pages/VideoWatch'
 import { AiCodeWorkspace } from '@/pages/AiCodeWorkspace'
 import { Tutorials } from '@/pages/Tutorials'
 import { Updates } from '@/pages/Updates'
+import { AdminUpdates } from '@/pages/AdminUpdates'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -122,6 +123,8 @@ function App() {
               <Route path="/tutorials" element={<Tutorials />} />
               <Route path="/atualizacoes" element={<Updates />} />
               <Route path="/updates" element={<Updates />} />
+              <Route path="/admin/atualizacoes" element={<AdminUpdates />} />
+              <Route path="/admin/updates" element={<AdminUpdates />} />
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />

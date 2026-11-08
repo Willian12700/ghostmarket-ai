@@ -134,7 +134,7 @@ export const Sidebar = ({ isOpen, onClose, onOpenCommandPalette }: SidebarProps)
       label: 'Administração',
       items: [
         { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' },
-        { to: '/atualizacoes', icon: Megaphone, label: 'Disparar Atualizações' },
+        { to: '/admin/atualizacoes', icon: Megaphone, label: 'Disparar Atualizações' },
         { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' },
         { to: '/tutoriais?action=new', icon: Video, label: 'Publicar Tutorial' },
         { to: '/admin/notes', icon: NotebookPen, label: 'Backlog & Notas' }
