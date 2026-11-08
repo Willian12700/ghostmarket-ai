@@ -64,7 +64,7 @@ export function CRMTeamManager() {
           <Card key={member.id} className="p-4 flex items-center justify-between border-white/5 bg-surface/50">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                {member.userName.charAt(0).toUpperCase()}
+                {member.userName?.charAt(0).toUpperCase() || '?'}
               </div>
               <div>
                 <p className="text-white font-medium flex items-center gap-2">

@@ -42,15 +42,15 @@ export const PREDEFINED_TUTORIAL_CATEGORIES: TutorialCategoryOption[] = [
   },
   {
     id: 'builder',
-    name: 'Hospedar Novo Site',
-    description: 'Publicação de sites com subdomínio e visual studio',
+    name: 'GhostStudio & Hospedagem',
+    description: 'Criação de sites em tempo real com 55+ modelos e painel do cliente',
     defaultRoute: '/builder'
   },
   {
-    id: 'ide',
-    name: 'Ghost IDE (BETA)',
-    description: 'Ambiente de desenvolvimento e código na nuvem',
-    defaultRoute: '/ide'
+    id: 'prompt-builder',
+    name: 'Catálogo de Modelos & Prompts',
+    description: 'Modelos prontos por nicho e gerador de prompts estruturados',
+    defaultRoute: '/prompt-builder'
   },
   {
     id: 'code-workspace',
@@ -65,10 +65,10 @@ export const PREDEFINED_TUTORIAL_CATEGORIES: TutorialCategoryOption[] = [
     defaultRoute: '/contracts'
   },
   {
-    id: 'digitaliza-crm',
-    name: 'CRM Compartilhado',
-    description: 'Workspaces colaborativos para múltiplos membros',
-    defaultRoute: '/digitaliza-crm'
+    id: 'proposta',
+    name: 'Propostas & Contratos PDF',
+    description: 'Emissão de orçamentos executivos e contratos de prestação de serviços',
+    defaultRoute: '/proposta'
   },
   {
     id: 'cnpj',
@@ -89,10 +89,10 @@ export const PREDEFINED_TUTORIAL_CATEGORIES: TutorialCategoryOption[] = [
     defaultRoute: '/scripts'
   },
   {
-    id: 'offers',
-    name: 'Tracker de Ofertas',
-    description: 'Espionagem e inteligência de mercado',
-    defaultRoute: '/offers'
+    id: 'finance',
+    name: 'Gestão Financeira &MRR',
+    description: 'Controle de faturamento, contratos fechados e recorrência mensal',
+    defaultRoute: '/finance'
   },
   {
     id: 'library',

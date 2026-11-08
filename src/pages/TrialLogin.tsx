@@ -74,9 +74,9 @@ export const TrialLogin = () => {
       console.error(err)
       await auth.signOut().catch(() => {})
       if (err.code === 'auth/admin-restricted-operation' || err.code === 'auth/operation-not-allowed') {
-        setError('Login Annimo est desativado no Firebase. Avise o dono do sistema para ativar!')
+        setError('Login Anônimo está desativado no Firebase. Avise o dono do sistema para ativar!')
       } else {
-        setError('Ocorreu um erro ao validar o cdigo.')
+        setError('Ocorreu um erro ao validar o código.')
       }
     } finally {
       setLoading(false)
@@ -97,7 +97,7 @@ export const TrialLogin = () => {
             <Ghost className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-black text-white text-center">Acesso VIP Temporário</h1>
-          <p className="text-textSecondary text-center mt-2 text-sm">Insira o cdigo de 6 dgitos fornecido no WhatsApp para testar a mquina.</p>
+          <p className="text-textSecondary text-center mt-2 text-sm">Insira o código de 6 dígitos fornecido no WhatsApp para testar a máquina.</p>
         </div>
 
         {error && (

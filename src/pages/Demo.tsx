@@ -10,11 +10,11 @@ export const Demo = () => {
 
       <div className="text-center max-w-2xl mx-auto mb-16 relative z-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-bold tracking-wider w-fit mb-6">
-          DEMONSTRAO OFICIAL
+          DEMONSTRAÇÃO OFICIAL
         </div>
-        <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">A Mquina por Dentro</h1>
+        <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">A Máquina por Dentro</h1>
         <p className="text-xl text-white/60 leading-relaxed">
-          Sem falsas promessas. Role a tela e veja exatamente a plataforma que est colocando dinheiro no bolso dos nossos alunos hoje.
+          Sem falsas promessas. Role a tela e veja exatamente a plataforma que está colocando dinheiro no bolso dos nossos alunos hoje.
         </p>
       </div>
 
@@ -23,7 +23,7 @@ export const Demo = () => {
       </div>
 
       <div className="mt-20 text-center relative z-10 flex flex-col items-center">
-        <h3 className="text-2xl font-bold mb-6">Pronto para ter a sua estrutura automtica?</h3>
+        <h3 className="text-2xl font-bold mb-6">Pronto para ter a sua estrutura automática?</h3>
         <a 
           href="https://api.whatsapp.com/send?phone=5584996162332&text=Ol%C3%A1!+Acabei+de+ver+a+demo+do+GhostMarket+e+quero+garantir+minha+vaga+no+plano+vitalcio." 
           target="_blank" 
@@ -32,7 +32,7 @@ export const Demo = () => {
         >
           <MessageCircle className="w-6 h-6" /> Falar com Especialista
         </a>
-        <p className="mt-4 text-white/40 text-sm">Vagas limitadas para o plano vitalcio.</p>
+        <p className="mt-4 text-white/40 text-sm">Vagas limitadas para o plano vitalício.</p>
       </div>
     </div>
   )

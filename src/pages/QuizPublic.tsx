@@ -60,7 +60,14 @@ export const QuizPublic = () => {
   };
 
   useEffect(() => {
-    trackEvent('quiz_view', { source: searchParams.get('utm_source') || 'direto' });
+    trackEvent('quiz_view', { 
+      source: searchParams.get('utm_source') || 'direto',
+      utm_source: searchParams.get('utm_source') || '',
+      utm_medium: searchParams.get('utm_medium') || '',
+      utm_campaign: searchParams.get('utm_campaign') || '',
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      referrer: typeof document !== 'undefined' ? document.referrer || '' : ''
+    });
   }, []);
 
   const handleStartQuiz = async () => {
@@ -424,7 +431,7 @@ export const QuizPublic = () => {
                           <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Textos da página de venda e de abordagem</li>
                           <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Respostas para objeções e follow-up</li>
                         </ul>
-                        <div className="text-2xl font-extrabold mb-4">{CFG.precoGhost}<span className="text-sm font-normal text-purple-200/50">/m�s</span></div>
+                        <div className="text-2xl font-extrabold mb-4">{CFG.precoGhost}<span className="text-sm font-normal text-purple-200/50">/mês</span></div>
                         <a 
                           href="/" onClick={(e) => { e.preventDefault(); trackEvent('quiz_offer_clicked', { offer: 'Ghost AI' }); window.location.href = '/'; }}
                           className="block text-center w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]"
@@ -438,15 +445,19 @@ export const QuizPublic = () => {
                     return (
                       <div key="ment" className={`bg-[#120e1d] border ${isDest ? 'border-purple-500 ring-1 ring-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.15)]' : 'border-purple-900/50'} rounded-2xl p-6`}>
                         {isDest && <div className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2">Recomendação Principal</div>}
-                        <h3 className="text-xl font-bold mb-3">Ghost AI <span className="text-purple-400">� Vital�cio</span></h3>
+                        <h3 className="text-xl font-bold mb-3">Ghost AI <span className="text-purple-400">• Vitalício</span></h3>
                         <ul className="space-y-2 text-purple-200/70 text-sm mb-5">
-                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Acesso ilimitado e para sempre � plataforma</li>\n                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Atualiza��es gratuitas e novos agentes de IA</li>\n                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Economize R$ 190 por ano, sem mensalidades</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Acesso ilimitado e para sempre à plataforma</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Atualizações gratuitas e novos agentes de IA</li>
+                          <li className="flex items-start gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" /> Economize R$ 190 por ano, sem mensalidades</li>
                         </ul>
-                        <div className="text-2xl font-extrabold mb-4">{CFG.precoMentoria}<span className="text-sm font-normal text-purple-200/50">/m�s</span></div>
+                        <div className="text-2xl font-extrabold mb-4">{CFG.precoMentoria}<span className="text-sm font-normal text-purple-200/50">/mês</span></div>
                         <a 
-                          href="/" onClick={(e) => { e.preventDefault(); trackEvent('quiz_offer_clicked', { offer: 'Vital�cio' }); window.location.href = '/'; }}
+                          href="/" onClick={(e) => { e.preventDefault(); trackEvent('quiz_offer_clicked', { offer: 'Vitalício' }); window.location.href = '/'; }}
                           className="block text-center w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]"
-                        >\n                          Quero o Plano Vital�cio\n                        </a>
+                        >
+                          Quero o Plano Vitalício
+                        </a>
                       </div>
                     )
                   }

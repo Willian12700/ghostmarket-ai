@@ -1,7 +1,7 @@
-import { Megaphone, AlertOctagon } from 'lucide-react';
+import { Megaphone, AlertOctagon, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react'
-import { collection, doc, setDoc, getDocs, query, where, writeBatch, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, setDoc, deleteDoc, getDocs, query, where, writeBatch, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -116,7 +116,7 @@ export const AdminPanel = () => {
       addToast(newStatus ? 'Acesso suspenso com sucesso.' : 'Acesso restaurado.', 'success');
     } catch (e) {
       console.error(e);
-      addToast('Erro ao suspender acesso.', 'error');
+      addToast('Erro ao suspender acesso.', 'error'); } }; const handleDeleteUser = async () => { if (!selectedUser) return; if (!window.confirm(`Tem certeza que deseja revogar e excluir a conta "${selectedUser.email}" do banco de dados?`)) return; try { const cleanEmail = (selectedUser.email || '').toLowerCase().trim(); if (cleanEmail) { await deleteDoc(doc(db, 'allowed_users', cleanEmail)).catch(() => {}); await deleteDoc(doc(db, 'users', cleanEmail)).catch(() => {}); } if (selectedUser.docId) { await deleteDoc(doc(db, 'allowed_users', selectedUser.docId)).catch(() => {}); await deleteDoc(doc(db, 'users', selectedUser.docId)).catch(() => {}); } if (selectedUser.uid) { await deleteDoc(doc(db, 'users', selectedUser.uid)).catch(() => {}); } setUsers(users.filter(u => u.email !== selectedUser.email)); setSelectedUser(null); addToast('Conta revogada e removida com sucesso!', 'success'); } catch (e) { console.error(e); addToast('Erro ao excluir conta.', 'error');
     }
   };
 
@@ -352,7 +352,7 @@ export const AdminPanel = () => {
 
                 <Input 
 
-                  label="E-mail do Usu�rio" 
+                  label="E-mail do Usuário" 
                   placeholder="email@exemplo.com"
                   value={freeAccessEmail}
                   onChange={(e) => setFreeAccessEmail(e.target.value)}
@@ -412,7 +412,7 @@ export const AdminPanel = () => {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
-              Gestão de Usu�rios
+              Gestão de Usuários
             </div>
                           <div className="flex items-center gap-3 w-full justify-end">
                 <div className="flex bg-background border border-border rounded-lg overflow-hidden h-10">
@@ -437,18 +437,18 @@ export const AdminPanel = () => {
             <table className="w-full text-left text-sm text-gray-300">
               <thead className="bg-background text-textSecondary font-medium">
                 <tr>
-                  <th className="px-6 py-4">Usu�rio</th>
+                  <th className="px-6 py-4">Usuário</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">�ltimo Acesso</th>
+                  <th className="px-6 py-4">Último Acesso</th>
                     <th className="px-6 py-4">Origem</th>
-                  <th className="px-6 py-4 text-right">A��o</th>
+                  <th className="px-6 py-4 text-right">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {loadingUsers ? (
-                  <tr><td colSpan={4} className="text-center py-8">Carregando usuários...</td></tr>
+                  <tr><td colSpan={5} className="text-center py-8">Carregando usuários...</td></tr>
                 ) : filteredUsers.length === 0 ? (
-                  <tr><td colSpan={4} className="text-center py-8">Nenhum usuário encontrado.</td></tr>
+                  <tr><td colSpan={5} className="text-center py-8">Nenhum usuário encontrado.</td></tr>
                 ) : (
                   filteredUsers.map((u, i) => {
                     const isOnline = u.lastLogin && (new Date().getTime() - new Date(u.lastLogin).getTime() < 15 * 60 * 1000)
@@ -482,7 +482,7 @@ export const AdminPanel = () => {
                             {u.lastLogin ? new Date(u.lastLogin).toLocaleString('pt-BR') : 'Nunca'}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-xs text-textSecondary">{u.utm_source || u.source || 'Direto'}</td><td className="px-6 py-4 text-right">
                           <Button size="sm" variant="secondary" onClick={() => loadUserDetails(u)}>Ver Detalhes</Button>
                         </td>
                       </tr>
@@ -518,7 +518,7 @@ export const AdminPanel = () => {
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-white leading-tight">{selectedUser.name || 'Usu�rio'}</h3>
+                    <h3 className="font-bold text-white leading-tight">{selectedUser.name || 'Usuário'}</h3>
                     <p className="text-xs text-textSecondary">{selectedUser.email}</p>
                   </div>
                 </div>
@@ -535,7 +535,7 @@ export const AdminPanel = () => {
                         useAuthStore.getState().setUser({
                           uid: selectedUser.uid || selectedUser.email,
                           email: selectedUser.email,
-                          name: selectedUser.name || 'Usu�rio',
+                          name: selectedUser.name || 'Usuário',
                           photoURL: selectedUser.photoURL || ''
                         });
                         navigate('/');
@@ -629,7 +629,7 @@ export const AdminPanel = () => {
                   onClick={handleToggleSuspend}
                 >
                   <AlertOctagon className="w-4 h-4" />
-                  {selectedUser.isSuspended ? 'Restaurar Acesso' : 'Suspender Acesso'}
+                  {selectedUser.isSuspended ? 'Restaurar Acesso' : 'Suspender Acesso'} </Button> <Button variant="secondary" className="w-full gap-2 font-bold border border-red-500/30 text-red-400 hover:bg-red-500/10" onClick={handleDeleteUser}> <Trash2 className="w-4 h-4" /> Revogar & Excluir Conta
                 </Button>
 
                 {/* Saldo Financeiro */}
@@ -659,7 +659,7 @@ export const AdminPanel = () => {
                             <div className="text-xs text-textSecondary mt-1">{site.views || 0} acessos totais</div>
                           </div>
                           <a 
-                            href={site.domain} 
+                            href={site.domain?.startsWith('http') ? site.domain : `${window.location.origin}/s/${site.id}`} 
                             target="_blank" 
                             rel="noreferrer"
                             className="p-2 text-textSecondary hover:text-primary bg-panel rounded-lg transition-colors shrink-0 ml-2"

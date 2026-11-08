@@ -50,7 +50,12 @@ export const TutorialModalPlayer = ({
   const handleNavigateToTool = () => {
     if (!tutorial.toolRoute) return
     onClose()
-    navigate(tutorial.toolRoute)
+    const routeMap: Record<string, string> = {
+      '/ide': '/builder',
+      '/digitaliza-crm': '/contracts',
+      '/offers': '/dashboard'
+    }
+    navigate(routeMap[tutorial.toolRoute] || tutorial.toolRoute)
   }
 
   return (

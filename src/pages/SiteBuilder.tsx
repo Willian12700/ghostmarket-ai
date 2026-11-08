@@ -1,619 +1,1888 @@
-﻿import { useState, useRef, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { getDoc } from 'firebase/firestore'
-import { useAuthStore } from '@/store/authStore'
-import { Globe, UploadCloud, ChevronRight, ChevronLeft, CheckCircle2, FileCode2, Monitor, Smartphone, Shield, Bot } from 'lucide-react'
-import { CreationStepper } from '@/components/ui/CreationStepper'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { useToastStore } from '@/store/toastStore'
-import { motion, AnimatePresence } from 'framer-motion'
-import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore'
-import { db } from '@/config/firebase'
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Code,
+  Eye,
+  Upload,
+  Sparkles,
+  Check,
+  Copy,
+  ExternalLink,
+  Smartphone,
+  Monitor,
+  Shield,
+  Bot,
+  Trash2,
+  Maximize2,
+  Minimize2,
+  Download,
+  Palette,
+  Type,
+  Layout,
+  ShoppingBag,
+  Image as ImageIcon,
+  Plus,
+  Search,
+  Layers,
+  Sliders,
+  Globe,
+  RefreshCw,
+  Lock,
+} from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { useToastStore } from '../store/toastStore';
+import { db } from '@/config/firebase';
+import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase/firestore';
+import { createAdminCredentials, ClientAdminAuth } from '../utils/clientAdminCrypto';
+import {
+  SITE_TEMPLATES,
+  TEMPLATE_CATEGORIES,
+  COLOR_PALETTES,
+  FONT_PRESETS,
+  LAYOUT_VARIANTS,
+  SiteStudioConfig,
+  InteractionMode,
+  findBestTemplateForNiche,
+  compileTemplateToHtml,
+} from '../data/siteTemplates';
+
+type StudioTab = 'templates' | 'colors' | 'texts' | 'catalog' | 'media' | 'extras';
+type BuilderWorkspaceMode = 'studio' | 'code';
 
 export const SiteBuilder = () => {
-  const { addToast } = useToastStore()
-  const { user } = useAuthStore()
-  const [searchParams] = useSearchParams()
-  const editId = searchParams.get('edit')
-  
-  const [step, setStep] = useState(1)
-  const [htmlContent, setHtmlContent] = useState('')
-  const [cssContent, setCssContent] = useState('')
-  const [jsContent, setJsContent] = useState('')
-  const [whatsappNumber, setWhatsappNumber] = useState('')
-  
-  const [activeView, setActiveView] = useState<'desktop' | 'mobile'>('desktop')
-  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
-  const [domainType, setDomainType] = useState<'subdomain' | 'custom'>('subdomain')
-  const [domainName, setDomainName] = useState('')
-  const [isPublishing, setIsPublishing] = useState(false)
-  const [publishedUrl, setPublishedUrl] = useState('')
+  const { user } = useAuthStore();
+  const { addToast } = useToastStore();
+  const toast = {
+    success: (msg: string) => addToast(msg, 'success'),
+    error: (msg: string, _opts?: any) => addToast(msg, 'error'),
+  };
+  const [searchParams] = useSearchParams();
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [uploadType, setUploadType] = useState<'html'|'css'|'js'>('html')
-  const [isProtectionEnabled, setIsProtectionEnabled] = useState(false)
-  const [chatbots, setChatbots] = useState<any[]>([])
-  const [selectedBotId, setSelectedBotId] = useState('')
+  // Workspace Mode: Visual Studio (default) vs Raw Code Editor
+  const [workspaceMode, setWorkspaceMode] = useState<BuilderWorkspaceMode>('studio');
+  const [activeStudioTab, setActiveStudioTab] = useState<StudioTab>('templates');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [templateSearch, setTemplateSearch] = useState<string>('');
+  const [showTemplateGalleryModal, setShowTemplateGalleryModal] = useState<boolean>(false);
 
-  
+  // Active Studio Configuration (Real-time state)
+  const [studioConfig, setStudioConfig] = useState<SiteStudioConfig>(() =>
+    structuredClone(SITE_TEMPLATES[0])
+  );
+
+  // Raw Code Mode States
+  const [siteName, setSiteName] = useState(SITE_TEMPLATES[0].name);
+  const [customSlug, setCustomSlug] = useState('');
+  const [htmlCode, setHtmlCode] = useState(() => compileTemplateToHtml(SITE_TEMPLATES[0]));
+  const [cssCode, setCssCode] = useState('');
+  const [jsCode, setJsCode] = useState('');
+  const [activeCodeTab, setActiveCodeTab] = useState<'html' | 'css' | 'js'>('html');
+
+  // Preview & Publish States
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishedAdminUrl, setPublishedAdminUrl] = useState<string | null>(null);
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+  const [protectCode, setProtectCode] = useState(true);
+  const [selectedChatbot, setSelectedChatbot] = useState<string>('none');
+  const [chatbots, setChatbots] = useState<any[]>([]);
+
+  // Establishment Client Admin Panel States (SHA-256 Protected)
+  const [enableClientAdmin, setEnableClientAdmin] = useState<boolean>(true);
+  const [clientAdminUser, setClientAdminUser] = useState<string>('admin');
+  const [clientAdminPass, setClientAdminPass] = useState<string>('Mudar@123');
+  const [existingAdminAuth, setExistingAdminAuth] = useState<ClientAdminAuth | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load existing site if ?edit=siteId is provided, or sync URL params from Scanner / PromptBuilder
   useEffect(() => {
-    if (user) {
-      const q = query(collection(db, 'chatbots'), where('userId', '==', user.uid))
-      getDocs(q).then(snap => {
-        const bots: any[] = []
-        snap.forEach(d => bots.push({ id: d.id, ...d.data() }))
-        setChatbots(bots)
-      })
-    }
-  }, [user])
-  
-  useEffect(() => {
-      if (editId) {
-      const fetchSite = async () => {
+    const editId = searchParams.get('edit');
+    if (editId) {
+      const loadExistingSite = async () => {
         try {
-          const docSnap = await getDoc(doc(db, 'sites', editId));
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setHtmlContent(data.htmlContent || data.rawHtml || '');
-            setCssContent(data.cssContent || '');
-            setJsContent(data.jsContent || '');
-            setWhatsappNumber(data.whatsappNumber || '');
-            setIsProtectionEnabled(data.isProtectionEnabled || false);
-            setSelectedBotId(data.chatbotId || '');
-            setDomainName(data.id);
-            if (data.domainType) setDomainType(data.domainType);
+          let snap = await getDoc(doc(db, 'sites', editId));
+          if (!snap.exists()) {
+            snap = await getDoc(doc(db, 'hosted_sites', editId));
           }
-        } catch (e) {
-          console.error(e);
+          if (snap.exists()) {
+            const data = snap.data();
+            setEditingSiteId(snap.id);
+            setCustomSlug(data.slug || snap.id);
+            setSiteName(data.name || snap.id);
+            if (data.studioConfig) {
+              setStudioConfig(data.studioConfig);
+              setWorkspaceMode('studio');
+            } else if (data.rawHtml || data.html) {
+              setHtmlCode(data.rawHtml || data.html);
+              setCssCode(data.rawCss || '');
+              setJsCode(data.rawJs || '');
+              setWorkspaceMode('code');
+            }
+            if (data.adminAuth) {
+              setExistingAdminAuth(data.adminAuth);
+              setEnableClientAdmin(Boolean(data.adminAuth.enabled));
+              setClientAdminUser(data.adminAuth.username || 'admin');
+              setClientAdminPass('');
+            }
+            toast.success(`Projeto "${data.name || snap.id}" carregado para edição!`);
+          }
+        } catch (err) {
+          console.error('Error loading site for edit:', err);
         }
       };
-      fetchSite();
+      loadExistingSite();
+      return;
     }
-  }, [editId]);
 
+    const leadName = searchParams.get('leadName') || searchParams.get('name');
+    const leadCategory = searchParams.get('leadCategory') || searchParams.get('niche') || searchParams.get('template');
+    const leadCity = searchParams.get('leadCity') || searchParams.get('city');
+    const leadPhone = searchParams.get('leadPhone') || searchParams.get('phone');
 
-  const getCombinedHtml = () => {
-    let finalHtml = htmlContent || ''
-
-    
-    let botInjection = '';
-    if (selectedBotId) {
-      const bot = chatbots.find(b => b.id === selectedBotId);
-      if (bot) {
-        // Stringify systemPrompt safely for JS injection
-        const safeSys = JSON.stringify(bot.systemPrompt);
-        const safeGreet = JSON.stringify(bot.greeting);
-        const color = bot.primaryColor;
-        
-        botInjection = `
-<!-- IA CHATBOT WIDGET -->
-<style>
-  #gm-chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 999999; font-family: sans-serif; }
-  #gm-chat-btn { width: 60px; height: 60px; border-radius: 50%; background: ${color}; color: white; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
-  #gm-chat-btn:hover { transform: scale(1.05); }
-  #gm-chat-btn svg { width: 30px; height: 30px; fill: white; }
-  #gm-chat-window { display: none; width: 350px; height: 500px; max-height: 80vh; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden; position: absolute; bottom: 80px; right: 0; border: 1px solid #eee; }
-  #gm-chat-header { background: ${color}; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-  #gm-chat-header span { display: flex; align-items: center; gap: 8px; }
-  #gm-chat-close { background: transparent; border: none; color: white; cursor: pointer; padding: 5px; }
-  #gm-chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f9f9f9; }
-  .gm-msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
-  .gm-msg-bot { background: white; color: #333; align-self: flex-start; border: 1px solid #eee; border-bottom-left-radius: 4px; }
-  .gm-msg-user { background: ${color}; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-  #gm-chat-input-container { display: flex; padding: 10px; border-top: 1px solid #eee; background: white; }
-  #gm-chat-input { flex: 1; border: 1px solid #ddd; border-radius: 20px; padding: 10px 15px; outline: none; font-size: 14px; }
-  #gm-chat-input:focus { border-color: ${color}; }
-  #gm-chat-send { background: ${color}; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; margin-left: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  .gm-typing { display: inline-block; width: 6px; height: 6px; background: #bbb; border-radius: 50%; animation: gm-typing 1.4s infinite ease-in-out both; margin: 0 2px; }
-  .gm-typing:nth-child(1) { animation-delay: -0.32s; }
-  .gm-typing:nth-child(2) { animation-delay: -0.16s; }
-  @keyframes gm-typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-  @media (max-width: 480px) {
-    #gm-chat-window { position: fixed; bottom: 0; right: 0; width: 100%; height: 100%; max-height: 100%; border-radius: 0; z-index: 9999999; }
-  }
-</style>
-<div id="gm-chat-widget">
-  <div id="gm-chat-window">
-    <div id="gm-chat-header">
-      <span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-        ${bot.name}
-      </span>
-      <button id="gm-chat-close">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
-      </button>
-    </div>
-    <div id="gm-chat-messages"></div>
-    <div id="gm-chat-input-container">
-      <input type="text" id="gm-chat-input" placeholder="Digite sua mensagem..." autocomplete="off">
-      <button id="gm-chat-send">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
-    </div>
-  </div>
-  <button id="gm-chat-btn">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-  </button>
-</div>
-
-<script>
-(function(){
-  const btn = document.getElementById('gm-chat-btn');
-  const win = document.getElementById('gm-chat-window');
-  const close = document.getElementById('gm-chat-close');
-  const msgs = document.getElementById('gm-chat-messages');
-  const input = document.getElementById('gm-chat-input');
-  const send = document.getElementById('gm-chat-send');
-  
-  const sys = ${safeSys};
-  const greet = ${safeGreet};
-  let history = [
-    { role: 'system', content: sys }
-  ];
-
-  function addMsg(text, isBot, isTyping = false) {
-    const d = document.createElement('div');
-    d.className = 'gm-msg ' + (isBot ? 'gm-msg-bot' : 'gm-msg-user');
-    if (isTyping) {
-      d.id = 'gm-typing-indicator';
-      d.innerHTML = '<span class="gm-typing"></span><span class="gm-typing"></span><span class="gm-typing"></span>';
-    } else {
-      d.innerText = text;
+    if (leadName || leadCategory || leadCity || leadPhone) {
+      const matched = findBestTemplateForNiche(leadCategory || leadName || '');
+      if (leadName) {
+        matched.name = leadName;
+        matched.aboutTitle = `Por que escolher a ${leadName}?`;
+        matched.footerText = `© ${new Date().getFullYear()} ${leadName}. Todos os direitos reservados.`;
+        setSiteName(leadName);
+        const suggestedUser = leadName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '')
+          .slice(0, 14);
+        if (suggestedUser) setClientAdminUser(suggestedUser);
+      }
+      if (leadCity) {
+        matched.city = leadCity;
+      }
+      if (leadPhone) {
+        const digits = leadPhone.replace(/\D/g, '');
+        matched.phone = leadPhone;
+        matched.whatsapp = digits.startsWith('55') ? digits : `55${digits}`;
+      }
+      setStudioConfig(matched);
+      setActiveStudioTab('colors');
+      toast.success(`Modelo "${matched.templateTitle}" carregado para ${leadName || 'seu projeto'}!`);
     }
-    msgs.appendChild(d);
-    msgs.scrollTop = msgs.scrollHeight;
-  }
+  }, [searchParams]);
 
-  // Initial
-  let opened = false;
-  btn.onclick = () => {
-    win.style.display = 'flex';
-    btn.style.display = 'none';
-    if (!opened) {
-      addMsg(greet, true);
-      history.push({ role: 'assistant', content: greet });
-      opened = true;
+  // Compile Studio Config into HTML in real time whenever studioConfig changes in Studio mode
+  useEffect(() => {
+    if (workspaceMode === 'studio') {
+      const compiled = compileTemplateToHtml(studioConfig);
+      setHtmlCode(compiled);
+      setSiteName(studioConfig.name);
     }
-  };
-  close.onclick = () => {
-    win.style.display = 'none';
-    btn.style.display = 'flex';
+  }, [studioConfig, workspaceMode]);
+
+  // Fetch user's AI Chatbots
+  useEffect(() => {
+    const fetchChatbots = async () => {
+      if (!user) return;
+      try {
+        const q = query(collection(db, 'chatbots'), where('userId', '==', user.uid));
+        const snap = await getDocs(q);
+        setChatbots(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error('Error fetching chatbots:', err);
+      }
+    };
+    fetchChatbots();
+  }, [user]);
+
+  const filteredTemplates = useMemo(() => {
+    return SITE_TEMPLATES.filter((t) => {
+      const matchesCat = selectedCategory === 'Todos' || t.category === selectedCategory;
+      const q = templateSearch.trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        t.templateTitle.toLowerCase().includes(q) ||
+        t.name.toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q) ||
+        t.headline.toLowerCase().includes(q);
+      return matchesCat && matchesQuery;
+    });
+  }, [selectedCategory, templateSearch]);
+
+  const handleSelectTemplate = (template: SiteStudioConfig) => {
+    const cloned = structuredClone(template);
+    // Preserve current lead contact details if user already customized them
+    if (studioConfig.name && studioConfig.name !== SITE_TEMPLATES[0].name) {
+      cloned.name = studioConfig.name;
+      cloned.aboutTitle = `Por que escolher a ${studioConfig.name}?`;
+      cloned.footerText = `© ${new Date().getFullYear()} ${studioConfig.name}. Todos os direitos reservados.`;
+    }
+    if (studioConfig.whatsapp !== '5511999999999') {
+      cloned.whatsapp = studioConfig.whatsapp;
+      cloned.phone = studioConfig.phone;
+    }
+    if (studioConfig.city !== 'São Paulo - SP') {
+      cloned.city = studioConfig.city;
+    }
+    setStudioConfig(cloned);
+    setWorkspaceMode('studio');
+    setShowTemplateGalleryModal(false);
+    toast.success(`Modelo "${template.templateTitle}" aplicado em tempo real!`);
   };
 
-  async function handleSend() {
-    const text = input.value.trim();
-    if(!text) return;
-    input.value = '';
-    input.disabled = true;
-    send.disabled = true;
-    
-    addMsg(text, false);
-    history.push({ role: 'user', content: text });
-    
-    addMsg('', true, true); // typing
+  const updateConfig = <K extends keyof SiteStudioConfig>(key: K, value: SiteStudioConfig[K]) => {
+    setStudioConfig((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
-    try {
-      // Using Pollinations Text Proxy to avoid leaking keys!
-      const res = await fetch('https://text.pollinations.ai/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: history,
-          model: 'openai'
-        })
-      });
-      const data = await res.text();
-      
-      // Remove typing
-      const typingEl = document.getElementById('gm-typing-indicator');
-      if(typingEl) typingEl.remove();
+  const applyColorPalette = (palette: (typeof COLOR_PALETTES)[number]) => {
+    setStudioConfig((prev) => ({
+      ...prev,
+      primaryColor: palette.primary,
+      secondaryColor: palette.secondary,
+      backgroundColor: palette.background,
+      surfaceColor: palette.surface,
+      textColor: palette.text,
+    }));
+    toast.success(`Paleta "${palette.name}" aplicada!`);
+  };
 
-      if(data) {
-        addMsg(data, true);
-        history.push({ role: 'assistant', content: data });
+  const handleUpdateCatalogItem = (idx: number, field: string, value: string) => {
+    setStudioConfig((prev) => {
+      const next = [...prev.catalog];
+      next[idx] = { ...next[idx], [field]: value };
+      return { ...prev, catalog: next };
+    });
+  };
+
+  const handleAddCatalogItem = () => {
+    setStudioConfig((prev) => ({
+      ...prev,
+      catalog: [
+        ...prev.catalog,
+        {
+          id: `item-${Date.now()}`,
+          name: 'Novo Item ou Serviço',
+          description: 'Descrição detalhada com os principais benefícios e diferenciais.',
+          price: 'R$ 99,90',
+          category: prev.catalog[0]?.category || 'Destaques',
+          image: prev.heroImage,
+          badge: 'Novo',
+        },
+      ],
+    }));
+    toast.success('Novo item adicionado ao catálogo!');
+  };
+
+  const handleRemoveCatalogItem = (idx: number) => {
+    setStudioConfig((prev) => ({
+      ...prev,
+      catalog: prev.catalog.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        if (file.name.endsWith('.html')) {
+          setHtmlCode(content);
+          setWorkspaceMode('code');
+          toast.success(`Arquivo ${file.name} carregado no Editor!`);
+        } else if (file.name.endsWith('.css')) {
+          setCssCode((prev) => prev + '\n/* ' + file.name + ' */\n' + content);
+          setWorkspaceMode('code');
+          toast.success(`Arquivo ${file.name} carregado!`);
+        } else if (file.name.endsWith('.js')) {
+          setJsCode((prev) => prev + '\n// ' + file.name + '\n' + content);
+          setWorkspaceMode('code');
+          toast.success(`Arquivo ${file.name} carregado!`);
+        }
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  const generateCombinedCode = () => {
+    let finalHtml = htmlCode;
+
+    if (cssCode.trim()) {
+      const styleTag = `<style>\n${cssCode}\n</style>`;
+      if (finalHtml.includes('</head>')) {
+        finalHtml = finalHtml.replace('</head>', `${styleTag}\n</head>`);
       } else {
-        addMsg('Desculpe, estou com problemas tÃ©cnicos agora.', true);
-      }
-    } catch(e) {
-      const typingEl = document.getElementById('gm-typing-indicator');
-      if(typingEl) typingEl.remove();
-      addMsg('Erro de conexÃ£o.', true);
-    }
-    input.disabled = false;
-    send.disabled = false;
-    input.focus();
-  }
-
-  send.onclick = handleSend;
-  input.onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
-})();
-</script>
-`;
+        finalHtml = `${styleTag}\n${finalHtml}`;
       }
     }
 
-    let protectInjection = '';
-    if (isProtectionEnabled) {
-      protectInjection = `
-<style>
-/* ProteÃ§Ã£o Anti-CÃ³pia GhostMarket */
-body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-</style>
-<script>
-// ProteÃ§Ã£o Anti-CÃ³pia GhostMarket
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-  if (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 's' || e.key === 'p' || e.key === 'C' || e.key === 'U' || e.key === 'S' || e.key === 'P')) e.preventDefault();
-  if (e.ctrlKey && e.shiftKey && (e.key === 'i' || e.key === 'j' || e.key === 'c' || e.key === 'I' || e.key === 'J' || e.key === 'C')) e.preventDefault();
-  if (e.key === 'F12') e.preventDefault();
-});
-</script>`;
-    }
-    
-    if (!finalHtml.toLowerCase().includes('<html')) {
-      finalHtml = `<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <!-- CSS_INJECT -->\n</head>\n<body>\n  ${finalHtml}\n  <!-- JS_INJECT -->\n</body>\n</html>`
-    } else {
-       if (finalHtml.toLowerCase().includes('</head>')) {
-           finalHtml = finalHtml.replace(/<\/head>/i, '<!-- CSS_INJECT --></head>')
-       } else {
-           finalHtml = finalHtml.replace('<html', '<html\n<!-- CSS_INJECT -->')
-       }
-       
-       if (finalHtml.toLowerCase().includes('</body>')) {
-           finalHtml = finalHtml.replace(/<\/body>/i, '<!-- JS_INJECT --></body>')
-       } else {
-           finalHtml += '<!-- JS_INJECT -->'
-       }
+    let finalJs = jsCode;
+
+    if (protectCode) {
+      const protectionScript = `
+      // Anti-Clone Protection
+      document.addEventListener('contextmenu', event => event.preventDefault());
+      document.onkeydown = function(e) {
+        if(e.keyCode == 123) return false;
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) return false;
+      };`;
+      finalJs = `${protectionScript}\n${finalJs}`;
     }
 
-    if (cssContent.trim()) {
-      finalHtml = finalHtml.replace('<!-- CSS_INJECT -->', `<style>${cssContent}</style>\n${protectInjection}`)
-    } else {
-      finalHtml = finalHtml.replace('<!-- CSS_INJECT -->', protectInjection)
+    if (selectedChatbot !== 'none') {
+      const bot = chatbots.find((b) => b.id === selectedChatbot);
+      if (bot) {
+        const chatbotScript = `
+        // GhostAI Chatbot Widget
+        (function() {
+          const style = document.createElement('style');
+          style.innerHTML = \`
+            .ghost-chat-widget { position: fixed; bottom: 92px; right: 22px; z-index: 9999; font-family: 'Inter', sans-serif; }
+            .ghost-chat-btn { width: 58px; height: 58px; border-radius: 50%; background: ${bot.color || '#10B981'}; color: white; border: none; box-shadow: 0 8px 25px rgba(0,0,0,0.35); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+            .ghost-chat-btn:hover { transform: scale(1.06); }
+            .ghost-chat-window { position: absolute; bottom: 72px; right: 0; width: 340px; height: 460px; background: #121216; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); display: none; flex-direction: column; overflow: hidden; }
+            .ghost-chat-window.open { display: flex; }
+            .ghost-chat-header { background: ${bot.color || '#10B981'}; color: white; padding: 14px 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+            .ghost-chat-messages { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+            .ghost-msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.45; }
+            .ghost-msg.bot { background: rgba(255,255,255,0.08); color: #fff; align-self: flex-start; border-bottom-left-radius: 4px; }
+            .ghost-msg.user { background: ${bot.color || '#10B981'}; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+            .ghost-chat-input { display: flex; padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); background: #09090B; }
+            .ghost-chat-input input { flex: 1; background: transparent; border: none; color: white; padding: 8px; outline: none; font-size: 13px; }
+            .ghost-chat-input button { background: ${bot.color || '#10B981'}; color: white; border: none; padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 12px; }
+          \`;
+          document.head.appendChild(style);
+          const widget = document.createElement('div');
+          widget.className = 'ghost-chat-widget';
+          widget.innerHTML = \`
+            <div class="ghost-chat-window" id="ghostChatWindow">
+              <div class="ghost-chat-header">
+                <span>${bot.name}</span>
+                <button onclick="document.getElementById('ghostChatWindow').classList.remove('open')" style="background:none;border:none;color:white;cursor:pointer;font-size:18px;">&times;</button>
+              </div>
+              <div class="ghost-chat-messages" id="ghostChatMessages">
+                <div class="ghost-msg bot">${bot.greeting || 'Olá! Como posso ajudar você hoje?'}</div>
+              </div>
+              <div class="ghost-chat-input">
+                <input type="text" id="ghostChatInput" placeholder="Digite sua dúvida..." onkeypress="if(event.key === 'Enter') window.sendGhostMsg()" />
+                <button onclick="window.sendGhostMsg()">Enviar</button>
+              </div>
+            </div>
+            <button class="ghost-chat-btn" onclick="document.getElementById('ghostChatWindow').classList.toggle('open')" title="Assistente IA">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </button>
+          \`;
+          document.body.appendChild(widget);
+          window.sendGhostMsg = function() {
+            const input = document.getElementById('ghostChatInput');
+            const messages = document.getElementById('ghostChatMessages');
+            const text = input.value.trim();
+            if(!text) return;
+            const userMsg = document.createElement('div');
+            userMsg.className = 'ghost-msg user';
+            userMsg.innerText = text;
+            messages.appendChild(userMsg);
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+            setTimeout(() => {
+              const botMsg = document.createElement('div');
+              botMsg.className = 'ghost-msg bot';
+              botMsg.innerText = "Perfeito! Já registrei sua solicitação. Clique no botão de WhatsApp da página para concluir seu atendimento prioritário.";
+              messages.appendChild(botMsg);
+              messages.scrollTop = messages.scrollHeight;
+            }, 700);
+          };
+        })();`;
+        finalJs = `${finalJs}\n${chatbotScript}`;
+      }
     }
 
-    if (jsContent.trim()) {
-      finalHtml = finalHtml.replace('<!-- JS_INJECT -->', `<script>${jsContent}</script>\n${botInjection}`)
-    } else {
-      finalHtml = finalHtml.replace('<!-- JS_INJECT -->', botInjection)
+    if (finalJs.trim()) {
+      const scriptTag = `<script>\n${finalJs}\n</script>`;
+      if (finalHtml.includes('</body>')) {
+        finalHtml = finalHtml.replace('</body>', `${scriptTag}\n</body>`);
+      } else {
+        finalHtml = `${finalHtml}\n${scriptTag}`;
+      }
     }
 
-    
-  // FIX: Force all links to open in top window to prevent iframe navigation issues
-    if (/<head>/i.test(finalHtml)) {
-      finalHtml = finalHtml.replace(/<head>/i, '<head>\n<base target="_blank">');
-    } else if (/<html.*?>/i.test(finalHtml)) {
-      finalHtml = finalHtml.replace(/(<html.*?>)/i, '$1\n<head>\n<base target="_blank">\n</head>');
-    } else {
-      finalHtml = '<head>\n<base target="_blank">\n</head>\n' + finalHtml;
+    return finalHtml;
+  };
+
+  const handleDownloadHtml = () => {
+    const combined = generateCombinedCode();
+    const blob = new Blob([combined], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(siteName || 'site-profissional').toLowerCase().replace(/[^a-z0-9-_]/g, '-')}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Arquivo HTML completo baixado!');
+  };
+
+  const handlePublish = async () => {
+    if (!user) {
+      toast.error('Você precisa estar logado para publicar um site.');
+      return;
     }
-    
-    if (whatsappNumber.trim()) {
-    let waClean = whatsappNumber.replace(/\D/g, '');
-    if (waClean.length >= 10 && !waClean.startsWith('55')) {
-      waClean = '55' + waClean;
-    }
-    const waBtn = `<a href="https://api.whatsapp.com/send?phone=${waClean}&text=Ol%C3%A1!" target="_blank" style="position:fixed;bottom:20px;right:20px;background-color:#25d366;color:white;border-radius:50px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:2147483647;text-decoration:none;"><svg viewBox="0 0 24 24" width="35" height="35" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133-.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></a>`;
-    
-    if (/<\/body>/i.test(finalHtml)) {
-      finalHtml = finalHtml.replace(/<\/body>/i, waBtn + '\n</body>');
-    } else if (/<\/html>/i.test(finalHtml)) {
-      finalHtml = finalHtml.replace(/<\/html>/i, waBtn + '\n</html>');
-    } else {
-      finalHtml += waBtn;
-    }
-  }
-
-    return finalHtml
-  }
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const content = event.target?.result as string
-      if (uploadType === 'html') setHtmlContent(content)
-      if (uploadType === 'css') setCssContent(content)
-      if (uploadType === 'js') setJsContent(content)
-      addToast('Arquivo carregado com sucesso!', 'success')
-    }
-    reader.readAsText(file)
-    e.target.value = ''
-  }
-
-  const triggerUpload = (type: 'html'|'css'|'js') => {
-    setUploadType(type)
-    fileInputRef.current?.click()
-  }
-
-  const handlePublish = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    if (!domainName.trim()) {
-      addToast('Defina um domÃ­nio', 'error')
-      return
+    const finalSiteName = (siteName || studioConfig.name || '').trim();
+    if (!finalSiteName) {
+      toast.error('Por favor, dê um nome ao seu projeto.');
+      return;
     }
 
-    setIsPublishing(true)
+    setIsPublishing(true);
     try {
-      const siteId = domainName.toLowerCase().replace(/[^a-z0-9-]/g, '')
-      
-      // Check for domain collision
-      const docRef = doc(db, 'sites', siteId)
-      let snap; try { snap = await getDoc(docRef); } catch(e:any) { if(e.code==='permission-denied') { addToast('Este nome já está sendo usado por outra conta! Escolha outro.', 'error'); setIsPublishing(false); return; } throw e; }
-      if (snap.exists() && snap.data().userId !== (user?.uid || 'anonymous')) {
-        addToast('Este nome jÃ¡ estÃ¡ sendo usado por outra conta! Escolha outro.', 'error')
-        setIsPublishing(false)
-        return
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      const userPlan = userData?.plan || 'free';
+
+      const sitesQuery = query(collection(db, 'sites'), where('userId', '==', user.uid));
+      const sitesSnap = await getDocs(sitesQuery);
+      const currentSitesCount = sitesSnap.size;
+
+      const limits: Record<string, number> = {
+        free: 2,
+        pro: 15,
+        vitalicio: 35,
+        admin: 999999,
+      };
+      const maxSites = (user as any)?.role === 'admin' ? 999999 : limits[userPlan] || 2;
+
+      if (!editingSiteId && currentSitesCount >= maxSites) {
+        toast.error(
+          `Limite de hospedagem atingido (${maxSites} sites no plano ${userPlan.toUpperCase()}). Gerencie seus sites em "Meus Sites".`,
+          { duration: 5000 }
+        );
+        setIsPublishing(false);
+        return;
       }
 
-      const fullDomain = domainType === 'subdomain' ? `${window.location.origin}/s/${siteId}` : `https://${siteId}`
-      const rawHtml = getCombinedHtml()
+      const finalSlug = editingSiteId
+        ? editingSiteId
+        : customSlug.trim()
+        ? customSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-')
+        : `${finalSiteName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}-${Math.random().toString(36).substring(2, 6)}`;
 
-      await setDoc(docRef, {
-        id: siteId,
-        rawHtml,
-        htmlContent: steps[0].value,
-        cssContent: steps[1].value,
-        jsContent: steps[2].value,
-        whatsappNumber,
-        domain: fullDomain,
-        domainType,
-        isProtectionEnabled,
-          chatbotId: selectedBotId,
-          userId: user?.uid || 'anonymous',
-        publishedAt: new Date().toISOString()
-      })
+      const finalStudioConfig: SiteStudioConfig = {
+        ...studioConfig,
+        siteSlug: finalSlug,
+      };
 
-      addToast('Site hospedado com sucesso!', 'success')
-      if (!editId) {
-        setPublishedUrl(fullDomain)
+      const combinedCode =
+        workspaceMode === 'studio'
+          ? (() => {
+              const baseCompiled = compileTemplateToHtml(finalStudioConfig);
+              setHtmlCode(baseCompiled);
+              return generateCombinedCode();
+            })()
+          : generateCombinedCode();
+
+      // Build SHA-256 salted credentials for the establishment owner
+      let adminAuthPayload: ClientAdminAuth | null = existingAdminAuth;
+      if (enableClientAdmin) {
+        if (clientAdminPass.trim()) {
+          adminAuthPayload = await createAdminCredentials(
+            clientAdminUser.trim() || 'admin',
+            clientAdminPass.trim(),
+            true
+          );
+        } else if (existingAdminAuth) {
+          adminAuthPayload = {
+            ...existingAdminAuth,
+            enabled: true,
+            username: (clientAdminUser.trim() || existingAdminAuth.username).toLowerCase(),
+          };
+        } else {
+          adminAuthPayload = await createAdminCredentials(
+            clientAdminUser.trim() || 'admin',
+            'Mudar@123',
+            true
+          );
+        }
+      } else if (existingAdminAuth) {
+        adminAuthPayload = { ...existingAdminAuth, enabled: false };
       }
+
+      const publicUrl = `${window.location.origin}/s/${finalSlug}`;
+      const adminUrl = `${window.location.origin}/painel/${finalSlug}`;
+
+      await setDoc(
+        doc(db, 'sites', finalSlug),
+        {
+          id: finalSlug,
+          userId: user.uid,
+          name: finalSiteName,
+          slug: finalSlug,
+          domain: publicUrl,
+          domainType: 'subdomain',
+          templateId: finalStudioConfig.templateId,
+          category: finalStudioConfig.category,
+          studioConfig: finalStudioConfig,
+          adminAuth: adminAuthPayload,
+          html: combinedCode,
+          rawHtml: combinedCode,
+          rawCss: cssCode,
+          rawJs: jsCode,
+          protectCode,
+          chatbotId: selectedChatbot,
+          isActive: true,
+          publishedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          views: 0,
+        },
+        { merge: true }
+      );
+
+      setEditingSiteId(finalSlug);
+      setPublishedUrl(publicUrl);
+      setPublishedAdminUrl(enableClientAdmin ? adminUrl : null);
+      toast.success('Site e Painel do Estabelecimento publicados com sucesso!');
     } catch (error) {
-      console.error(error)
-      addToast('Erro ao publicar: ' + (error as Error).message, 'error')
+      console.error('Error publishing site:', error);
+      toast.error('Erro ao publicar o site. Tente novamente.');
     } finally {
-      setIsPublishing(false)
+      setIsPublishing(false);
     }
-  }
-
-  const steps = [
-    { id: 1, name: 'HTML', desc: 'Estrutura', value: htmlContent, setter: setHtmlContent, accept: '.html' },
-    { id: 2, name: 'CSS', desc: 'Estilos', value: cssContent, setter: setCssContent, accept: '.css' },
-    { id: 3, name: 'JS', desc: 'Scripts', value: jsContent, setter: setJsContent, accept: '.js' },
-    { id: 4, name: 'WhatsApp', desc: 'BotÃ£o MÃ¡gico', value: whatsappNumber, setter: setWhatsappNumber, accept: '' },
-    { id: 5, name: 'Preview', desc: 'Publicar', value: '', setter: () => {}, accept: '' }
-  ]
+  };
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0b0714] text-white selection:bg-primary/30 relative overflow-hidden">
-        {/* ANIMATED BACKGROUND BLOBS */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          <motion.div animate={{ x: [0, 50, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-primary/20 blur-[150px] rounded-full mix-blend-screen" />
-          <motion.div animate={{ x: [0, -50, 0], y: [0, 50, 0], scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 20, ease: "linear" }} className="absolute top-[20%] right-[-10%] w-[50vw] h-[50vw] bg-fuchsia-600/10 blur-[150px] rounded-full mix-blend-screen" />
-          <motion.div animate={{ x: [0, 100, 0], y: [0, 100, 0], scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 25, ease: "linear" }} className="absolute bottom-[-20%] left-[20%] w-[60vw] h-[60vw] bg-indigo-600/10 blur-[150px] rounded-full mix-blend-screen" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_1px,transparent_1px)]" style={{ backgroundSize: '24px 24px' }}></div>
-        </div>
-
-      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept={steps.find(s => s.id === step)?.accept} className="hidden" />
-      
-      {/* HEADER WIZARD */}
-      <div className="h-24 border-b border-[#261f36] bg-[#0b0714]/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-            <UploadCloud className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white leading-tight">Hospedagem Expressa</h2>
-            <p className="text-xs text-textSecondary">FaÃ§a o upload do seu funil</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-8 hidden md:flex">
-          {steps.map((s, i) => (
-            <div key={s.id} className="flex items-center">
-              <div className={`flex flex-col items-center gap-2 ${step === s.id ? 'opacity-100' : step > s.id ? 'opacity-70' : 'opacity-40'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${step === s.id ? 'bg-primary text-white ring-4 ring-primary/20' : step > s.id ? 'bg-primary text-white' : 'bg-[#0b0714] border border-[#261f36] text-textSecondary'}`}>
-                  {step > s.id ? <CheckCircle2 className="w-4 h-4" /> : s.id}
-                </div>
-                <span className="text-xs font-bold text-white">{s.name}</span>
-              </div>
-              {i < steps.length - 1 && <div className={`w-12 h-[2px] mx-4 mt-[-20px] ${step > s.id ? 'bg-primary' : 'bg-border'}`} />}
+    <div className="min-h-screen bg-[#09090B] text-white p-4 md:p-6 pb-20">
+      <div className="max-w-[1600px] mx-auto space-y-5">
+        {/* Top Studio Header */}
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-[#0E0E11] p-5 rounded-2xl border border-zinc-800/80">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Sparkles className="w-5 h-5" />
             </div>
-          ))}
-        </div>
-        
-        <div className="w-[200px] flex justify-end">
-          {step === 5 && (
-            <Button onClick={() => setIsPublishModalOpen(true)} className="shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-green-500 hover:bg-green-600 text-white">
-              <Globe className="w-4 h-4 mr-2" /> Hospedar Site
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* MAIN CONTENT */}
-      <div className="flex-1 overflow-hidden relative bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat flex flex-col items-center">
-        <div className="absolute inset-0 bg-[#0b0714] z-0" />
-        
-        <div className="z-10 w-full h-full max-w-5xl p-6 md:p-8 flex flex-col">
-<CreationStepper currentStep={3} />
-          
-          <AnimatePresence mode="wait">
-            {step < 5 ? (
-              <motion.div key="editor" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col bg-[#130e1d] rounded-2xl border border-[#261f36] overflow-hidden shadow-2xl">
-                <div className="h-14 bg-[#0b0714] border-b border-[#261f36] flex items-center justify-between px-6">
-                  <div className="flex items-center gap-3">
-                    <FileCode2 className="w-5 h-5 text-primary" />
-                    <span className="font-bold text-white">Insira seu cÃ³digo {steps[step-1].name}</span>
-                  </div>
-                  <Button variant="secondary" size="sm" onClick={() => triggerUpload(steps[step-1].name.toLowerCase() as any)} className="bg-primary/10 text-primary hover:bg-primary/20">
-                    <UploadCloud className="w-4 h-4 mr-2" /> Upload do Arquivo .{steps[step-1].name.toLowerCase()}
-                  </Button>
-                </div>
-                
-                  {step === 4 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0b0714] text-center">
-                      <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/50 flex items-center justify-center mb-6">
-                        <svg viewBox="0 0 24 24" width="32" height="32" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133-.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                      </div>
-                      <h3 className="text-2xl font-bold text-white mb-2">BotÃ£o MÃ¡gico de WhatsApp</h3>
-                      <p className="text-textSecondary mb-8 max-w-md">Digite apenas o nÃºmero com DDD (ex: 11999999999). O GhostMarket vai injetar um botÃ£o flutuante direto no site.</p>
-                      
-                      <input 
-                        type="text"
-                        value={steps[step-1].value}
-                        onChange={(e) => steps[step-1].setter(e.target.value.replace(/\D/g, ''))}
-                        placeholder="Ex: 11999999999"
-                        className="w-full max-w-md bg-[#130e1d] border-2 border-[#261f36] focus:border-green-500 rounded-xl text-white text-xl px-6 py-4 text-center transition-colors outline-none"
-                      />
-                    </div>
-                  ) : (
-                    <textarea 
-                      value={steps[step-1].value}
-                      onChange={(e) => steps[step-1].setter(e.target.value)}
-                      placeholder={`Cole o seu cÃ³digo ${steps[step-1].name} aqui...`}
-                      className="flex-1 w-full bg-[#0b0714] text-gray-300 font-mono text-sm p-6 focus:outline-none resize-none custom-scrollbar"
-                      spellCheck={false}
-                    />
-                  )}
-
-              </motion.div>
-            ) : (
-              <motion.div key="preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex-1 flex flex-col items-center w-full">
-                <div className="w-full flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-white">Preview Final</h3>
-                  <div className="flex items-center gap-1 bg-[#130e1d] border border-[#261f36] p-1 rounded-lg">
-                    <button onClick={() => setActiveView('desktop')} className={`p-2 rounded-md transition-all ${activeView === 'desktop' ? 'bg-[#0b0714] text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Monitor className="w-4 h-4" /></button>
-                    <button onClick={() => setActiveView('mobile')} className={`p-2 rounded-md transition-all ${activeView === 'mobile' ? 'bg-[#0b0714] text-primary shadow-sm' : 'text-textSecondary hover:text-white'}`}><Smartphone className="w-4 h-4" /></button>
-                  </div>
-                </div>
-                <div className={`transition-all duration-500 ease-in-out border border-[#261f36] rounded-xl bg-white shadow-2xl overflow-hidden relative flex-shrink-0 ${activeView === 'mobile' ? 'w-[375px] min-h-[812px] ring-[12px] ring-zinc-900 shadow-[0_0_50px_rgba(0,0,0,0.5)] mt-4 mb-12' : 'w-full flex-1'}`}>
-                  {activeView === 'mobile' && (
-                    <div className="absolute top-0 inset-x-0 h-7 bg-zinc-900 z-50 flex justify-center rounded-b-3xl w-[150px] mx-auto pointer-events-none">
-                      <div className="w-16 h-4 bg-black rounded-full mt-1.5 opacity-50"></div>
-                    </div>
-                  )}
-                  <iframe 
-                    srcDoc={getCombinedHtml()} 
-                    className="w-full h-full bg-white" 
-                    frameBorder="0"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals allow-top-navigation allow-top-navigation-by-user-activation"
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="mt-6 flex justify-between items-center">
-            <Button variant="ghost" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className={`h-12 px-6 text-base font-bold transition-all ${step === 1 ? 'opacity-0' : 'text-textSecondary hover:text-white hover:bg-white/5 rounded-xl'}`}>
-              <ChevronLeft className="w-4 h-4 mr-2" /> Voltar
-            </Button>
-            {step < 5 ? (
-              <Button onClick={() => setStep(step + 1)} className="h-12 px-8 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:scale-105 transition-all">
-                PrÃ³ximo Passo <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            ) : (
-                <Button onClick={() => setIsPublishModalOpen(true)} className="h-12 px-8 text-base font-black shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-green-500 hover:bg-green-600 text-white rounded-xl hover:scale-105 transition-all">
-                  <Globe className="w-4 h-4 mr-2" /> Hospedar Site
-                </Button>
-              )}
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                  GhostStudio • Criador de Sites em Tempo Real
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  {SITE_TEMPLATES.length} Modelos Prontos
+                </span>
+              </div>
+              <p className="text-xs md:text-sm text-zinc-400 mt-0.5">
+                Escolha um modelo do nicho do cliente, troque nome, cores, fotos e cardápio/serviços em tempo real e publique em 1 clique.
+              </p>
+            </div>
           </div>
 
-        </div>
-      </div>
+          <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto justify-end">
+            {/* Switch Studio vs Code Editor */}
+            <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setWorkspaceMode('studio')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
+                  workspaceMode === 'studio'
+                    ? 'bg-white text-zinc-950 shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                Studio Visual (Tempo Real)
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkspaceMode('code')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
+                  workspaceMode === 'code'
+                    ? 'bg-white text-zinc-950 shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Code className="w-3.5 h-3.5" />
+                Editor HTML/CSS/JS
+              </button>
+            </div>
 
-      <AnimatePresence>
-        {isPublishModalOpen && (
-          <div className="fixed inset-0 bg-[#0b0714]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#130e1d] border border-[#261f36] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#261f36] flex justify-between items-center bg-[#0b0714]/50">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2"><Globe className="w-5 h-5 text-primary" /> Publicar e Hospedar</h3>
-                <button onClick={() => { setIsPublishModalOpen(false); setPublishedUrl(''); }} className="text-textSecondary hover:text-white transition-colors">x</button>
-              </div>
-              {publishedUrl ? (
-                <div className="p-6 space-y-6 text-center">
-                  <div className="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white">Seu site estÃ¡ no ar!</h3>
-                  <p className="text-textSecondary">Acesse agora mesmo atravÃ©s do link abaixo:</p>
-                  
-                  <div className="bg-[#0b0714] border border-[#261f36] p-3 rounded-lg flex items-center justify-between gap-4">
-                    <span className="text-primary font-mono text-sm truncate">{publishedUrl}</span>
-                    <Button size="sm" onClick={() => { navigator.clipboard.writeText(publishedUrl); addToast('Link copiado!', 'success') }}>Copiar</Button>
-                  </div>
-                  
-                  <div className="pt-4 flex gap-3">
-                    <Button variant="ghost" className="flex-1" onClick={() => { setIsPublishModalOpen(false); setPublishedUrl(''); }}>Fechar</Button>
-                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-                      <Button className="w-full bg-green-500 hover:bg-green-600 text-white">Acessar Site</Button>
-                    </a>
+            <button
+              type="button"
+              onClick={() => setShowTemplateGalleryModal(true)}
+              className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
+            >
+              <Layers className="w-4 h-4 text-emerald-400" />
+              Catálogo ({SITE_TEMPLATES.length} Modelos)
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadHtml}
+              className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors"
+              title="Baixar arquivo HTML único pronto para hospedar"
+            >
+              <Download className="w-4 h-4" />
+              Baixar HTML
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+            >
+              {isPublishing ? (
+                <div className="w-4 h-4 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Globe className="w-4 h-4" />
+              )}
+              {isPublishing ? 'Publicando...' : 'Publicar e Gerar Link'}
+            </button>
+          </div>
+        </div>
+
+        {/* Published URL & Client Admin Delivery Kit Banner */}
+        {publishedUrl && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Check className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-emerald-400 text-sm">
+                    Site Publicado & Kit do Cliente Pronto para Entrega!
+                  </h3>
+                  <div className="mt-1 space-y-1">
+                    <p className="text-xs text-zinc-200 font-mono break-all">
+                      🌐 <strong>Site Público:</strong> {publishedUrl}
+                    </p>
+                    {publishedAdminUrl && (
+                      <p className="text-xs text-emerald-300 font-mono break-all">
+                        🔐 <strong>Painel Admin do Cliente:</strong> {publishedAdminUrl} &nbsp;|&nbsp;{' '}
+                        <strong>Login:</strong> {clientAdminUser} &nbsp;|&nbsp;{' '}
+                        <strong>Senha:</strong> {clientAdminPass || '(mantida)'}
+                      </p>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <form onSubmit={handlePublish} className="p-6 space-y-6">
-                  <div className="flex p-1 bg-[#0b0714] border border-[#261f36] rounded-lg">
-                    <button type="button" onClick={() => setDomainType('subdomain')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${domainType === 'subdomain' ? 'bg-[#130e1d] text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}>Link Gratuito</button>
-                    <button type="button" onClick={() => setDomainType('custom')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${domainType === 'custom' ? 'bg-[#130e1d] text-white shadow-sm' : 'text-textSecondary hover:text-white'}`}>DomÃ­nio PrÃ³prio</button>
-                  </div>
-                  {domainType === 'subdomain' ? (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-textSecondary">Escolha a URL da sua Landing Page</label>
-                      <div className="flex relative items-center">
-                        <span className="absolute left-4 text-textSecondary text-sm font-medium pointer-events-none">{window.location.host}/s/</span>
-                        <Input value={domainName} onChange={(e) => setDomainName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} placeholder="meu-negocio" className="pl-[200px]" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="space-y-2"><label className="text-sm font-medium text-textSecondary">Seu DomÃ­nio</label><Input value={domainName} onChange={(e) => setDomainName(e.target.value.toLowerCase())} placeholder="www.meusite.com.br" /></div>
-                    </div>
-                  )}
-                  
-                  
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-4">
-                    <label className="text-sm font-medium text-white flex items-center gap-2 mb-2">
-                      <Bot className="w-4 h-4 text-primary" /> Atendente Virtual Inteligente
-                    </label>
-                    <select 
-                      value={selectedBotId} 
-                      onChange={e => setSelectedBotId(e.target.value)}
-                      className="w-full bg-[#0b0714] border border-[#261f36] rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
-                    >
-                      <option value="">Nenhum (Desativado)</option>
-                      {chatbots.map(bot => (
-                        <option key={bot.id} value={bot.id}>{bot.name}</option>
-                      ))}
-                    </select>
-                    {chatbots.length === 0 && <p className="text-xs text-textSecondary mt-2">VocÃª ainda nÃ£o criou nenhum chatbot. VÃ¡ em "Chatbots de IA" no menu.</p>}
-                  </div>
+              </div>
 
-                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mt-2 mb-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/20 p-2 rounded-full"><Shield className="w-5 h-5 text-primary" /></div>
-                      <div>
-                        <h4 className="text-white font-medium text-sm">ProteÃ§Ã£o Anti-CÃ³pia</h4>
-                        <p className="text-xs text-textSecondary mt-0.5">Bloqueia botÃ£o direito, seleÃ§Ã£o e F12.</p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                      <input type="checkbox" className="sr-only peer" checked={isProtectionEnabled} onChange={(e) => setIsProtectionEnabled(e.target.checked)} />
-                      <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                  <div className="pt-2 flex justify-end gap-3">
-                    <Button type="button" variant="ghost" onClick={() => setIsPublishModalOpen(false)}>Cancelar</Button>
-                    <Button type="submit" disabled={isPublishing} className="shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-primary text-white">{isPublishing ? 'Hospedando...' : 'Colocar no Ar Agora'}</Button>
-                  </div>
-                </form>
-              )}
-            </motion.div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(publishedUrl);
+                    toast.success('Link do site copiado!');
+                  }}
+                  className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" /> Copiar Site
+                </button>
+
+                {publishedAdminUrl && (
+                  <>
+                    <a
+                      href={publishedAdminUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <Lock className="w-3.5 h-3.5" /> Abrir Painel do Lojista
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const msg = `🚀 *ENTREGA OFICIAL — ${studioConfig.name.toUpperCase()}*\n\nSeu novo site e painel de gestão já estão no ar!\n\n🌐 *Link do Site Oficial:*\n${publishedUrl}\n\n🔐 *Painel Administrativo do Estabelecimento:*\n${publishedAdminUrl}\n👤 *Usuário:* ${clientAdminUser}\n🔑 *Senha:* ${clientAdminPass || 'Sua senha configurada'}\n\nPelo Painel Administrativo você pode alterar preços, adicionar itens, pausar produtos esgotados e mudar o status de Aberto/Fechado em tempo real!`;
+                        navigator.clipboard.writeText(msg);
+                        toast.success('Kit de entrega com Site + Painel Admin + Senha copiado para enviar no WhatsApp!');
+                      }}
+                      className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copiar Kit p/ WhatsApp do Cliente
+                    </button>
+                  </>
+                )}
+
+                <a
+                  href={publishedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Abrir Site
+                </a>
+              </div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
+
+        {/* Main Split Layout: Left Control Panel + Right Live Preview */}
+        <div
+          className={`grid gap-5 ${
+            isFullscreen ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-12'
+          }`}
+        >
+          {/* LEFT PANEL: STUDIO VISUAL OR CODE EDITOR */}
+          {!isFullscreen && (
+            <div className="lg:col-span-5 xl:col-span-5 flex flex-col bg-[#0E0E11] border border-zinc-800/90 rounded-2xl overflow-hidden h-[780px]">
+              {workspaceMode === 'studio' ? (
+                <>
+                  {/* Studio Navigation Tabs */}
+                  <div className="grid grid-cols-6 border-b border-zinc-800 bg-zinc-950/60 p-1.5 gap-1">
+                    {[
+                      { id: 'templates', label: 'Modelo', icon: Layout },
+                      { id: 'colors', label: 'Cores', icon: Palette },
+                      { id: 'texts', label: 'Textos', icon: Type },
+                      { id: 'catalog', label: 'Itens', icon: ShoppingBag },
+                      { id: 'media', label: 'Fotos', icon: ImageIcon },
+                      { id: 'extras', label: 'Painel Adm', icon: Lock },
+                    ].map((tab) => {
+                      const Icon = tab.icon;
+                      const active = activeStudioTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveStudioTab(tab.id as StudioTab)}
+                          className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[11px] font-bold transition-all gap-1 ${
+                            active
+                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Active Studio Tab Content */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
+                    {/* TAB 1: TEMPLATES & LAYOUT */}
+                    {activeStudioTab === 'templates' && (
+                      <div className="space-y-5">
+                        <div className="p-3.5 rounded-xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-between gap-3">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                              Modelo Ativo
+                            </span>
+                            <h3 className="text-sm font-bold text-white">
+                              {studioConfig.templateTitle}
+                            </h3>
+                            <p className="text-xs text-zinc-400">{studioConfig.category}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowTemplateGalleryModal(true)}
+                            className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-lg text-xs font-bold whitespace-nowrap"
+                          >
+                            Ver Todos (+55)
+                          </button>
+                        </div>
+
+                        {/* Layout Structure Selector */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                            Estrutura Visual do Site (Layout)
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {LAYOUT_VARIANTS.map((variant) => (
+                              <button
+                                key={variant.id}
+                                type="button"
+                                onClick={() => updateConfig('layoutVariant', variant.id)}
+                                className={`p-3 rounded-xl border text-left transition-all ${
+                                  studioConfig.layoutVariant === variant.id
+                                    ? 'bg-emerald-500/10 border-emerald-500/50 text-white'
+                                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                                }`}
+                              >
+                                <div className="text-xs font-bold text-white">{variant.name}</div>
+                                <div className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
+                                  {variant.desc}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Interaction Mode Selector */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                            Modo de Conversão dos Botões
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'cart', label: 'Sacola / Delivery', desc: 'Soma itens p/ WhatsApp' },
+                              { id: 'booking', label: 'Agendamento', desc: 'Escolhe dia e horário' },
+                              { id: 'whatsapp', label: 'Orçamento Direto', desc: 'Abre conversa rápida' },
+                            ].map((m) => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => updateConfig('interactionMode', m.id as InteractionMode)}
+                                className={`p-2.5 rounded-xl border text-left transition-all ${
+                                  studioConfig.interactionMode === m.id
+                                    ? 'bg-emerald-500/10 border-emerald-500/50 text-white'
+                                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                                }`}
+                              >
+                                <div className="text-xs font-bold text-white">{m.label}</div>
+                                <div className="text-[10px] text-zinc-400 mt-0.5">{m.desc}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Quick Niche Filter & Template List */}
+                        <div className="space-y-3 pt-2 border-t border-zinc-800">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                              Trocar Modelo Rápido ({filteredTemplates.length})
+                            </label>
+                          </div>
+
+                          <div className="relative">
+                            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={templateSearch}
+                              onChange={(e) => setTemplateSearch(e.target.value)}
+                              placeholder="Buscar nicho (ex: pizzaria, dentista, barbearia, advogado...)"
+                              className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+
+                          <div className="flex gap-1.5 overflow-x-auto pb-1.5 custom-scrollbar">
+                            {TEMPLATE_CATEGORIES.map((cat) => (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
+                                  selectedCategory === cat
+                                    ? 'bg-white text-zinc-950'
+                                    : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="space-y-2 max-h-[290px] overflow-y-auto pr-1 custom-scrollbar">
+                            {filteredTemplates.map((tpl) => {
+                              const isSelected = tpl.templateId === studioConfig.templateId;
+                              return (
+                                <button
+                                  key={tpl.templateId}
+                                  type="button"
+                                  onClick={() => handleSelectTemplate(tpl)}
+                                  className={`w-full p-2.5 rounded-xl border flex items-center gap-3 text-left transition-all ${
+                                    isSelected
+                                      ? 'bg-emerald-500/10 border-emerald-500/50'
+                                      : 'bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700'
+                                  }`}
+                                >
+                                  <img
+                                    src={tpl.heroImage}
+                                    alt={tpl.templateTitle}
+                                    className="w-12 h-12 rounded-lg object-cover shrink-0 border border-zinc-700"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                                        style={{ backgroundColor: tpl.primaryColor }}
+                                      />
+                                      <p className="text-xs font-bold text-white truncate">
+                                        {tpl.templateTitle}
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+                                      {tpl.category} • {tpl.name}
+                                    </p>
+                                  </div>
+                                  <span className="text-[11px] font-bold text-emerald-400 shrink-0">
+                                    {isSelected ? 'Ativo' : 'Usar →'}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 2: REAL-TIME COLORS & TYPOGRAPHY */}
+                    {activeStudioTab === 'colors' && (
+                      <div className="space-y-5">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2.5">
+                            Paletas de Cores Instantâneas (1 Clique)
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {COLOR_PALETTES.map((pal) => (
+                              <button
+                                key={pal.id}
+                                type="button"
+                                onClick={() => applyColorPalette(pal)}
+                                className="p-2.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-600 flex items-center gap-2.5 text-left transition-all"
+                              >
+                                <div className="flex -space-x-1.5 shrink-0">
+                                  <span
+                                    className="w-5 h-5 rounded-full border border-black/40"
+                                    style={{ backgroundColor: pal.primary }}
+                                  />
+                                  <span
+                                    className="w-5 h-5 rounded-full border border-black/40"
+                                    style={{ backgroundColor: pal.background }}
+                                  />
+                                  <span
+                                    className="w-5 h-5 rounded-full border border-black/40"
+                                    style={{ backgroundColor: pal.surface }}
+                                  />
+                                </div>
+                                <span className="text-xs font-semibold text-zinc-200 truncate">
+                                  {pal.name}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-zinc-800">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">
+                            Personalização Fina de Cores (Tempo Real)
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[
+                              { key: 'primaryColor', label: 'Cor Principal / Botões' },
+                              { key: 'secondaryColor', label: 'Cor Secundária / Destaques' },
+                              { key: 'backgroundColor', label: 'Fundo da Página' },
+                              { key: 'surfaceColor', label: 'Fundo dos Cards / Blocos' },
+                              { key: 'textColor', label: 'Cor dos Textos' },
+                            ].map((c) => {
+                              const val = studioConfig[c.key as keyof SiteStudioConfig] as string;
+                              return (
+                                <div
+                                  key={c.key}
+                                  className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between gap-2"
+                                >
+                                  <div>
+                                    <span className="block text-[11px] font-semibold text-zinc-300">
+                                      {c.label}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-zinc-500 uppercase">
+                                      {val}
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="color"
+                                    value={val}
+                                    onChange={(e) =>
+                                      updateConfig(c.key as keyof SiteStudioConfig, e.target.value as any)
+                                    }
+                                    className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Typography Selector */}
+                        <div className="pt-3 border-t border-zinc-800">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                            Tipografia / Fonte do Site
+                          </label>
+                          <div className="grid grid-cols-1 gap-2">
+                            {FONT_PRESETS.map((f) => (
+                              <button
+                                key={f.id}
+                                type="button"
+                                onClick={() => updateConfig('fontFamily', f.id)}
+                                className={`px-3.5 py-2.5 rounded-xl border text-left flex items-center justify-between ${
+                                  studioConfig.fontFamily === f.id
+                                    ? 'bg-emerald-500/10 border-emerald-500/50 text-white'
+                                    : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                                }`}
+                              >
+                                <span className="text-xs font-bold">{f.label}</span>
+                                {studioConfig.fontFamily === f.id && (
+                                  <Check className="w-4 h-4 text-emerald-400" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Border Radius Selector */}
+                        <div className="pt-3 border-t border-zinc-800">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                            Formato dos Botões & Cards
+                          </label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { val: '0px', label: 'Reto (0px)' },
+                              { val: '8px', label: 'Suave (8px)' },
+                              { val: '16px', label: 'Moderno (16px)' },
+                              { val: '24px', label: 'Curvo (24px)' },
+                            ].map((r) => (
+                              <button
+                                key={r.val}
+                                type="button"
+                                onClick={() => updateConfig('borderRadius', r.val as any)}
+                                className={`py-2 px-2 rounded-xl border text-xs font-bold ${
+                                  studioConfig.borderRadius === r.val
+                                    ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400'
+                                    : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                                }`}
+                              >
+                                {r.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 3: BRAND, HEADLINES & CONTACT INFO */}
+                    {activeStudioTab === 'texts' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Nome da Empresa / Negócio
+                          </label>
+                          <input
+                            type="text"
+                            value={studioConfig.name}
+                            onChange={(e) => {
+                              updateConfig('name', e.target.value);
+                              updateConfig('aboutTitle', `Por que escolher a ${e.target.value}?`);
+                              updateConfig(
+                                'footerText',
+                                `© ${new Date().getFullYear()} ${e.target.value}. Todos os direitos reservados.`
+                              );
+                            }}
+                            className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Selo de Destaque Superior (Eyebrow)
+                          </label>
+                          <input
+                            type="text"
+                            value={studioConfig.eyebrow}
+                            onChange={(e) => updateConfig('eyebrow', e.target.value)}
+                            className="w-full px-3.5 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Título Principal (Headline)
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={studioConfig.headline}
+                            onChange={(e) => updateConfig('headline', e.target.value)}
+                            className="w-full px-3.5 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Subtítulo Explicativo
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={studioConfig.subheadline}
+                            onChange={(e) => updateConfig('subheadline', e.target.value)}
+                            className="w-full px-3.5 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-300 mb-1">
+                              Texto do Botão Principal
+                            </label>
+                            <input
+                              type="text"
+                              value={studioConfig.ctaText}
+                              onChange={(e) => updateConfig('ctaText', e.target.value)}
+                              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-300 mb-1">
+                              Título da Seção de Itens
+                            </label>
+                            <input
+                              type="text"
+                              value={studioConfig.catalogTitle}
+                              onChange={(e) => updateConfig('catalogTitle', e.target.value)}
+                              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-zinc-800 grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-emerald-400 mb-1">
+                              WhatsApp (c/ DDD, números)
+                            </label>
+                            <input
+                              type="text"
+                              value={studioConfig.whatsapp}
+                              onChange={(e) => updateConfig('whatsapp', e.target.value)}
+                              placeholder="5511999999999"
+                              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-300 mb-1">
+                              Telefone Exibido
+                            </label>
+                            <input
+                              type="text"
+                              value={studioConfig.phone}
+                              onChange={(e) => updateConfig('phone', e.target.value)}
+                              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-300 mb-1">
+                              Cidade / UF
+                            </label>
+                            <input
+                              type="text"
+                              value={studioConfig.city}
+                              onChange={(e) => updateConfig('city', e.target.value)}
+                              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-300 mb-1">
+                              Horário de Atendimento
+                            </label>
+                            <input
+                              type="text"
+                              value={studioConfig.hours}
+                              onChange={(e) => updateConfig('hours', e.target.value)}
+                              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Endereço Completo
+                          </label>
+                          <input
+                            type="text"
+                            value={studioConfig.address}
+                            onChange={(e) => updateConfig('address', e.target.value)}
+                            className="w-full px-3.5 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Sobre a Empresa
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={studioConfig.aboutText}
+                            onChange={(e) => updateConfig('aboutText', e.target.value)}
+                            className="w-full px-3.5 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:border-emerald-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 4: CATALOG / MENU / SERVICES */}
+                    {activeStudioTab === 'catalog' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+                              Produtos, Cardápio ou Serviços ({studioConfig.catalog.length})
+                            </h3>
+                            <p className="text-[11px] text-zinc-500">
+                              Edite preços, nomes, fotos e descrições em tempo real.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleAddCatalogItem}
+                            className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-lg text-xs font-bold flex items-center gap-1"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Adicionar Item
+                          </button>
+                        </div>
+
+                        <label className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 cursor-pointer">
+                          <span className="text-xs font-semibold text-zinc-200">
+                            Exibir preços nos cards
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={studioConfig.showPrices}
+                            onChange={(e) => updateConfig('showPrices', e.target.checked)}
+                            className="w-4 h-4 accent-emerald-500"
+                          />
+                        </label>
+
+                        <div className="space-y-3">
+                          {studioConfig.catalog.map((item, idx) => (
+                            <div
+                              key={item.id || idx}
+                              className="p-3.5 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2.5"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-bold text-emerald-400">
+                                  Item #{idx + 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveCatalogItem(idx)}
+                                  className="text-zinc-500 hover:text-red-400 p-1"
+                                  title="Remover item"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-2">
+                                <input
+                                  type="text"
+                                  value={item.name}
+                                  onChange={(e) =>
+                                    handleUpdateCatalogItem(idx, 'name', e.target.value)
+                                  }
+                                  placeholder="Nome do produto/serviço"
+                                  className="col-span-2 px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.price}
+                                  onChange={(e) =>
+                                    handleUpdateCatalogItem(idx, 'price', e.target.value)
+                                  }
+                                  placeholder="Preço"
+                                  className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-emerald-400 font-bold"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={item.category}
+                                  onChange={(e) =>
+                                    handleUpdateCatalogItem(idx, 'category', e.target.value)
+                                  }
+                                  placeholder="Categoria (ex: Destaques)"
+                                  className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-300"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.badge || ''}
+                                  onChange={(e) =>
+                                    handleUpdateCatalogItem(idx, 'badge', e.target.value)
+                                  }
+                                  placeholder="Selo (ex: Mais Pedido)"
+                                  className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-300"
+                                />
+                              </div>
+
+                              <textarea
+                                rows={2}
+                                value={item.description}
+                                onChange={(e) =>
+                                  handleUpdateCatalogItem(idx, 'description', e.target.value)
+                                }
+                                placeholder="Descrição do item..."
+                                className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-300"
+                              />
+
+                              <input
+                                type="text"
+                                value={item.image}
+                                onChange={(e) =>
+                                  handleUpdateCatalogItem(idx, 'image', e.target.value)
+                                }
+                                placeholder="URL da foto do produto/serviço"
+                                className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-[11px] text-zinc-400 font-mono"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 5: MEDIA, PHOTOS & SECTION TOGGLES */}
+                    {activeStudioTab === 'media' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            URL da Logo (Opcional — deixe vazio para usar ícone moderno)
+                          </label>
+                          <input
+                            type="text"
+                            value={studioConfig.logoUrl}
+                            onChange={(e) => updateConfig('logoUrl', e.target.value)}
+                            placeholder="https://..."
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Foto Principal de Capa (Hero Image)
+                          </label>
+                          <input
+                            type="text"
+                            value={studioConfig.heroImage}
+                            onChange={(e) => updateConfig('heroImage', e.target.value)}
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono mb-2"
+                          />
+                          <img
+                            src={studioConfig.heroImage}
+                            alt="Hero Preview"
+                            className="w-full h-36 object-cover rounded-xl border border-zinc-800"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Diferenciais Rápidos (separados por vírgula)
+                          </label>
+                          <input
+                            type="text"
+                            value={studioConfig.perks.join(', ')}
+                            onChange={(e) =>
+                              updateConfig(
+                                'perks',
+                                e.target.value
+                                  .split(',')
+                                  .map((s) => s.trim())
+                                  .filter(Boolean)
+                              )
+                            }
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white"
+                          />
+                        </div>
+
+                        <div className="pt-3 border-t border-zinc-800 space-y-2">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+                            Seções Visíveis na Página
+                          </label>
+                          {[
+                            { key: 'showGallery', label: 'Galeria de Fotos & Estrutura' },
+                            { key: 'showReviews', label: 'Depoimentos e Avaliações 5 Estrelas' },
+                            { key: 'showFaq', label: 'Perguntas Frequentes (FAQ)' },
+                            { key: 'showFloatingWhatsapp', label: 'Botão Flutuante de WhatsApp' },
+                          ].map((sec) => (
+                            <label
+                              key={sec.key}
+                              className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 cursor-pointer"
+                            >
+                              <span className="text-xs font-semibold text-zinc-200">
+                                {sec.label}
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(studioConfig[sec.key as keyof SiteStudioConfig])}
+                                onChange={(e) =>
+                                  updateConfig(sec.key as keyof SiteStudioConfig, e.target.checked as any)
+                                }
+                                className="w-4 h-4 accent-emerald-500"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 6: CLIENT ADMIN PANEL, SLUG, ANTI-CLONE & CHATBOT */}
+                    {activeStudioTab === 'extras' && (
+                      <div className="space-y-4">
+                        {/* Client Establishment Admin Panel Configuration */}
+                        <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/30 space-y-3.5">
+                          <label className="flex items-center justify-between cursor-pointer">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                <Lock className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <span className="block text-xs font-bold text-white">
+                                  Painel Admin do Cliente (Lojista)
+                                </span>
+                                <span className="text-[10px] text-emerald-400 font-mono">
+                                  Blindado com SHA-256 (Invisível no F12)
+                                </span>
+                              </div>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={enableClientAdmin}
+                              onChange={(e) => setEnableClientAdmin(e.target.checked)}
+                              className="w-4 h-4 accent-emerald-500"
+                            />
+                          </label>
+
+                          {enableClientAdmin && (
+                            <div className="space-y-3 pt-2 border-t border-emerald-500/20">
+                              <p className="text-[11px] text-zinc-300 leading-relaxed">
+                                Crie o login e a senha para o dono do estabelecimento editar cardápio, preços, promoções e status Aberto/Fechado em{' '}
+                                <code className="text-emerald-400">/painel/slug-do-site</code>.
+                              </p>
+
+                              <div className="grid grid-cols-2 gap-2.5">
+                                <div>
+                                  <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
+                                    Login do Cliente
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={clientAdminUser}
+                                    onChange={(e) => setClientAdminUser(e.target.value)}
+                                    placeholder="ex: brutoburger"
+                                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
+                                    Senha do Cliente
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={clientAdminPass}
+                                    onChange={(e) => setClientAdminPass(e.target.value)}
+                                    placeholder={existingAdminAuth ? 'Nova senha (opcional)' : 'Ex: Mudar@123'}
+                                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-emerald-400 font-mono font-bold"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2.5">
+                                <div>
+                                  <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
+                                    Status Inicial da Loja
+                                  </label>
+                                  <select
+                                    value={studioConfig.storeStatus || 'open'}
+                                    onChange={(e) => updateConfig('storeStatus', e.target.value as any)}
+                                    className="w-full px-2.5 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white"
+                                  >
+                                    <option value="open">🟢 Aberto Agora</option>
+                                    <option value="busy">⚡ Horário de Pico</option>
+                                    <option value="closed">🔴 Fechado</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
+                                    Tempo de Fila / Entrega
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={studioConfig.waitTimeText || ''}
+                                    onChange={(e) => updateConfig('waitTimeText', e.target.value)}
+                                    placeholder="Ex: Entrega 35 min"
+                                    className="w-full px-2.5 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
+                                  Barra de Promoção no Topo (Opcional)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={studioConfig.promoBannerText || ''}
+                                  onChange={(e) => updateConfig('promoBannerText', e.target.value)}
+                                  placeholder="Ex: 🔥 Combo Duplo + Batata Grátis nos pedidos hoje!"
+                                  className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white"
+                                />
+                              </div>
+
+                              <label className="flex items-center justify-between pt-1 cursor-pointer">
+                                <span className="text-[11px] text-zinc-300">
+                                  Mostrar link discreto "🔒 Área do Estabelecimento" no rodapé
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(studioConfig.showAdminLinkInFooter)}
+                                  onChange={(e) => updateConfig('showAdminLinkInFooter', e.target.checked)}
+                                  className="w-4 h-4 accent-emerald-500"
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-300 mb-1">
+                            Slug Personalizado do Link (Opcional)
+                          </label>
+                          <input
+                            type="text"
+                            value={customSlug}
+                            onChange={(e) => setCustomSlug(e.target.value)}
+                            placeholder="ex: hamburgueria-do-joao"
+                            className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono"
+                          />
+                        </div>
+
+                        <label className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 cursor-pointer">
+                          <div className="flex items-center gap-3">
+                            <Shield className="w-4 h-4 text-emerald-400" />
+                            <div>
+                              <span className="block text-xs font-bold text-white">
+                                Proteção Anti-Clone Ativa
+                              </span>
+                              <span className="text-[11px] text-zinc-400">
+                                Bloqueia botão direito, F12 e inspeção de código
+                              </span>
+                            </div>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={protectCode}
+                            onChange={(e) => setProtectCode(e.target.checked)}
+                            className="w-4 h-4 accent-emerald-500"
+                          />
+                        </label>
+
+                        <div className="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-bold text-white">
+                            <Bot className="w-4 h-4 text-emerald-400" />
+                            <span>Integrar Chatbot IA no Site</span>
+                          </div>
+                          <select
+                            value={selectedChatbot}
+                            onChange={(e) => setSelectedChatbot(e.target.value)}
+                            className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white"
+                          >
+                            <option value="none">Sem Chatbot Adicional</option>
+                            {chatbots.map((bot) => (
+                              <option key={bot.id} value={bot.id}>
+                                {bot.name} ({bot.niche || 'Personalizado'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-2">
+                          <p className="text-xs font-bold text-zinc-200">
+                            Precisa editar o código HTML/CSS diretamente?
+                          </p>
+                          <p className="text-[11px] text-zinc-400">
+                            Todo o site gerado pelo Studio já está compilado e pronto no Editor de Código.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setWorkspaceMode('code')}
+                            className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2"
+                          >
+                            <Code className="w-3.5 h-3.5" /> Abrir no Editor HTML/CSS/JS
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* RAW CODE EDITOR MODE */
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-950">
+                    <div className="flex gap-1.5">
+                      {(['html', 'css', 'js'] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setActiveCodeTab(tab)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${
+                            activeCodeTab === tab
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        multiple
+                        accept=".html,.css,.js"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+                      >
+                        <Upload className="w-3.5 h-3.5" /> Importar Arquivo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHtmlCode(compileTemplateToHtml(studioConfig));
+                          toast.success('Código sincronizado com o Studio Visual!');
+                        }}
+                        className="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 rounded-lg text-xs font-semibold flex items-center gap-1"
+                        title="Regerar HTML a partir do Studio"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3 border-b border-zinc-800 bg-zinc-900/40 grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={siteName}
+                      onChange={(e) => setSiteName(e.target.value)}
+                      placeholder="Nome do Projeto"
+                      className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white"
+                    />
+                    <input
+                      type="text"
+                      value={customSlug}
+                      onChange={(e) => setCustomSlug(e.target.value)}
+                      placeholder="Slug da URL (opcional)"
+                      className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white font-mono"
+                    />
+                  </div>
+
+                  <div className="flex-1 relative">
+                    {activeCodeTab === 'html' && (
+                      <textarea
+                        value={htmlCode}
+                        onChange={(e) => setHtmlCode(e.target.value)}
+                        className="w-full h-full bg-[#09090B] text-zinc-200 font-mono text-xs p-4 focus:outline-none resize-none"
+                        spellCheck="false"
+                      />
+                    )}
+                    {activeCodeTab === 'css' && (
+                      <textarea
+                        value={cssCode}
+                        onChange={(e) => setCssCode(e.target.value)}
+                        placeholder="/* CSS Extra Opcional */"
+                        className="w-full h-full bg-[#09090B] text-zinc-200 font-mono text-xs p-4 focus:outline-none resize-none"
+                        spellCheck="false"
+                      />
+                    )}
+                    {activeCodeTab === 'js' && (
+                      <textarea
+                        value={jsCode}
+                        onChange={(e) => setJsCode(e.target.value)}
+                        placeholder="// JavaScript Extra Opcional"
+                        className="w-full h-full bg-[#09090B] text-zinc-200 font-mono text-xs p-4 focus:outline-none resize-none"
+                        spellCheck="false"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* RIGHT PANEL: REAL-TIME INTERACTIVE PREVIEW */}
+          <div
+            className={`${
+              isFullscreen ? 'col-span-1' : 'lg:col-span-7 xl:col-span-7'
+            } flex flex-col bg-[#0E0E11] border border-zinc-800/90 rounded-2xl overflow-hidden h-[780px]`}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950/70">
+              <div className="flex items-center gap-2.5">
+                <div className="flex gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
+                </div>
+                <span className="text-xs font-mono text-zinc-400 truncate max-w-[260px] sm:max-w-md">
+                  https://ghostai.studio/{(customSlug || studioConfig.name || 'preview').toLowerCase().replace(/[^a-z0-9-]/g, '-')}
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <Eye className="w-3 h-3" /> Tempo Real
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('desktop')}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    previewMode === 'desktop'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Visualização Desktop"
+                >
+                  <Monitor className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('mobile')}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    previewMode === 'mobile'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Visualização Celular"
+                >
+                  <Smartphone className="w-4 h-4" />
+                </button>
+                <div className="w-px h-4 bg-zinc-800 mx-1" />
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                  title={isFullscreen ? 'Sair da Tela Cheia' : 'Expandir Preview'}
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 bg-zinc-950 flex items-center justify-center overflow-hidden p-2">
+              <div
+                className={`h-full transition-all duration-300 bg-white overflow-hidden shadow-2xl ${
+                  previewMode === 'mobile'
+                    ? 'w-[390px] max-h-[710px] rounded-[34px] border-[7px] border-zinc-800'
+                    : 'w-full rounded-xl'
+                }`}
+              >
+                <iframe
+                  srcDoc={generateCombinedCode()}
+                  title="Live Studio Preview"
+                  className="w-full h-full border-0"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-modals"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FULL TEMPLATE GALLERY MODAL (+55 TEMPLATES) */}
+      {showTemplateGalleryModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0E0E11] border border-zinc-800 rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                  Biblioteca Completa GhostStudio
+                </span>
+                <h2 className="text-xl font-bold text-white">
+                  Escolha um Modelo Pronto por Nicho ({SITE_TEMPLATES.length} Modelos)
+                </h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="relative w-64">
+                  <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={templateSearch}
+                    onChange={(e) => setTemplateSearch(e.target.value)}
+                    placeholder="Buscar nicho..."
+                    className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateGalleryModal(false)}
+                  className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold"
+                >
+                  Fechar ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="px-5 py-3 border-b border-zinc-800 flex gap-2 overflow-x-auto custom-scrollbar bg-zinc-950/50">
+              {TEMPLATE_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-emerald-500 text-zinc-950'
+                      : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 custom-scrollbar">
+              {filteredTemplates.map((tpl) => (
+                <div
+                  key={tpl.templateId}
+                  className="group bg-zinc-900/70 border border-zinc-800 hover:border-emerald-500/60 rounded-2xl overflow-hidden flex flex-col transition-all"
+                >
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src={tpl.heroImage}
+                      alt={tpl.templateTitle}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/75 text-white backdrop-blur-md border border-white/10">
+                      {tpl.category}
+                    </span>
+                    <div className="absolute bottom-3 right-3 flex -space-x-1">
+                      <span
+                        className="w-5 h-5 rounded-full border border-white/40"
+                        style={{ backgroundColor: tpl.primaryColor }}
+                      />
+                      <span
+                        className="w-5 h-5 rounded-full border border-white/40"
+                        style={{ backgroundColor: tpl.backgroundColor }}
+                      />
+                    </div>
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                    <div>
+                      <h3 className="font-bold text-white text-sm">{tpl.templateTitle}</h3>
+                      <p className="text-xs text-zinc-400 line-clamp-2 mt-1">{tpl.headline}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTemplate(tpl)}
+                      className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl font-bold text-xs transition-colors"
+                    >
+                      Carregar Este Modelo no Studio →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};

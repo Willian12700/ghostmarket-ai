@@ -9,7 +9,6 @@ import { TrialLogin } from '@/pages/TrialLogin'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { ResetPassword } from '@/pages/ResetPassword'
-import { CloudIde } from '@/pages/CloudIde'
 import { Dashboard } from '@/pages/Dashboard'
 import { Ranking } from '@/pages/Ranking'
 import { Creator } from '@/pages/Creator'
@@ -22,6 +21,7 @@ import { Finance } from '@/pages/Finance'
 import { Products } from '@/pages/Products'
 import { Checkout } from '@/pages/Checkout'
 import { SiteViewer } from '@/pages/SiteViewer'
+import { ClientSiteAdmin } from '@/pages/ClientSiteAdmin'
 import { ClientReport } from '@/pages/ClientReport'
 import { Scanner } from '@/pages/Scanner'
 import { CnpjScanner } from '@/pages/CnpjScanner'
@@ -30,12 +30,10 @@ import { SalesScripts } from '@/pages/SalesScripts'
 import { Demo } from '@/pages/Demo'
 import { PartnerPanel } from '@/pages/PartnerPanel'
 
-import { DigitalizaCRM } from '@/pages/DigitalizaCRM'
 import { Contracts } from '@/pages/Contracts'
 import { Settings } from '@/pages/Settings'
 import { Affiliates } from '@/pages/Affiliates'
 import { Integrations } from '@/pages/Integrations'
-import { OfferIntelligence } from '@/pages/OfferIntelligence'
 import { PropostaPdf } from '@/pages/PropostaPdf'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { ToastContainer } from '@/components/ui/ToastContainer'
@@ -86,7 +84,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             
             <Route element={<MainLayout />}>
-              <Route path="/ide" element={<CloudIde />} />
+              <Route path="/ide" element={<Navigate to="/builder" replace />} />
               <Route path="/code-workspace" element={<AiCodeWorkspace />} />
               <Route path="/ai-code-workspace" element={<AiCodeWorkspace />} />
               <Route path="/dashboard" element={<Dashboard />} />
@@ -99,13 +97,15 @@ function App() {
               <Route path="/videos" element={<Videos />} />
               <Route path="/video-links" element={<Videos />} />
               <Route path="/sites" element={<HostedSites />} />
+              <Route path="/hosted-sites" element={<HostedSites />} />
               <Route path="/finance" element={<Finance />} />
+              <Route path="/proposta" element={<PropostaPdf />} />
               <Route path="/products" element={<Products />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/cnpj" element={<CnpjScanner />} />
               <Route path="/chatbots" element={<Chatbots />} />
               <Route path="/scripts" element={<SalesScripts />} />
-              <Route path="/digitaliza-crm" element={<DigitalizaCRM />} />
+              <Route path="/digitaliza-crm" element={<Navigate to="/contracts" replace />} />
               <Route path="/contracts" element={<Contracts />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminPanel />} />
@@ -114,7 +114,7 @@ function App() {
               <Route path="/admin/notes" element={<AdminNotes />} />
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/affiliates" element={<Affiliates />} />
-              <Route path="/offers" element={<OfferIntelligence />} />
+              <Route path="/offers" element={<Navigate to="/dashboard" replace />} />
               <Route path="/vip" element={<VipGroup />} />
               <Route path="/grupo-vip" element={<VipGroup />} />
               <Route path="/tutoriais" element={<Tutorials />} />
@@ -122,11 +122,14 @@ function App() {
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />
+            <Route path="/site/:siteId" element={<SiteViewer />} />
+            <Route path="/s/:siteId/admin" element={<ClientSiteAdmin />} />
+            <Route path="/painel/:siteId" element={<ClientSiteAdmin />} />
             <Route path="/v/:videoId" element={<VideoWatch />} />
             <Route path="/watch/:videoId" element={<VideoWatch />} />
             <Route path="/demo" element={<Demo />} />
-            <Route path="/proposta" element={<PropostaPdf />} />
             <Route path="/report/:siteId" element={<ClientReport />} />
+            <Route path="/relatorio/:siteId" element={<ClientReport />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

@@ -9,7 +9,21 @@ const syncUserToFirestore = async (user: User) => {
   
   try {
     const { getDoc } = await import('firebase/firestore');
-    const userRef = doc(db, 'users', user.email || user.uid);
+    const cleanEmail = (user.email || '').toLowerCase().trim();
+    const isMasterOrPartner = cleanEmail === 'willrandrier@gmail.com' || cleanEmail === 'souza.abencoado4@gmail.com';
+
+    if (!isMasterOrPartner && cleanEmail) {
+      const allowedLower = await getDoc(doc(db, 'allowed_users', cleanEmail));
+      const allowedExact = user.email && user.email !== cleanEmail ? await getDoc(doc(db, 'allowed_users', user.email)) : null;
+      const isApproved =
+        (allowedLower.exists() && allowedLower.data()?.status === 'approved') ||
+        (allowedExact?.exists() && allowedExact.data()?.status === 'approved');
+
+      // Não sincroniza na coleção 'users' se o e-mail não tiver assinatura aprovada
+      if (!isApproved) return;
+    }
+
+    const userRef = doc(db, 'users', cleanEmail || user.uid);
     const snap = await getDoc(userRef);
     
     let utmData = {};
@@ -23,7 +37,7 @@ const syncUserToFirestore = async (user: User) => {
 
     await setDoc(userRef, {
       uid: user.uid,
-      email: user.email || '',
+      email: cleanEmail || user.email || '',
       name: user.displayName || user.email?.split('@')[0] || 'User',
       photoURL: user.photoURL || '',
       lastLogin: new Date().toISOString(),

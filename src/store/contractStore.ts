@@ -14,12 +14,15 @@ export interface Contract {
   phone?: string
   instagram?: string
   city?: string
+  niche?: string
+  notes?: string
+  website?: string
 }
 
 interface ContractState {
   contracts: Contract[]
   isSynced: boolean
-  syncContracts: (userId: string) => () => void // Returns unsubscribe function
+  syncContracts: (userId: string) => () => void
   addContract: (userId: string, contract: Omit<Contract, 'id' | 'userId'>) => Promise<void>
   updateContract: (id: string, data: Partial<Omit<Contract, 'id' | 'userId'>>) => Promise<void>
   deleteContract: (id: string) => Promise<void>
@@ -35,10 +38,16 @@ export const useContractStore = create<ContractState>()((set) => ({
       where('userId', '==', userId)
     )
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contract))
-      set({ contracts: txs, isSynced: true })
-    })
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contract))
+        set({ contracts: txs, isSynced: true })
+      },
+      (err) => {
+        console.warn('crm_contracts listener error:', err)
+      }
+    )
 
     return unsubscribe
   },

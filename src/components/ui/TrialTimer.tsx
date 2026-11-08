@@ -15,19 +15,26 @@ export const TrialTimer = () => {
     }
 
     const expiresAt = localStorage.getItem('trial_expires_at')
-    if (!expiresAt) return
+    if (!expiresAt || isNaN(parseInt(expiresAt))) {
+      // Se um usuário anônimo apagar o localStorage pelo F12, desloga imediatamente
+      if (auth.currentUser?.isAnonymous) {
+        auth.signOut().finally(() => navigate('/login?trial_ended=true'))
+      }
+      return
+    }
 
     const interval = setInterval(async () => {
+      const currentExpires = localStorage.getItem('trial_expires_at')
       const now = Date.now()
-      const diff = parseInt(expiresAt) - now
+      const diff = (currentExpires ? parseInt(currentExpires) : 0) - now
 
-      if (diff <= 0) {
+      if (!currentExpires || isNaN(diff) || diff <= 0) {
         clearInterval(interval)
         localStorage.removeItem('trial_expires_at')
         await auth.signOut()
         navigate('/login?trial_ended=true')
       } else {
-        const m = Math.floor((diff / 1000) / 60)
+        const m = Math.floor(diff / 1000 / 60)
         const s = Math.floor((diff / 1000) % 60)
         setTimeLeft(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`)
       }
@@ -39,9 +46,11 @@ export const TrialTimer = () => {
   if (!timeLeft) return null
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-blue-600/90 backdrop-blur-md border border-blue-400/50 text-white px-6 py-3 rounded-full shadow-[0_4px_30px_rgba(37,99,235,0.5)] flex items-center gap-3 font-medium animate-bounce">
-      <Clock className="w-5 h-5" />
-      <span>Tempo de Teste: <span className="font-mono font-bold text-lg">{timeLeft}</span></span>
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-zinc-900/95 backdrop-blur-md border border-zinc-700 text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 text-sm font-medium">
+      <Clock className="w-4 h-4 text-emerald-400" />
+      <span>
+        Sessão de Teste: <span className="font-mono font-bold text-emerald-400 tabular-nums">{timeLeft}</span>
+      </span>
     </div>
   )
 }

@@ -1,31 +1,61 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BellRing, Trophy, Wand2, Search, FileText, Bot, Settings, LogOut, Ghost, X, Code, BookMarked, LayoutTemplate, Globe, Image as ImageIcon, Video, ShieldAlert, MessageCircle, SearchCode, Crown, NotebookPen, Key, PieChart, CodeXml, GraduationCap } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Trophy,
+  Wand2,
+  Search,
+  FileText,
+  Bot,
+  Settings,
+  LogOut,
+  Ghost,
+  X,
+  Code,
+  BookMarked,
+  LayoutTemplate,
+  Globe,
+  Image as ImageIcon,
+  Video,
+  ShieldAlert,
+  MessageCircle,
+  SearchCode,
+  Crown,
+  NotebookPen,
+  Key,
+  PieChart,
+  CodeXml,
+  GraduationCap,
+  Command,
+  ArrowUpRight
+} from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
+  onOpenCommandPalette?: () => void
 }
 
-export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+export const Sidebar = ({ isOpen, onClose, onOpenCommandPalette }: SidebarProps) => {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>([
-    'Painel',
-    'Prompt, Sites e Leads',
-    'Digitaliza Comercial',
-    'PAINEL ADM',
-    'PAINEL SÓCIO'
+    'Visão Geral',
+    'Inteligência de Mercado',
+    'Estúdio & Prospecção',
+    'Gestão & CRM',
+    'Administração',
+    'Painel Sócio'
   ])
 
   const toggleGroup = (groupLabel: string) => {
-    setExpandedGroups(prev => 
-      prev.includes(groupLabel) 
-        ? prev.filter(g => g !== groupLabel) 
+    setExpandedGroups(prev =>
+      prev.includes(groupLabel)
+        ? prev.filter(g => g !== groupLabel)
         : [...prev, groupLabel]
     )
   }
@@ -35,213 +65,213 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     navigate('/login')
   }
 
-  const isPartner = user?.email === 'souza.abencoado4@gmail.com';
-  const isAdmin = user?.email === 'willrandrier@gmail.com';
-  const hasRealEmail = Boolean(user?.email && user.email.includes('@') && !user.email.startsWith('Teste VIP'));
+  const isPartner = user?.email === 'souza.abencoado4@gmail.com'
+  const isAdmin = user?.email === 'willrandrier@gmail.com'
+  const hasRealEmail = Boolean(user?.email && user.email.includes('@') && !user.email.startsWith('Teste VIP'))
 
-  // Somente usuários anônimos / códigos de teste temporário são trial
-  const isTrial = Boolean(!isAdmin && !isPartner && !hasRealEmail && (user?.isAnonymous || user?.email?.startsWith('Teste VIP')));
+  const isTrial = Boolean(
+    !isAdmin && !isPartner && !hasRealEmail && (user?.isAnonymous || user?.email?.startsWith('Teste VIP'))
+  )
 
-  // Limpa resquício antigo de teste do navegador se o usuário estiver logado com conta real
   if (hasRealEmail || isAdmin || isPartner) {
     if (typeof window !== 'undefined' && localStorage.getItem('trial_expires_at')) {
-      localStorage.removeItem('trial_expires_at');
+      localStorage.removeItem('trial_expires_at')
     }
   }
 
   let menuGroups = [
-
     {
-      label: 'Painel',
+      label: 'Visão Geral',
       items: [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Resumo Global' },
-        { to: '/tutoriais', icon: GraduationCap, label: 'Tutoriais & Aulas', badge: 'VÍDEOS' },
-        ...(!isTrial ? [{ to: '/vip', icon: MessageCircle, label: 'Grupo VIP', badge: 'WHATSAPP' }] : []),
-        { to: '/ranking', icon: Trophy, label: 'Top Global' },
+        { to: '/tutoriais', icon: GraduationCap, label: 'Tutoriais & Aulas' },
+        { to: '/ranking', icon: Trophy, label: 'Ranking Global' }
       ]
     },
     {
-      label: 'InteligÃªncia de Mercado',
+      label: 'Estúdio & Prospecção',
       items: [
-        { to: '/offers', icon: BellRing, label: 'Tracker de Ofertas' }
-      ]
-    },
-    {
-      label: 'Prompt, Sites e Leads',
-      items: [
+        { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
+        { to: '/cnpj', icon: SearchCode, label: 'Dossiê CNPJ' },
         { to: '/creator', icon: Wand2, label: 'Creator IA' },
-        { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
-        { to: '/prompt-builder', icon: Code, label: 'Prompt Builder' },
-        { to: '/builder', icon: LayoutTemplate, label: 'Hospedar Novo Site' },
-        { to: '/ide', icon: Code, label: 'Ghost IDE (BETA)', badge: 'NOVO' },
-        { to: '/code-workspace', icon: CodeXml, label: 'AI Code Workspace', badge: 'NOVO' },
-        { to: '/image-to-link', icon: ImageIcon, label: 'Converter Imagem (URL)' },
-        { to: '/videos', icon: Video, label: 'Vídeos e Links', badge: 'EM BREVE' },
+        { to: '/scripts', icon: MessageCircle, label: 'Scripts X1' },
+        { to: '/prompt-builder', icon: Code, label: 'Modelos & Prompts' },
+        { to: '/code-workspace', icon: CodeXml, label: 'AI Code Workspace' },
+        { to: '/builder', icon: LayoutTemplate, label: 'GhostStudio & Hospedar' },
         { to: '/sites', icon: Globe, label: 'Meus Sites' },
         { to: '/chatbots', icon: Bot, label: 'Chatbots de IA' },
-        { to: '/scanner', icon: Search, label: 'Scanner de Leads' },
-        { to: '/cnpj', icon: SearchCode, label: 'DossiÃª CNPJ' },
-        { to: '/scripts', icon: MessageCircle, label: 'Scripts X1' },
+        { to: '/library', icon: BookMarked, label: 'Biblioteca IA' },
+        { to: '/image-to-link', icon: ImageIcon, label: 'Imagem para URL' },
+        { to: '/videos', icon: Video, label: 'Vídeos & Links' }
       ]
     },
     {
-      label: 'GestÃ£o',
+      label: 'Gestão & CRM',
       items: [
-        { to: '/contracts', icon: FileText, label: 'CRM (Kanban)' },
+        { to: '/contracts', icon: FileText, label: 'CRM Comercial (Kanban)' },
+        { to: '/proposta', icon: FileText, label: 'Proposta & Contrato PDF' },
+        { to: '/finance', icon: PieChart, label: 'Financeiro & Receita' }
       ]
     }
   ]
 
   if (isPartner) {
-      menuGroups = menuGroups.filter(g => !['GestÇœo', 'GestÃ£o', 'Digitaliza Comercial', 'PAINEL ADM'].includes(g.label));
-      menuGroups.unshift({
-          label: 'PAINEL SÃ“CIO',
-          items: [
-              { to: '/socio', icon: Key, label: 'Gerar Códigos VIP' }, { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' }
-          ]
-      });
-  }
-
-  if (isAdmin) {
-    menuGroups.push({
-      label: 'PAINEL ADM',
+    menuGroups = menuGroups.filter(g => !['Gestão & CRM', 'Administração'].includes(g.label))
+    menuGroups.unshift({
+      label: 'Painel Sócio',
       items: [
-        { to: '/admin', icon: ShieldAlert, label: 'LiberaÃ§Ã£o de Acesso' },
-        { to: '/tutoriais?action=new', icon: Video, label: 'Publicar Tutorial' },
-        { to: '/admin/notes', icon: NotebookPen, label: 'Backlog / Notas' }, { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' },
+        { to: '/socio', icon: Key, label: 'Gerar Códigos VIP' },
+        { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' }
       ]
     })
   }
 
-  menuGroups.push({
-    label: 'Digitaliza Comercial',
-    items: [
-      { to: '/digitaliza-crm', icon: FileText, label: 'CRM Compartilhado', badge: 'PRO' },
-    ]
-  })
+  if (isAdmin) {
+    menuGroups.push({
+      label: 'Administração',
+      items: [
+        { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' },
+        { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' },
+        { to: '/tutoriais?action=new', icon: Video, label: 'Publicar Tutorial' },
+        { to: '/admin/notes', icon: NotebookPen, label: 'Backlog & Notas' }
+      ]
+    })
+  }
 
-  // Close sidebar on route change on mobile
   useEffect(() => {
     if (window.innerWidth < 1024) {
-      onClose();
+      onClose()
     }
-  }, [location.pathname]);
+  }, [location.pathname])
 
   return (
     <>
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 lg:hidden animate-fade-in"
           onClick={onClose}
         />
       )}
 
-      <aside 
+      <aside
         className={cn(
-          "fixed top-0 left-0 h-full bg-background/95 backdrop-blur-2xl border-r border-border transition-transform duration-300 ease-out z-50 flex flex-col shadow-[20px_0_40px_rgba(0,0,0,0.5)]",
-          "w-[280px]",
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          'fixed top-0 left-0 h-full bg-[#09090B] border-r border-zinc-800/80 transition-transform duration-200 ease-out z-50 flex flex-col',
+          'w-[264px]',
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        <div className="h-20 flex items-center justify-between px-6 border-b border-border bg-transparent">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-accent/50 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] relative">
-              <div className="absolute inset-0 bg-black/20 rounded-xl"></div>
-              <Ghost className="w-5 h-5 text-white relative z-10" />
+        {/* Minimal Brand Header */}
+        <div className="h-16 flex items-center justify-between px-5 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <Ghost className="w-4 h-4 text-zinc-100" />
             </div>
-            <span className="font-black text-xl text-textPrimary tracking-tight">GhostMarket</span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[15px] text-white tracking-tight">GhostMarket</span>
+              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded">
+                OS
+              </span>
+            </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-surface text-textSecondary hover:text-textPrimary lg:hidden transition-colors"
+            className="p-1.5 rounded-lg hover:bg-zinc-900 text-zinc-400 hover:text-white lg:hidden transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
-          {!isTrial && (
-            <div className="mb-6">
-              <NavLink
-                to="/vip"
-                className={({ isActive }) => cn(
-                  "flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 group relative overflow-hidden shadow-xl",
-                  isActive
-                    ? "bg-gradient-to-r from-emerald-500/20 via-purple-500/20 to-transparent border-emerald-500/50 text-white shadow-[0_0_25px_rgba(16,185,129,0.3)]"
-                    : "bg-gradient-to-br from-[#130b2b] via-[#091510] to-[#040406] border-emerald-500/30 hover:border-emerald-500/60 text-white hover:scale-[1.01]"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                    <MessageCircle className="w-5 h-5 fill-emerald-400/20 text-emerald-400" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-white tracking-wide">Grupo VIP</span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
-                    </div>
-                    <p className="text-[10px] text-emerald-400/90 font-semibold">WhatsApp Oficial</p>
-                  </div>
-                </div>
-                <span className="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-black font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-[0_0_12px_rgba(16,185,129,0.6)]">
-                  Entrar
-                </span>
-              </NavLink>
-            </div>
+        {/* Navigation List */}
+        <div className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar space-y-5">
+          {/* Quick Search Bar */}
+          {onOpenCommandPalette && (
+            <button
+              onClick={onOpenCommandPalette}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-900/70 hover:bg-zinc-900 border border-zinc-800/90 hover:border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2 text-xs font-medium">
+                <Search className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Ir para ferramenta...</span>
+              </div>
+              <kbd className="flex items-center gap-0.5 text-[10px] font-mono text-zinc-500 bg-zinc-950 border border-zinc-800 px-1.5 py-0.5 rounded">
+                <Command className="w-2.5 h-2.5" />K
+              </kbd>
+            </button>
           )}
 
-          <div className="space-y-6">
+          {/* Discreet Executive Community Link */}
+          {!isTrial && (
+            <NavLink
+              to="/vip"
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center justify-between px-3 py-2.5 rounded-lg border text-xs transition-colors',
+                  isActive
+                    ? 'bg-zinc-900 border-zinc-700 text-white'
+                    : 'bg-zinc-900/40 border-zinc-800/80 hover:border-zinc-700 text-zinc-300 hover:text-white'
+                )
+              }
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="font-medium">Comunidade VIP (WhatsApp)</span>
+              </div>
+              <ArrowUpRight className="w-3.5 h-3.5 text-zinc-500" />
+            </NavLink>
+          )}
+
+          {/* Menu Groups */}
+          <div className="space-y-5">
             {menuGroups.map((group, groupIndex) => (
-              <div key={groupIndex} className="space-y-1">
+              <div key={groupIndex}>
                 <button
                   onClick={() => toggleGroup(group.label)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-black text-textMuted uppercase tracking-widest group hover:text-textPrimary transition-colors"
+                  className="w-full flex items-center justify-between px-2.5 py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
                 >
-                  {group.label}
-                  <svg 
-                    className={cn("w-3.5 h-3.5 transition-transform duration-300", expandedGroups.includes(group.label) ? "rotate-90 text-accent" : "")} 
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  <span>{group.label}</span>
+                  <svg
+                    className={cn(
+                      'w-3 h-3 transition-transform duration-200 text-zinc-600',
+                      expandedGroups.includes(group.label) ? 'rotate-90' : ''
+                    )}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
-                
-                <div 
+
+                <div
                   className={cn(
-                    "space-y-1 overflow-hidden transition-all duration-300",
-                    expandedGroups.includes(group.label) ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
+                    'space-y-0.5 overflow-hidden transition-all duration-200',
+                    expandedGroups.includes(group.label) ? 'max-h-[650px] opacity-100 mt-1' : 'max-h-0 opacity-0'
                   )}
                 >
                   {group.items.map((item, index) => {
                     const Icon = item.icon
                     const isActive = location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-                    
+
                     return (
                       <NavLink
                         key={index}
                         to={item.to}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 group relative overflow-hidden",
-                          isActive 
-                            ? "text-white bg-gradient-to-r from-accent/20 to-transparent border border-accent/20 shadow-[inset_0_0_20px_rgba(139,92,246,0.1)]"
-                            : "text-textSecondary hover:text-textPrimary hover:bg-surface/50 border border-transparent"
+                          'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors group relative',
+                          isActive
+                            ? 'text-white bg-zinc-800/80'
+                            : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/60'
                         )}
                       >
-                        {isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent rounded-r-full shadow-[0_0_10px_var(--accent)]" />
-                        )}
-                        <Icon className={cn(
-                          "w-4 h-4 transition-all duration-300",
-                          isActive ? "text-accent drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]" : "text-textMuted group-hover:text-textPrimary"
-                        )} />
-                        <span>{item.label}</span>
+                        <Icon
+                          className={cn(
+                            'w-4 h-4 shrink-0 transition-colors',
+                            isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'
+                          )}
+                        />
+                        <span className="truncate">{item.label}</span>
                         {(item as any).badge && (
-                          <span className={cn(
-                            "ml-auto text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider",
-                            (item as any).badge === 'WHATSAPP'
-                              ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]"
-                              : "bg-primary text-white shadow-[0_0_10px_rgba(139,92,246,0.5)]"
-                          )}>
+                          <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 shrink-0">
                             {(item as any).badge}
                           </span>
                         )}
@@ -254,61 +284,60 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           </div>
         </div>
 
-        <div className="p-5 border-t border-border bg-surface-elevated/30 backdrop-blur-xl space-y-4">
-          
-          <a
-            href="https://api.whatsapp.com/send?phone=5584996162332&text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20GhostMarket%20AI"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:-translate-y-0.5 active:scale-95 bg-accent border border-accent/50 relative overflow-hidden group"
-            title="Suporte no WhatsApp"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]" />
-            <MessageCircle className="w-5 h-5 relative z-10" />
-            <span className="tracking-wide relative z-10">Suporte Exclusivo</span>
-          </a>
-
-          <div className="flex gap-2">
+        {/* Bottom Profile & Actions */}
+        <div className="p-3 border-t border-zinc-800/80 bg-[#09090B] space-y-2">
+          <div className="flex gap-1.5">
             <NavLink
               to="/settings"
-              className={({ isActive }) => cn(
-                "flex-1 flex justify-center items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200",
-                isActive 
-                  ? "text-textPrimary bg-surface-elevated border border-border shadow-sm"
-                  : "text-textSecondary hover:text-textPrimary hover:bg-surface border border-transparent"
-              )}
+              className={({ isActive }) =>
+                cn(
+                  'flex-1 flex justify-center items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border',
+                  isActive
+                    ? 'text-white bg-zinc-800 border-zinc-700'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border-zinc-800/80'
+                )
+              }
             >
-              <Settings className="w-4 h-4" /> Config
+              <Settings className="w-3.5 h-3.5" />
+              <span>Agência</span>
             </NavLink>
+            <a
+              href="https://api.whatsapp.com/send?phone=5584996162332&text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20GhostMarket%20AI"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex justify-center items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800/80 transition-colors"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>Suporte</span>
+            </a>
             <button
               onClick={handleLogout}
-              className="flex-1 flex justify-center items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-textSecondary hover:text-error hover:bg-error/10 border border-transparent transition-all duration-200 group"
+              title="Sair da conta"
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-zinc-800/80 transition-colors cursor-pointer"
             >
-              <LogOut className="w-4 h-4 group-hover:text-error transition-colors" />
-              Sair
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface/80 border border-border/50 shadow-sm backdrop-blur-md relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="w-10 h-10 rounded-full bg-surface-elevated border border-accent/30 flex items-center justify-center overflow-hidden shrink-0 shadow-[0_0_10px_rgba(139,92,246,0.2)] relative z-10">
-              <Crown className="w-5 h-5 text-accent" />
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-zinc-900/50 border border-zinc-800/80">
+            <div className="w-7 h-7 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={user.name || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                <Crown className="w-3.5 h-3.5 text-zinc-300" />
+              )}
             </div>
-            <div className="flex-1 min-w-0 relative z-10">
-              <p className="text-sm font-bold text-textPrimary truncate">
-                {user?.name || 'UsuÃ¡rio Elite'}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-zinc-100 truncate">
+                {user?.name || 'Membro GhostMarket'}
               </p>
-              <p className="text-[10px] font-black text-accent truncate uppercase tracking-widest">
-                {isAdmin ? 'Administrador' : isPartner ? 'SÃ³cio Ghost' : 'Membro Elite'}
+              <p className="text-[10px] font-mono text-zinc-500 truncate">
+                {isAdmin ? 'Admin' : isPartner ? 'Sócio' : 'Licença Ativa'}
               </p>
             </div>
           </div>
-
         </div>
       </aside>
     </>
   )
 }
-
-
-

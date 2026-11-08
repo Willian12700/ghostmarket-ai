@@ -38,7 +38,12 @@ export const TutorialCard = ({
   const handleNavigateToTool = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (tutorial.toolRoute) {
-      navigate(tutorial.toolRoute)
+      const routeMap: Record<string, string> = {
+        '/ide': '/builder',
+        '/digitaliza-crm': '/contracts',
+        '/offers': '/dashboard'
+      }
+      navigate(routeMap[tutorial.toolRoute] || tutorial.toolRoute)
     }
   }
 

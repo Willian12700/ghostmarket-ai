@@ -1,323 +1,581 @@
-import { GlassTerminal } from '@/components/ui/GlassTerminal'
-import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
-import { PillSelector } from '@/components/ui/PillSelector'
-import { useState } from 'react'
-import { MessageSquare, Copy, Check, ChevronRight, ChevronLeft } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/Card'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import {
+  Wand2,
+  Copy,
+  Check,
+  MessageCircle,
+  Sparkles,
+  RefreshCw,
+  User,
+  Briefcase,
+  Phone,
+  MapPin,
+  Layers,
+  CheckCircle2
+} from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToastStore } from '@/store/toastStore'
 import { useAuthStore } from '@/store/authStore'
 import { db } from '@/config/firebase'
-import { motion, AnimatePresence } from 'framer-motion'
+
+interface ScriptVariation {
+  id: string
+  label: string
+  badge: string
+  text: string
+}
+
+const MESSAGE_TYPES = [
+  'Primeiro Contato (Prospecção)',
+  'Follow-Up (Visualizou e sumiu)',
+  'Quebra de Objeção (Achou caro)',
+  'Apresentação de Prévia / Site'
+]
+
+const TONES = ['Consultivo & Executivo', 'Curto & Direto', 'Persuasivo (Dor & Solução)', 'Amigável & Próximo']
+
+const QUICK_PRODUCTS = [
+  'Landing Page de Alta Conversão',
+  'Site Profissional + Chatbot IA 24h',
+  'Posicionamento no Google + Site',
+  'Reestruturação Digital Completa'
+]
 
 export const Creator = () => {
+  const [searchParams] = useSearchParams()
   const { user } = useAuthStore()
   const { addToast } = useToastStore()
-  
-  const [step, setStep] = useState(1)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedScript, setGeneratedScript] = useState('')
-  const [copied, setCopied] = useState(false)
 
   const [formData, setFormData] = useState({
-    type: 'Abertura',
+    type: 'Primeiro Contato (Prospecção)',
     clientName: '',
+    phone: '',
     niche: '',
-    product: '',
+    city: '',
+    product: 'Landing Page de Alta Conversão',
     offer: '',
-    tone: 'Persuasivo',
-    followUpReason: 'Visualizou e não respondeu'
+    tone: 'Consultivo & Executivo'
   })
 
-  const TONES = ['Persuasivo', 'Direto', 'Amigável']
-  const REASONS = ['Visualizou e não respondeu', 'Achou caro', 'Pediu pra ver depois']
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [variations, setVariations] = useState<ScriptVariation[]>([])
+  const [activeTab, setActiveTab] = useState<number>(0)
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
 
-  const generateScript = () => {
-    setIsGenerating(true)
-    setStep(5)
-    
-    setTimeout(async () => {
-      const { type, clientName, niche, product, offer, tone, followUpReason } = formData
-      
-      const firstName = clientName ? clientName.split(' ')[0] : 'Empreendedor'
-      const nicheText = niche ? niche.toLowerCase() : 'negócio'
-      
-      let script = ''
+  useEffect(() => {
+    const clientName = searchParams.get('clientName') || ''
+    const niche = searchParams.get('niche') || ''
+    const phone = searchParams.get('phone') || ''
+    const city = searchParams.get('city') || ''
 
-      if (type === 'Abertura') {
-        if (tone === 'Persuasivo') {
-          script = `Fala ${firstName}, tudo bem?\\n\\nEstava analisando algumas empresas do setor de ${nicheText} aqui na região e o perfil de vocês me chamou muita atenção. Percebi um detalhe na estratégia de vocês que está deixando muito dinheiro na mesa.\\n\\nNós ajudamos empresas exatamente como a sua através de ${product || 'nossa solução'}, e o resultado costuma ser brutal na atração de novos clientes.\\n\\n${offer ? `Para você ter uma ideia, ${offer}.` : 'Temos uma estratégia pronta que eu gostaria de te apresentar.'}\\n\\nVocê teria 5 minutinhos amanhã à tarde para eu te mostrar como isso funcionaria no seu negócio, sem compromisso?`
-        } else if (tone === 'Direto') {
-          script = `Olá ${firstName}, vi que vocês têm um ${nicheText} de muito potencial.\\n\\nTrabalho com ${product || 'marketing e tecnologia'} e criei um plano de ação rápido que pode dobrar seus resultados nos próximos 30 dias.\\n\\n${offer ? `A nossa proposta é a seguinte: ${offer}.` : 'Se fizer sentido, podemos marcar uma call super rápida.'}\\n\\nComo está sua agenda para amanhã?`
-        } else if (tone === 'Amigável') {
-          script = `Opa ${firstName}, tudo joia?\\n\\nAcompanho o trabalho de vocês e acho fantástico o que estão construindo com o ${nicheText}! 👏\\n\\nEu ajudo empresas do seu setor com ${product || 'estratégias de crescimento'} e lembrei de vocês na hora. ${offer ? `Nós estamos com uma oportunidade muito legal: ${offer}.` : 'Gostaria muito de trocar uma ideia rápida para te mostrar como podemos ajudar.'}\\n\\nFaz sentido batermos um papo rápido na semana que vem? Abraço!`
+    if (clientName || niche || phone || city) {
+      setFormData(prev => ({
+        ...prev,
+        clientName: clientName || prev.clientName,
+        niche: niche || prev.niche,
+        phone: phone || prev.phone,
+        city: city || prev.city
+      }))
+    }
+  }, [searchParams])
+
+  const buildSmartFallbackVariations = (): ScriptVariation[] => {
+    const { type, clientName, niche, city, product, offer, tone } = formData
+    const targetName = clientName.trim() ? clientName.trim() : 'tudo bem'
+    const firstWord = clientName.trim() ? clientName.trim().split(' ')[0] : 'Olá'
+    const nicheLabel = niche.trim() ? niche.trim().toLowerCase() : 'seu segmento'
+    const cityLabel = city.trim() ? ` em ${city.trim()}` : ''
+    const productLabel = product.trim() || 'uma estrutura digital de alta conversão'
+    const offerSentence = offer.trim()
+      ? `\n\nInclusive, ${offer.trim()}.`
+      : '\n\nMontei uma prévia personalizada mostrando exatamente como ficaria para a estrutura de vocês.'
+
+    if (type.includes('Follow-Up')) {
+      return [
+        {
+          id: 'v1',
+          label: 'Variação 01 • Toque Rápido (Alta Resposta)',
+          badge: 'CURTA',
+          text: `Olá, ${firstWord}! Tudo bem?\n\nSei que a rotina no setor de ${nicheLabel} é corrida. Conseguiu dar uma olhada na mensagem anterior sobre ${productLabel}?\n\nSe fizer sentido, consigo separar 5 minutos hoje para te mostrar a estrutura funcionando na prática.`
+        },
+        {
+          id: 'v2',
+          label: 'Variação 02 • Fechamento de Agenda',
+          badge: 'CONSULTIVA',
+          text: `Fala, ${firstWord}! Passando rapidamente porque estamos fechando o cronograma de entregas desta semana para empresas de ${nicheLabel}${cityLabel}.\n\nAinda tenho 1 vaga disponível para implementar ${productLabel} com acompanhamento direto.${offerSentence}\n\nQuer que eu reserve para a ${targetName} ou deixamos para o próximo mês?`
+        },
+        {
+          id: 'v3',
+          label: 'Variação 03 • Sem Compromisso (Desbloqueio)',
+          badge: 'DIRETA',
+          text: `${firstWord}, tudo ótimo por aí?\n\nPara facilitar sua análise sem tomar seu tempo: posso te mandar um link rápido de demonstração de ${productLabel} aqui mesmo no WhatsApp para você abrir quando tiver 2 minutos?`
         }
-      } else {
-        if (followUpReason === 'Visualizou e não respondeu') {
-          script = `Opa ${firstName}, tudo bem?\\n\\nSei que a correria do dia a dia no ${nicheText} é grande. Conseguiu dar uma olhada na proposta que te mandei sobre ${product || 'o nosso serviço'}?\\n\\nTemos apenas mais 2 vagas para implementar essa estratégia neste mês. Faz sentido darmos andamento ou prefere deixar para o próximo mês?`
-        } else if (followUpReason === 'Achou caro') {
-          script = `Fala ${firstName}, tudo bem?\\n\\nFiquei pensando no que conversamos sobre o investimento para o projeto de ${product || 'tecnologia'}.\\n\\nSei que o fluxo de caixa é prioridade pra vocês. Conversei com a equipe e consegui bolar uma alternativa: que tal começarmos com uma versão inicial focada apenas em gerar caixa rápido? ${offer ? `Nesse formato, podemos fazer por: ${offer}.` : 'Isso reduz o investimento inicial pela metade.'}\\n\\nO que acha de marcarmos 5 min para eu te mostrar esse novo escopo?`
-        } else if (followUpReason === 'Pediu pra ver depois') {
-          script = `Olá ${firstName}, como estão as coisas?\\n\\nDa última vez que nos falamos, você pediu para retomarmos o contato mais pra frente.\\n\\nNesse meio tempo, implementamos nossa estratégia de ${product || 'vendas'} em outro ${nicheText} e o resultado foi incrível.\\n\\nAinda faz sentido conversarmos sobre como aplicar isso no seu negócio?\\nAbraço!`
+      ]
+    }
+
+    if (type.includes('Objeção')) {
+      return [
+        {
+          id: 'v1',
+          label: 'Variação 01 • Retorno sobre Investimento (ROI)',
+          badge: 'ROI & CAIXA',
+          text: `${firstWord}, entendo perfeitamente sua cautela com o investimento.\n\nJustamente por isso estruturamos ${productLabel} para se pagar já nos primeiros clientes que chegarem pelo Google e WhatsApp. No setor de ${nicheLabel}, apenas 2 ou 3 novos fechamentos já cobrem 100% da implementação.${offerSentence}\n\nSe ajustarmos a condição de entrada, faz sentido avançarmos hoje?`
+        },
+        {
+          id: 'v2',
+          label: 'Variação 02 • Escopo Enxuto (Entrada Facilitada)',
+          badge: 'FLEXÍVEL',
+          text: `Fala, ${firstWord}! Fiquei pensando no que conversamos sobre o projeto da ${targetName}.\n\nPara não pesar no seu fluxo de caixa agora, consigo liberar uma versão inicial focada 100% em captação imediata no WhatsApp, reduzindo o investimento inicial.\n\nTopa validar esse formato mais enxuto para começarmos a gerar resultado já nesta semana?`
+        },
+        {
+          id: 'v3',
+          label: 'Variação 03 • Comparativo de Custo de Oportunidade',
+          badge: 'EXECUTIVA',
+          text: `Olá, ${firstWord}. Analisando a busca por ${nicheLabel}${cityLabel}, dezenas de clientes pesquisam diariamente no Google e acabam fechando com concorrentes que possuem página estruturada.\n\nO objetivo de ${productLabel} é estancar essa perda de clientes todos os meses. Posso te apresentar uma condição especial no PIX ou parcelado para destravarmos isso hoje?`
+        }
+      ]
+    }
+
+    return [
+      {
+        id: 'v1',
+        label: 'Variação 01 • Quebra-Gelo de Alta Resposta (Sem cara de robô)',
+        badge: 'RECOMENDADA',
+        text: `Olá, pessoal da ${targetName}! Tudo bem?\n\nEstava pesquisando por referências de ${nicheLabel}${cityLabel} no Google e encontrei o perfil de vocês.\n\nNotei um ponto importante na presença digital de vocês que pode estar fazendo clientes prontos para comprar irem para a concorrência. Trabalho com ${productLabel} e preparei uma ideia rápida específica para a ${targetName}.\n\nPosso mandar um print/link aqui mesmo no WhatsApp para você avaliar sem compromisso?`
+      },
+      {
+        id: 'v2',
+        label: `Variação 02 • Abordagem ${tone.split(' ')[0]} (Autoridade & Diagnóstico)`,
+        badge: 'CONSULTIVA',
+        text: `Olá, ${firstWord}! Tudo ótimo?\n\nVi que a ${targetName} tem ótimas avaliações e uma excelente reputação em ${nicheLabel}${cityLabel}, mas hoje quem pesquisa pelo serviço de vocês no Google não encontra uma página de alta conversão dedicada para atendimento rápido.\n\nNós implementamos ${productLabel} para transformar essas buscas em chamados qualificados direto no seu WhatsApp.${offerSentence}\n\nVocê é a pessoa responsável pela parte comercial da ${targetName} para eu te mostrar como funciona em 2 minutos?`
+      },
+      {
+        id: 'v3',
+        label: 'Variação 03 • Abordagem da Prévia Pronta (Gatilho da Curiosidade)',
+        badge: 'ALTA CONVERSÃO',
+        text: `Opa, tudo bem por aí?\n\nSou especialista em estrutura digital para ${nicheLabel} e tomei a liberdade de montar um modelo demonstrativo de ${productLabel} com o nome da ${targetName} para você ver como ficaria no celular dos seus clientes.${offerSentence}\n\nFicou bem profissional! Posso te enviar o link de visualização aqui para você me dizer o que achou?`
+      }
+    ]
+  }
+
+  const handleGenerate = async () => {
+    if (!formData.niche.trim() && !formData.clientName.trim()) {
+      addToast('Informe pelo menos o nome da empresa ou o nicho de atuação.', 'error')
+      return
+    }
+
+    setIsGenerating(true)
+    const fallbackList = buildSmartFallbackVariations()
+
+    try {
+      const prompt = `Você é um especialista sênior em vendas B2B pelo WhatsApp no Brasil.
+Gere 3 abordagens altamente persuasivas, humanas e naturais para WhatsApp (sem parecer robô, sem hashtags, sem clichês de IA).
+Dados do Lead:
+- Empresa/Cliente: ${formData.clientName || 'Empresa local'}
+- Nicho: ${formData.niche || 'Negócio local'}
+- Cidade: ${formData.city || 'Brasil'}
+- Objetivo: ${formData.type}
+- Solução vendida: ${formData.product}
+- Oferta/Diferencial: ${formData.offer || 'Demonstração prática rápida'}
+- Tom de voz: ${formData.tone}
+
+Retorne EXATAMENTE no formato JSON abaixo (apenas o array JSON válido, sem markdown):
+[
+  {"label": "Variação 01 • Quebra-Gelo Rápido (Alta Resposta)", "badge": "RECOMENDADA", "text": "..."},
+  {"label": "Variação 02 • Diagnóstico Consultivo (Autoridade)", "badge": "CONSULTIVA", "text": "..."},
+  {"label": "Variação 03 • Abordagem da Prévia Pronta (Curiosidade)", "badge": "DIRETA", "text": "..."}
+]`
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 6500)
+
+      const response = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'Responda apenas com um JSON array válido contendo 3 objetos com label, badge e text em português do Brasil.' },
+            { role: 'user', content: prompt }
+          ],
+          model: 'openai'
+        }),
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+
+      let finalVariations = fallbackList
+
+      if (response.ok) {
+        const rawText = await response.text()
+        const jsonMatch = rawText.match(/\[[\s\S]*\]/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          if (Array.isArray(parsed) && parsed.length >= 2 && parsed[0]?.text) {
+            finalVariations = parsed.slice(0, 3).map((item: any, idx: number) => ({
+              id: `v${idx + 1}`,
+              label: item.label || fallbackList[idx]?.label || `Variação 0${idx + 1}`,
+              badge: item.badge || fallbackList[idx]?.badge || 'PRO',
+              text: String(item.text).replace(/\\n/g, '\n')
+            }))
+          }
         }
       }
 
-      setGeneratedScript(script)
-      setIsGenerating(false)
-      addToast('Script gerado com sucesso!', 'success')
+      setVariations(finalVariations)
+      setActiveTab(0)
+      addToast('3 variações geradas com sucesso!', 'success')
 
-      try {
-        if (user?.email) {
+      if (user?.email) {
+        try {
           const { addDoc, collection, serverTimestamp } = await import('firebase/firestore')
           await addDoc(collection(db, 'ai_history'), {
             userId: user.email,
-            type: type,
+            type: formData.type,
             niche: formData.niche || 'Geral',
-            script: script,
+            clientName: formData.clientName || '',
+            script: finalVariations[0].text,
             timestamp: serverTimestamp()
           })
+        } catch (err) {
+          console.error('Erro ao salvar histórico:', err)
         }
-      } catch (err) {
-        console.error("Erro ao salvar histrico:", err)
       }
-    }, 1200)
+    } catch {
+      setVariations(fallbackList)
+      setActiveTab(0)
+      addToast('3 variações estratégicas geradas!', 'success')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedScript)
-    setCopied(true)
-    addToast('Copiado para a área de transferência!', 'success')
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopy = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text)
+    setCopiedIdx(idx)
+    addToast('Script copiado para a área de transferência!', 'success')
+    setTimeout(() => setCopiedIdx(null), 2000)
   }
 
-  const nextStep = () => setStep(s => Math.min(5, s + 1))
-  const prevStep = () => setStep(s => Math.max(1, s - 1))
+  const handleSendWhatsApp = (text: string) => {
+    const cleanPhone = formData.phone.replace(/\D/g, '')
+    const encoded = encodeURIComponent(text)
+    if (cleanPhone) {
+      const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`
+      window.open(`https://wa.me/${fullPhone}?text=${encoded}`, '_blank')
+    } else {
+      window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank')
+    }
+  }
+
+  const handleUpdateVariationText = (idx: number, newText: string) => {
+    setVariations(prev => prev.map((v, i) => (i === idx ? { ...v, text: newText } : v)))
+  }
 
   return (
-    <div className="relative overflow-x-hidden min-h-[calc(100vh-64px)] w-full bg-[#09090b] text-white selection:bg-primary/30">
-      <AnimatedBackground />
-      <div className="max-w-4xl mx-auto space-y-6 pt-10 pb-20 relative z-10 min-h-screen">
-        
-        <div className="mb-12 flex flex-col items-center justify-center text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6 border border-primary/20 shadow-[0_0_30px_rgba(139,92,246,0.3)]">
-            <MessageSquare className="w-8 h-8 text-primary" />
+    <div className="max-w-7xl mx-auto space-y-6 pb-16">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
+        <div>
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px] font-mono uppercase tracking-wider mb-2">
+            <Wand2 className="w-3 h-3 text-zinc-300" />
+            <span>Copywriting Comercial B2B</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-indigo-400 mb-4">
-            Creator IA
-          </h1>
-          <p className="text-lg text-textSecondary max-w-2xl font-medium">
-            Gere abordagens irresistíveis para WhatsApp. Converte frio em quente e quebra objeções.
+          <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Creator IA — Gerador Multi-Abordagem</h1>
+          <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+            Configure os dados do lead e gere simultaneamente 3 variações estratégicas prontas para disparar no WhatsApp.
           </p>
         </div>
+      </div>
 
-        <div className="mb-12 relative max-w-2xl mx-auto">
-          <div className="absolute top-1/2 left-0 w-full h-1 -translate-y-1/2 bg-border rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full bg-gradient-to-r from-primary to-indigo-500"
-              initial={{ width: '0%' }}
-              animate={{ width: `${((step - 1) / 4) * 100}%` }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
+      {/* Main Split Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN: Configuration Form (5 cols) */}
+        <div className="lg:col-span-5 bg-[#0E0E11] border border-zinc-800/80 rounded-xl p-5 sm:p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3.5">
+            <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-zinc-400" />
+              <span>Parâmetros da Abordagem</span>
+            </h2>
+            <span className="text-[10px] font-mono text-zinc-500 uppercase">Contexto do Lead</span>
+          </div>
+
+          {/* Momento / Objetivo */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-2">Objetivo da Mensagem</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {MESSAGE_TYPES.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, type: t }))}
+                  className={`text-left px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                    formData.type === t
+                      ? 'bg-zinc-100 text-zinc-950 border-white font-semibold'
+                      : 'bg-[#09090B] text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-200'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Dados do Lead */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-zinc-500" />
+                Nome da Empresa / Sócio
+              </label>
+              <Input
+                value={formData.clientName}
+                onChange={e => setFormData(p => ({ ...p, clientName: e.target.value }))}
+                placeholder="Ex: Clínica Odonto Prime"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-zinc-500" />
+                WhatsApp do Lead
+              </label>
+              <Input
+                value={formData.phone}
+                onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-zinc-500" />
+                Nicho / Segmento *
+              </label>
+              <Input
+                value={formData.niche}
+                onChange={e => setFormData(p => ({ ...p, niche: e.target.value }))}
+                placeholder="Ex: Odontologia, Barbearia..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-zinc-500" />
+                Cidade / Região
+              </label>
+              <Input
+                value={formData.city}
+                onChange={e => setFormData(p => ({ ...p, city: e.target.value }))}
+                placeholder="Ex: São Paulo"
+              />
+            </div>
+          </div>
+
+          {/* Solução Vendida */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">O que você está oferecendo?</label>
+            <Input
+              value={formData.product}
+              onChange={e => setFormData(p => ({ ...p, product: e.target.value }))}
+              placeholder="Ex: Landing Page de Alta Conversão + Chatbot IA"
+            />
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {QUICK_PRODUCTS.map(prod => (
+                <button
+                  key={prod}
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, product: prod }))}
+                  className={`text-[11px] px-2 py-1 rounded-md border transition-colors cursor-pointer ${
+                    formData.product === prod
+                      ? 'bg-zinc-800 text-white border-zinc-600'
+                      : 'bg-[#09090B] text-zinc-500 border-zinc-800/80 hover:text-zinc-300'
+                  }`}
+                >
+                  {prod}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Diferencial / Oferta */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+              Oferta ou Gatilho Específico (Opcional)
+            </label>
+            <Input
+              value={formData.offer}
+              onChange={e => setFormData(p => ({ ...p, offer: e.target.value }))}
+              placeholder="Ex: Já montei uma prévia gratuita do site de vocês para demonstrar"
             />
           </div>
-          <div className="relative flex justify-between">
-            {[1, 2, 3, 4, 5].map(i => (
-              <motion.div 
-                key={i}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: i * 0.1 }}
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border-4 transition-colors duration-500 ${
-                  step >= i 
-                  ? 'bg-primary border-panel text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]' 
-                  : 'bg-panel border-background text-textSecondary'
-                }`}
-              >
-                {i}
-              </motion.div>
-            ))}
+
+          {/* Tom de Voz */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-2">Tom da Abordagem</label>
+            <div className="grid grid-cols-2 gap-2">
+              {TONES.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, tone: t }))}
+                  className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                    formData.tone === t
+                      ? 'bg-zinc-800 text-white border-zinc-600'
+                      : 'bg-[#09090B] text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full h-11 text-sm font-semibold">
+            {isGenerating ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Gerando 3 Variações com IA...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Gerar 3 Variações de Abordagem
+              </>
+            )}
+          </Button>
         </div>
 
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
-                <CardContent className="p-8 space-y-8">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 1 de 5</h3>
-                    <h2 className="text-3xl font-black text-white">Objetivo da Mensagem</h2>
-                    <p className="text-textSecondary">É um primeiro contato ou resgate de lead frio?</p>
-                  </div>
-                  
-                  <div className="space-y-4 pt-4">
-                    <PillSelector 
-                      id="type" 
-                      options={['Abertura', 'Follow-Up']} 
-                      value={formData.type} 
-                      onChange={(val) => setFormData(p => ({ ...p, type: val }))} 
-                    />
-                  </div>
-
-                  <div className="pt-6 border-t border-border/50">
-                    <Button onClick={nextStep} className="w-full h-14 text-lg font-bold">
-                      Avançar <ChevronRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
-                <CardContent className="p-8 space-y-8">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 2 de 5</h3>
-                    <h2 className="text-3xl font-black text-white">Quem é o Cliente?</h2>
-                    <p className="text-textSecondary">Detalhes básicos para gerar proximidade na copy.</p>
-                  </div>
-                  
-                  <div className="space-y-4 pt-4">
-                    <Input 
-                      label="Nome do Cliente (ou Empresa)"
-                      value={formData.clientName}
-                      onChange={(e) => setFormData(p => ({ ...p, clientName: e.target.value }))}
-                      placeholder="Ex: João Silva ou Barbearia do João"
-                    />
-                    <Input 
-                      label="Qual o nicho dele?"
-                      value={formData.niche}
-                      onChange={(e) => setFormData(p => ({ ...p, niche: e.target.value }))}
-                      placeholder="Ex: Clínicas de Estética, Restaurantes..."
-                    />
-                  </div>
-
-                  <div className="pt-6 border-t border-border/50 flex gap-4">
-                    <Button variant="secondary" onClick={prevStep} className="h-14 px-6"><ChevronLeft className="w-5 h-5" /></Button>
-                    <Button onClick={nextStep} disabled={!formData.niche} className="flex-1 h-14 text-lg font-bold">
-                      Avançar <ChevronRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
-                <CardContent className="p-8 space-y-8">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 3 de 5</h3>
-                    <h2 className="text-3xl font-black text-white">A Solução</h2>
-                    <p className="text-textSecondary">O que você está oferecendo?</p>
-                  </div>
-                  
-                  <div className="space-y-4 pt-4">
-                    <Input 
-                      label="Qual Serviço/Produto você vende?"
-                      value={formData.product}
-                      onChange={(e) => setFormData(p => ({ ...p, product: e.target.value }))}
-                      placeholder="Ex: Assessoria de Tráfego, Criação de Sites..."
-                    />
-                    <Input 
-                      label="Condição Especial / Benefício (Opcional)"
-                      value={formData.offer}
-                      onChange={(e) => setFormData(p => ({ ...p, offer: e.target.value }))}
-                      placeholder="Ex: Criação do site sem custo de adesão"
-                    />
-                  </div>
-
-                  <div className="pt-6 border-t border-border/50 flex gap-4">
-                    <Button variant="secondary" onClick={prevStep} className="h-14 px-6"><ChevronLeft className="w-5 h-5" /></Button>
-                    <Button onClick={nextStep} disabled={!formData.product} className="flex-1 h-14 text-lg font-bold">
-                      Avançar <ChevronRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {step === 4 && (
-            <motion.div key="step4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
-              <Card className="border-border/50 bg-panel/50 backdrop-blur-sm shadow-2xl">
-                <CardContent className="p-8 space-y-8">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold tracking-widest text-textSecondary uppercase">Passo 4 de 5</h3>
-                    <h2 className="text-3xl font-black text-white">O Tom da Conversa</h2>
-                    <p className="text-textSecondary">Como devemos estruturar a abordagem psicológica?</p>
-                  </div>
-                  
-                  <div className="space-y-4 pt-4">
-                    {formData.type === 'Abertura' ? (
-                      <PillSelector 
-                        id="tone" 
-                        options={TONES} 
-                        value={formData.tone} 
-                        onChange={(val) => setFormData(p => ({ ...p, tone: val }))} 
-                      />
-                    ) : (
-                      <PillSelector 
-                        id="reason" 
-                        options={REASONS} 
-                        value={formData.followUpReason} 
-                        onChange={(val) => setFormData(p => ({ ...p, followUpReason: val }))} 
-                      />
-                    )}
-                  </div>
-
-                  <div className="pt-6 border-t border-border/50 flex gap-4">
-                    <Button variant="secondary" onClick={prevStep} className="h-14 px-6"><ChevronLeft className="w-5 h-5" /></Button>
-                    <Button onClick={generateScript} className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-primaryLight hover:to-indigo-500 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
-                      <MessageSquare className="w-5 h-5 mr-2" /> Gerar Mensagem Pronta
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {step === 5 && (
-            <motion.div key="step5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <div className="flex justify-between items-end mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Mensagem Pronta</h3>
-                  <p className="text-textSecondary">Apenas copie e cole no WhatsApp do cliente.</p>
+        {/* RIGHT COLUMN: 3 Strategic Variations Output (7 cols) */}
+        <div className="lg:col-span-7 space-y-4">
+          {variations.length === 0 ? (
+            <div className="bg-[#0E0E11] border border-zinc-800/80 rounded-xl p-10 text-center min-h-[480px] flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+                <Wand2 className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-semibold text-zinc-200 mb-1.5">
+                Pronto para gerar suas abordagens personalizadas
+              </h3>
+              <p className="text-xs text-zinc-500 max-w-md leading-relaxed mb-6">
+                Preencha os dados do cliente ao lado (ou clique em <strong className="text-zinc-300">"Abordar com IA"</strong> direto no Scanner de Leads / CRM) para criar 3 opções de scripts prontos para enviar no WhatsApp.
+              </p>
+              <Button variant="secondary" onClick={handleGenerate} className="text-xs">
+                Gerar Exemplo Agora
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-[#0E0E11] border border-zinc-800/80 rounded-xl p-5 sm:p-6 space-y-4">
+              {/* Tabs Selector for the 3 Variations */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3.5">
+                <div className="flex items-center gap-1.5 bg-[#09090B] p-1 rounded-lg border border-zinc-800">
+                  {variations.map((v, idx) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setActiveTab(idx)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        activeTab === idx
+                          ? 'bg-zinc-100 text-zinc-950'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <span>Opção 0{idx + 1}</span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase ${
+                          activeTab === idx ? 'bg-zinc-950/15 text-zinc-950' : 'bg-zinc-900 text-zinc-500'
+                        }`}
+                      >
+                        {v.badge}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <div className="flex gap-3">
-                  <Button variant="secondary" onClick={() => setStep(1)} className="font-bold">
-                    Refazer
-                  </Button>
-                  <Button onClick={copyToClipboard} className="bg-primary hover:bg-primaryLight font-bold">
-                    {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                    {copied ? 'Copiado!' : 'Copiar Mensagem'}
-                  </Button>
+
+                <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Salvo na Biblioteca IA
+                </span>
+              </div>
+
+              {/* Active Variation Editor & Actions */}
+              {variations[activeTab] && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-200">{variations[activeTab].label}</span>
+                    <span className="text-[11px] text-zinc-500">Você pode editar o texto abaixo antes de enviar</span>
+                  </div>
+
+                  <textarea
+                    rows={10}
+                    value={variations[activeTab].text}
+                    onChange={e => handleUpdateVariationText(activeTab, e.target.value)}
+                    className="w-full rounded-xl bg-[#09090B] border border-zinc-800 p-4 text-sm text-zinc-100 leading-relaxed focus:outline-none focus:border-zinc-600 custom-scrollbar font-sans"
+                  />
+
+                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                    <Button
+                      onClick={() => handleSendWhatsApp(variations[activeTab].text)}
+                      className="w-full sm:flex-1 h-11 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs sm:text-sm"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      {formData.phone.trim()
+                        ? `Enviar no WhatsApp (${formData.phone})`
+                        : 'Abrir e Enviar no WhatsApp'}
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleCopy(variations[activeTab].text, activeTab)}
+                      className="w-full sm:w-auto h-11 px-5 text-xs sm:text-sm font-semibold"
+                    >
+                      {copiedIdx === activeTab ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2 text-emerald-400" />
+                          Copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copiar Texto
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* All 3 quick cards overview */}
+              <div className="pt-4 border-t border-zinc-800/80">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 block mb-2.5">
+                  Comparativo Rápido das 3 Variações
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                  {variations.map((v, idx) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setActiveTab(idx)}
+                      className={`text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                        activeTab === idx
+                          ? 'bg-zinc-900 border-zinc-600'
+                          : 'bg-[#09090B] border-zinc-800/80 hover:border-zinc-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-zinc-200">Opção 0{idx + 1}</span>
+                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                          {v.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 line-clamp-2">{v.text}</p>
+                    </button>
+                  ))}
                 </div>
               </div>
-              
-              <div className="rounded-xl border border-border/50 bg-panel/50 backdrop-blur-md shadow-2xl overflow-hidden p-2">
-                {isGenerating ? (
-                  <div className="h-[400px] flex flex-col items-center justify-center text-textSecondary gap-6">
-                    <div className="relative w-20 h-20">
-                      <div className="absolute inset-0 border-4 border-t-primary border-r-indigo-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-                      <div className="absolute inset-2 border-4 border-t-transparent border-r-transparent border-b-primary border-l-indigo-500 rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
-                      <MessageSquare className="absolute inset-0 m-auto w-8 h-8 text-primary animate-pulse" />
-                    </div>
-                    <p className="text-lg font-medium animate-pulse text-white">Escrevendo roteiro de vendas...</p>
-                  </div>
-                ) : (
-                  <div className="h-[400px] w-full">
-                    <GlassTerminal content={generatedScript || ''} />
-                  </div>
-                )}
-              </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
-
+        </div>
       </div>
     </div>
   )
