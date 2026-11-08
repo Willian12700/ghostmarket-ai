@@ -211,20 +211,16 @@ export const SiteBuilder = () => {
 
   const handleSelectTemplate = (template: SiteStudioConfig) => {
     const cloned = structuredClone(template);
-    // Preserve current lead contact details if user already customized them
-    if (studioConfig.name && studioConfig.name !== SITE_TEMPLATES[0].name) {
-      cloned.name = studioConfig.name;
-      cloned.aboutTitle = `Por que escolher a ${studioConfig.name}?`;
-      cloned.footerText = `© ${new Date().getFullYear()} ${studioConfig.name}. Todos os direitos reservados.`;
-    }
-    if (studioConfig.whatsapp !== '5511999999999') {
-      cloned.whatsapp = studioConfig.whatsapp;
-      cloned.phone = studioConfig.phone;
-    }
-    if (studioConfig.city !== 'São Paulo - SP') {
-      cloned.city = studioConfig.city;
+    const editParam = searchParams.get('edit');
+    if (!editParam) {
+      // Ao escolher outro modelo sem estar em modo de edição fixa (?edit=), prepara para criar um novo site
+      setEditingSiteId(null);
+      setPublishedUrl(null);
+      setPublishedAdminUrl(null);
+      setCustomSlug('');
     }
     setStudioConfig(cloned);
+    setSiteName(cloned.name);
     setWorkspaceMode('studio');
     setShowTemplateGalleryModal(false);
     toast.success(`Modelo "${template.templateTitle}" aplicado em tempo real!`);
@@ -443,36 +439,41 @@ export const SiteBuilder = () => {
 
     setIsPublishing(true);
     try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDoc.data();
-      const userPlan = userData?.plan || 'free';
+      const normalizedCustomSlug = customSlug
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-');
 
-      const sitesQuery = query(collection(db, 'sites'), where('userId', '==', user.uid));
-      const sitesSnap = await getDocs(sitesQuery);
-      const currentSitesCount = sitesSnap.size;
-
-      const limits: Record<string, number> = {
-        free: 2,
-        pro: 15,
-        vitalicio: 35,
-        admin: 999999,
-      };
-      const maxSites = (user as any)?.role === 'admin' ? 999999 : limits[userPlan] || 2;
-
-      if (!editingSiteId && currentSitesCount >= maxSites) {
-        toast.error(
-          `Limite de hospedagem atingido (${maxSites} sites no plano ${userPlan.toUpperCase()}). Gerencie seus sites em "Meus Sites".`,
-          { duration: 5000 }
-        );
-        setIsPublishing(false);
-        return;
-      }
-
-      const finalSlug = editingSiteId
+      const finalSlug = normalizedCustomSlug
+        ? normalizedCustomSlug
+        : editingSiteId
         ? editingSiteId
-        : customSlug.trim()
-        ? customSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-')
         : `${finalSiteName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}-${Math.random().toString(36).substring(2, 6)}`;
+
+      // Sistema de segurança contra domínio/slug duplicado
+      const [existingSiteSnap, existingHostedSnap] = await Promise.all([
+        getDoc(doc(db, 'sites', finalSlug)),
+        getDoc(doc(db, 'hosted_sites', finalSlug)),
+      ]);
+
+      const existingDoc = existingSiteSnap.exists()
+        ? existingSiteSnap.data()
+        : existingHostedSnap.exists()
+        ? existingHostedSnap.data()
+        : null;
+
+      if (existingDoc) {
+        const isOwner = existingDoc.userId === user.uid || existingDoc.userId === user.email;
+        const isSameEditingSite = editingSiteId === finalSlug && isOwner;
+        if (!isSameEditingSite) {
+          toast.error(
+            `Este domínio (/s/${finalSlug}) já está em uso! Escolha outro nome no campo de link personalizado.`,
+            { duration: 5000 }
+          );
+          setIsPublishing(false);
+          return;
+        }
+      }
 
       const finalStudioConfig: SiteStudioConfig = {
         ...studioConfig,
@@ -716,6 +717,20 @@ export const SiteBuilder = () => {
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Abrir Site
                 </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSiteId(null);
+                    setPublishedUrl(null);
+                    setPublishedAdminUrl(null);
+                    setCustomSlug('');
+                    setShowTemplateGalleryModal(true);
+                  }}
+                  className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Criar Outro Site
+                </button>
               </div>
             </div>
           </div>
