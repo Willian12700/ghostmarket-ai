@@ -1,19 +1,22 @@
 {
   "manifest_version": 3,
-  "name": "GhostMarket AI",
-  "version": "1.0",
-  "description": "Motor de rastreamento invisível da GhostMarket AI",
+  "name": "GhostMarket AI & Jarvis Automação",
+  "version": "2.0",
+  "description": "Motor de automação, rastreamento e auto-postagem do Jarvis e GhostMarket AI",
   "permissions": [
     "tabs",
     "scripting",
     "alarms",
     "storage",
-    "notifications"
+    "notifications",
+    "activeTab"
   ],
   "host_permissions": [
+    "*://*.tiktok.com/*",
     "*://*.shopee.com.br/*",
     "*://firestore.googleapis.com/*",
-    "http://localhost:*/*"
+    "http://localhost:*/*",
+    "https://*.vercel.app/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -26,6 +29,11 @@
     {
       "matches": ["http://localhost:*/*", "https://*.vercel.app/*"],
       "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.tiktok.com/creator-center/upload*", "*://*.tiktok.com/upload*"],
+      "js": ["tiktok_poster.js"],
       "run_at": "document_idle"
     }
   ],
