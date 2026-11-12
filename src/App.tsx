@@ -48,6 +48,7 @@ import { Tutorials } from '@/pages/Tutorials'
 import { Updates } from '@/pages/Updates'
 import { AdminUpdates } from '@/pages/AdminUpdates'
 import { JarvisPanel } from '@/pages/JarvisPanel'
+import { TikTokCallback } from '@/pages/TikTokCallback'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -85,6 +86,7 @@ function App() {
             <Route path="/pay/:productId" element={<Checkout />} />
             <Route path="/register" element={<Register />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/tiktok-callback" element={<TikTokCallback />} />
             
             <Route element={<MainLayout />}>
               <Route path="/ide" element={<Navigate to="/builder" replace />} />
