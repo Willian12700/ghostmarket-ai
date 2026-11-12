@@ -65,13 +65,24 @@ export const JarvisPanel: React.FC = () => {
   // Status de IA e Engine
   const [systemLogs, setSystemLogs] = useState<string[]>([
     'JARVIS Engine v4.2 inicializado com sucesso.',
-    'Sincronizado com GhostMarket AI core.',
-    'Caixa inicial detectado: R$ 111,00.',
-    'Meta ativa: R$ 800,00 (Desbloqueio Gemini Ultra / 4 Cargon).'
+    'Sincronizado com perfil TikTok @willianrde_2.',
+    'Scraper Playwright executado: 16 vídeos analisados.',
+    'Voz Neural Antonio (Edge-TTS pt-BR) gerada com sucesso.',
+    'Vídeo MP4 renderizado via Remotion: video_ghostmarket_viral.mp4 (3.8 MB).'
   ])
 
   // Projetos de Vídeo
   const [videoProjects] = useState<VideoProject[]>([
+    {
+      title: 'Você ainda estuda 6 meses de código pra ter clientes? (NOVO)',
+      hook: 'Se você ainda acha que precisa passar semanas aprendendo a programar pra ter clientes pagando, olha o que essa ferramenta fez em 40 segundos.',
+      format: 'TikTok',
+      status: 'renderizado',
+      bestTime: '18:45 (Horário de Pico Hoje)',
+      targetPlatform: 'TikTok & Reels',
+      scriptSnippet: 'Renderizado automaticamente pelo Remotion com narração neural em português e animações de alta retenção.',
+      remotionCode: 'out/video_ghostmarket_viral.mp4'
+    },
     {
       title: 'POV: Você demorou 1 ano e eu criei o site em 47s',
       hook: 'Se você ainda paga programador pra criar site, para tudo agora.',
@@ -477,6 +488,18 @@ export const JarvisPanel: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 self-end md:self-center">
+                        {vid.status === 'renderizado' && (
+                          <a
+                            href="/jarvis-videos/video_ghostmarket_viral.mp4"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download="video_ghostmarket_viral.mp4"
+                            className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-sm shadow-emerald-500/20"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Assistir / Baixar MP4
+                          </a>
+                        )}
                         <button
                           onClick={() => {
                             setSelectedTopic('como-criar-site-30s')
