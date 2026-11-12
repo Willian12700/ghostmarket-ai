@@ -29,7 +29,8 @@ import {
   Command,
   ArrowUpRight,
   Sparkles,
-  Megaphone
+  Megaphone,
+  Cpu
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
@@ -131,8 +132,9 @@ export const Sidebar = ({ isOpen, onClose, onOpenCommandPalette }: SidebarProps)
 
   if (isAdmin) {
     menuGroups.push({
-      label: 'Administração',
+      label: 'Administração & Jarvis',
       items: [
+        { to: '/jarvis', icon: Cpu, label: 'J.A.R.V.I.S. Máquina' },
         { to: '/admin', icon: ShieldAlert, label: 'Liberação de Acesso' },
         { to: '/admin/atualizacoes', icon: Megaphone, label: 'Disparar Atualizações' },
         { to: '/quiz/analytics', icon: PieChart, label: 'Quiz Analytics' },

@@ -47,6 +47,7 @@ import { AiCodeWorkspace } from '@/pages/AiCodeWorkspace'
 import { Tutorials } from '@/pages/Tutorials'
 import { Updates } from '@/pages/Updates'
 import { AdminUpdates } from '@/pages/AdminUpdates'
+import { JarvisPanel } from '@/pages/JarvisPanel'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -125,6 +126,7 @@ function App() {
               <Route path="/updates" element={<Updates />} />
               <Route path="/admin/atualizacoes" element={<AdminUpdates />} />
               <Route path="/admin/updates" element={<AdminUpdates />} />
+              <Route path="/jarvis" element={<JarvisPanel />} />
             </Route>
 
             <Route path="/s/:siteId" element={<SiteViewer />} />

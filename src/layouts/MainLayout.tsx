@@ -53,6 +53,7 @@ const pageInfo: Record<string, { title: string; description: string }> = {
   '/socio': { title: 'Painel do Sócio', description: 'Gere códigos VIP temporários e acompanhe os resultados da parceria.' },
   '/quiz/analytics': { title: 'Analytics do Quiz', description: 'Acompanhe visualizações, funil de conversão e respostas detalhadas dos leads.' },
   '/finance': { title: 'Gestão Financeira', description: 'Controle completo de entradas, saídas e lucro líquido da sua operação.' },
+  '/jarvis': { title: 'J.A.R.V.I.S. • Central Autônoma', description: 'Painel executivo de criação de vídeos, inteligência de horários e aceleração para o Gemini Ultra.' },
   '/products': { title: 'Meus Produtos', description: 'Gerencie seus produtos e gere links de checkout personalizados.' },
   '/affiliates': { title: 'Central de Afiliados', description: 'Acompanhe materiais de divulgação e comissões como afiliado.' }
 }
