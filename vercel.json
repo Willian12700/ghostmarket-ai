@@ -1,5 +1,10 @@
 {
+  "cleanUrls": true,
   "rewrites": [
+    {
+      "source": "/tiktok:path*",
+      "destination": "/tiktok:path*"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
