@@ -49,6 +49,7 @@ import { Updates } from '@/pages/Updates'
 import { AdminUpdates } from '@/pages/AdminUpdates'
 import { JarvisPanel } from '@/pages/JarvisPanel'
 import { TikTokCallback } from '@/pages/TikTokCallback'
+import { TikTokBioFunnel } from '@/pages/TikTokBioFunnel'
 
 import { APIProvider } from '@vis.gl/react-google-maps'
 
@@ -78,6 +79,9 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/bio" element={<TikTokBioFunnel />} />
+            <Route path="/links" element={<TikTokBioFunnel />} />
+            <Route path="/funil" element={<TikTokBioFunnel />} />
             <Route path="/quiz" element={<QuizPublic />} />
             <Route path="/parceiros" element={<PublicPartners />} />
             <Route path="/socios" element={<PublicPartners />} />

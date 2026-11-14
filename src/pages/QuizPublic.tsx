@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, Loader2, Play, Phone, User, AlertCircle, PhoneCall } from 'lucide-react';
 
 const CFG = {
-  zapSuporte: "5575000000000",
-  checkoutGhost: "https://pay.cakto.com.br/fiqwtse_1119916?affiliate=psuf2rhA",
+  zapSuporte: "558496162332",
+  checkoutGhost: "https://pay.cakto.com.br/fiqwtse_1119916",
   checkoutMentoria: "https://pay.cakto.com.br/yonkyi5_1119928",
   precoGhost: "R$ 19,99",
   precoMentoria: "R$ 49,99"
