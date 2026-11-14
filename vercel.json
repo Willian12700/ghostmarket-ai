@@ -1,9 +1,8 @@
 {
-  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/tiktok:path*",
-      "destination": "/tiktok:path*"
+      "source": "/legal",
+      "destination": "/legal.html"
     },
     {
       "source": "/(.*)",
