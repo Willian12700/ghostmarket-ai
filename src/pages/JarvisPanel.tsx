@@ -19,6 +19,8 @@ import {
   Tag,
   Key,
   PieChart,
+  Pause,
+  Play,
   X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -31,7 +33,12 @@ export const JarvisPanel: React.FC = () => {
   
   // Filtros WhatsApp
   const [leadSearch, setLeadSearch] = useState('');
-  const [stageFilter, setStageFilter] = useState<'all' | '0' | '1' | '2' | '3' | 'converted'>('all');
+  const [stageFilter, setStageFilter] = useState<'all' | '0' | '1' | '2' | '3' | 'converted' | 'paused'>('all');
+
+  // Intervenção Humana / Controle de Pausa da IA
+  const [pausePhoneInput, setPausePhoneInput] = useState('');
+  const [pauseReasonInput, setPauseReasonInput] = useState('');
+  const [pausingPhone, setPausingPhone] = useState<string | null>(null);
 
   // Geração manual de código de teste
   const [manualPhone, setManualPhone] = useState('');
@@ -164,18 +171,63 @@ export const JarvisPanel: React.FC = () => {
     }
   };
 
+  // Intervenção Humana: Pausar ou Reativar IA no WhatsApp
+  const handleTogglePauseChat = async (phone: string, action: 'pause' | 'unpause', reason?: string) => {
+    const clean = phone.replace(/\D/g, '');
+    if (!clean) return;
+    setPausingPhone(clean);
+    try {
+      const res = await fetch('/api/pause-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: clean,
+          action,
+          reason: reason || (action === 'pause' ? 'Manual via Mega Painel' : undefined)
+        })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setFeedbackMsg(action === 'pause' ? `IA pausada para +${clean}!` : `IA reativada para +${clean}!`);
+        setPausePhoneInput('');
+        setPauseReasonInput('');
+        fetchData();
+      } else {
+        alert(resData.error || 'Erro ao alterar pausa da IA');
+      }
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`);
+    } finally {
+      setPausingPhone(null);
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    }
+  };
+
   // Processamento e filtros de leads do WhatsApp
   const rawLeads = data?.whatsappLeads?.items || {};
   const leadsArray = Object.values(rawLeads).map((l: any) => l);
+  const pausedChatsMap = data?.pausedChats?.items || {};
+
+  const isPhonePaused = (phoneOrJid: string) => {
+    if (!phoneOrJid) return false;
+    const clean = phoneOrJid.replace(/\D/g, '');
+    if (clean && (pausedChatsMap[clean] || pausedChatsMap[`55${clean}`])) return true;
+    if (clean.startsWith('55') && pausedChatsMap[clean.slice(2)]) return true;
+    if (pausedChatsMap[phoneOrJid]) return true;
+    return false;
+  };
 
   const filteredLeads = leadsArray.filter((l: any) => {
+    const phone = l.phone || l.jid?.replace('@s.whatsapp.net', '') || '';
+    const cleanPhone = phone.replace(/\D/g, '');
     const nameMatch = (l.senderName || '').toLowerCase().includes(leadSearch.toLowerCase());
-    const phoneMatch = (l.phone || '').includes(leadSearch);
+    const phoneMatch = cleanPhone.includes(leadSearch.replace(/\D/g, ''));
     const textMatch = (l.lastUserMessage || '').toLowerCase().includes(leadSearch.toLowerCase());
     const matchesSearch = nameMatch || phoneMatch || textMatch;
 
     if (!matchesSearch) return false;
 
+    if (stageFilter === 'paused') return isPhonePaused(cleanPhone) || isPhonePaused(l.jid);
     if (stageFilter === 'converted') return l.converted;
     if (stageFilter === '0') return l.stage === 0 && !l.converted;
     if (stageFilter === '1') return l.stage === 1 && !l.converted;
@@ -185,6 +237,7 @@ export const JarvisPanel: React.FC = () => {
     return true;
   });
 
+  const pausedCount = Object.keys(pausedChatsMap).length;
   const convertedCount = leadsArray.filter((l: any) => l.converted).length;
   const stage0Count = leadsArray.filter((l: any) => l.stage === 0 && !l.converted).length;
   const stage1Count = leadsArray.filter((l: any) => l.stage === 1 && !l.converted).length;
@@ -409,6 +462,81 @@ export const JarvisPanel: React.FC = () => {
         {/* ============================================================ */}
         {activeTab === 'whatsapp' && (
           <div className="space-y-4">
+            
+            {/* Box de Intervenção Humana / Controle de Pausa da IA */}
+            <div className="bg-[#120e1d] border border-purple-900/40 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <h2 className="text-base font-bold text-white flex items-center gap-2">
+                      <Pause className="w-4 h-4 text-amber-400" />
+                      Intervenção Humana (Pausar / Desativar Bot por Cliente)
+                    </h2>
+                  </div>
+                  <p className="text-xs text-purple-300/70 mt-1 max-w-2xl">
+                    Digite o WhatsApp do cliente para pausar a IA apenas nessa conversa. Enquanto estiver pausado, o Jarvis não responde automaticamente e nem envia lembretes, permitindo que você assuma a negociação manualmente.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 bg-black/40 px-3.5 py-1.5 rounded-xl border border-purple-900/40 text-xs">
+                  <span className="text-purple-300/60 font-medium">Chats pausados agora:</span>
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 font-bold rounded-md">
+                    {pausedCount}
+                  </span>
+                </div>
+              </div>
+
+              {/* Formulário de Pausa Rápida */}
+              <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-3 border-t border-purple-900/30">
+                <input
+                  type="text"
+                  placeholder="WhatsApp com DDD (Ex: 84996656016)"
+                  value={pausePhoneInput}
+                  onChange={e => setPausePhoneInput(e.target.value)}
+                  className="flex-1 bg-[#0a0712] border border-purple-900/50 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-purple-300/40 focus:outline-none focus:border-amber-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Motivo da pausa (opcional)"
+                  value={pauseReasonInput}
+                  onChange={e => setPauseReasonInput(e.target.value)}
+                  className="sm:w-64 bg-[#0a0712] border border-purple-900/50 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-purple-300/40 focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  onClick={() => handleTogglePauseChat(pausePhoneInput, 'pause', pauseReasonInput)}
+                  disabled={!pausePhoneInput.trim() || pausingPhone === pausePhoneInput.replace(/\D/g, '')}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-black font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-amber-900/20"
+                >
+                  <Pause className="w-4 h-4 fill-current" />
+                  <span>Pausar IA no Chat</span>
+                </button>
+              </div>
+
+              {/* Pills de números pausados no momento */}
+              {pausedCount > 0 && (
+                <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-purple-900/20">
+                  <span className="text-[11px] font-semibold text-purple-300/60 mr-1">Pausados no momento:</span>
+                  {Object.entries(pausedChatsMap).map(([phoneKey, pData]: [string, any]) => (
+                    <div
+                      key={phoneKey}
+                      className="flex items-center gap-2 px-2.5 py-1 bg-amber-950/40 border border-amber-500/40 rounded-lg text-xs text-amber-200"
+                    >
+                      <span className="font-mono font-bold">+{phoneKey}</span>
+                      {pData?.reason && <span className="text-[10px] text-amber-300/60 hidden sm:inline">({pData.reason})</span>}
+                      <button
+                        onClick={() => handleTogglePauseChat(phoneKey, 'unpause')}
+                        title="Reativar IA para este número"
+                        className="p-0.5 hover:bg-amber-500/30 rounded text-amber-300 transition-colors"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Barra de Filtros e Busca */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#120e1d] border border-purple-900/30 rounded-2xl p-4">
               <div className="relative flex-1 max-w-md">
@@ -426,6 +554,7 @@ export const JarvisPanel: React.FC = () => {
               <div className="flex flex-wrap items-center gap-1.5">
                 {[
                   { id: 'all', label: 'Todos', count: leadsArray.length },
+                  { id: 'paused', label: 'Pausados (Manual)', count: pausedCount, highlight: true },
                   { id: '0', label: 'Atendimento (Estágio 0)', count: stage0Count },
                   { id: '1', label: 'Lembrete 25m', count: stage1Count },
                   { id: '2', label: 'Lembrete 18h', count: stage2Count },
@@ -437,7 +566,11 @@ export const JarvisPanel: React.FC = () => {
                     onClick={() => setStageFilter(f.id as any)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       stageFilter === f.id
-                        ? 'bg-purple-600 text-white font-bold'
+                        ? f.highlight
+                          ? 'bg-amber-500 text-black font-bold'
+                          : 'bg-purple-600 text-white font-bold'
+                        : f.highlight && f.count > 0
+                        ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
                         : 'bg-black/30 text-purple-300/60 hover:text-white border border-purple-900/30'
                     }`}
                   >
@@ -452,6 +585,7 @@ export const JarvisPanel: React.FC = () => {
               {filteredLeads.map((lead: any, idx: number) => {
                 const phone = lead.phone || lead.jid?.replace('@s.whatsapp.net', '') || '';
                 const cleanPhone = phone.replace(/\D/g, '');
+                const isPaused = isPhonePaused(cleanPhone) || isPhonePaused(lead.jid);
                 const waLink = `https://wa.me/${cleanPhone}`;
 
                 return (
@@ -460,6 +594,8 @@ export const JarvisPanel: React.FC = () => {
                     className={`bg-[#120e1d] border rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-all ${
                       lead.converted
                         ? 'border-emerald-500/40 bg-emerald-950/10'
+                        : isPaused
+                        ? 'border-amber-500/40 bg-amber-950/10'
                         : lead.stage === 3
                         ? 'border-amber-500/40 bg-amber-950/10'
                         : 'border-purple-900/40 hover:border-purple-600/50'
@@ -477,27 +613,36 @@ export const JarvisPanel: React.FC = () => {
                           </span>
                         </div>
 
-                        {lead.converted ? (
-                          <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            Pagou 💰
-                          </span>
-                        ) : (
-                          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
-                            lead.stage === 3
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                              : lead.stage === 2
-                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                              : lead.stage === 1
-                              ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                              : 'bg-zinc-800 text-zinc-300 border-zinc-700'
-                          }`}>
-                            {lead.stage === 0 && 'Estágio 0: Conversando'}
-                            {lead.stage === 1 && 'Estágio 1: 25m'}
-                            {lead.stage === 2 && 'Estágio 2: 18h'}
-                            {lead.stage === 3 && 'Estágio 3: Cupom VIP10'}
-                          </span>
-                        )}
+                        <div className="flex flex-col items-end gap-1.5">
+                          {isPaused && (
+                            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg text-[11px] font-bold flex items-center gap-1">
+                              <Pause className="w-3 h-3 fill-current" />
+                              IA Pausada
+                            </span>
+                          )}
+
+                          {lead.converted ? (
+                            <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Pagou 💰
+                            </span>
+                          ) : (
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                              lead.stage === 3
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                : lead.stage === 2
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                : lead.stage === 1
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                            }`}>
+                              {lead.stage === 0 && 'Estágio 0: Conversando'}
+                              {lead.stage === 1 && 'Estágio 1: 25m'}
+                              {lead.stage === 2 && 'Estágio 2: 18h'}
+                              {lead.stage === 3 && 'Estágio 3: Cupom VIP10'}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Mensagem Recente */}
@@ -523,21 +668,45 @@ export const JarvisPanel: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Botão Ação */}
-                    <div className="mt-4 pt-3 border-t border-purple-900/30 flex items-center justify-between">
+                    {/* Botões Ação */}
+                    <div className="mt-4 pt-3 border-t border-purple-900/30 flex items-center justify-between gap-2">
                       <span className="text-[11px] text-purple-300/40">
                         {lead.lastInteractionAt ? new Date(lead.lastInteractionAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Hoje'}
                       </span>
 
-                      <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-green-900/20"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Abrir Conversa</span>
-                      </a>
+                      <div className="flex items-center gap-2">
+                        {isPaused ? (
+                          <button
+                            onClick={() => handleTogglePauseChat(cleanPhone, 'unpause')}
+                            disabled={pausingPhone === cleanPhone}
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600/30 hover:bg-purple-600 border border-purple-500/40 text-purple-200 hover:text-white text-xs font-semibold rounded-xl transition-all"
+                            title="Reativar IA para este lead"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span>Reativar IA</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleTogglePauseChat(cleanPhone, 'pause')}
+                            disabled={pausingPhone === cleanPhone}
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold rounded-xl transition-all"
+                            title="Pausar IA para assumir conversa manualmente"
+                          >
+                            <Pause className="w-3.5 h-3.5" />
+                            <span>Pausar IA</span>
+                          </button>
+                        )}
+
+                        <a
+                          href={waLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-green-900/20"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Abrir Conversa</span>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 );
