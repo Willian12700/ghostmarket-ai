@@ -221,6 +221,22 @@ export const QuizPublic = () => {
         });
 
         await trackEvent('quiz_completed', { score: nota, profile: profileStr });
+
+        // Disparar Jarvis para chamar o lead no WhatsApp no privado
+        if (zap) {
+          fetch('/api/quiz-lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              name: nome || '',
+              phone: zap,
+              score: nota,
+              profile: profileStr,
+              bottleneck: GT[res.g][0]
+            })
+          }).catch(err => console.warn('Erro ao notificar Jarvis do lead de quiz:', err));
+        }
       } catch (e) {
         console.error(e);
       }
