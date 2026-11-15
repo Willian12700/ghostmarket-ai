@@ -880,13 +880,14 @@ async function startGhostWhatsAppAgent() {
 
       // 3. Responder o cliente seguindo o funil de vendas sem flood de emojis
       try {
-        await sock.sendPresenceUpdate('composing', from);
-
         console.log('🧠 Jarvis pensando na resposta de conversão...');
         const aiReply = await getAiResponse(from, text, { cleanPhone, senderName, jid: from });
 
-        const delayMs = Math.min(1800, Math.max(900, aiReply.length * 12));
-        await new Promise((r) => setTimeout(r, delayMs));
+        // Simulação de digitação humana com "digitando..." visível por 3 a 5 segundos
+        await sock.sendPresenceUpdate('composing', from);
+        const humanTypingDelayMs = Math.floor(Math.random() * 2000) + 3000; // 3000ms a 5000ms (3 a 5s)
+        console.log(`⏳ Simulando digitação humana por ${(humanTypingDelayMs / 1000).toFixed(1)}s...`);
+        await new Promise((r) => setTimeout(r, humanTypingDelayMs));
 
         await sock.sendMessage(from, { text: aiReply });
         await sock.sendPresenceUpdate('paused', from);
