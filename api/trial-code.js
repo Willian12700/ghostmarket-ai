@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDafvRbIgwriRgCis2sAmJeJ80RHmn30LA",
@@ -12,6 +13,13 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+async function ensureAuth() {
+  if (!auth.currentUser) {
+    await signInAnonymously(auth);
+  }
+}
 
 function formatBrazilPhone(rawPhone) {
   if (!rawPhone) return '';
@@ -29,6 +37,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    await ensureAuth();
+
     const rawPhone = req.body?.phone || req.query?.phone;
     const cleanPhone = formatBrazilPhone(rawPhone);
     const name = req.body?.name || req.query?.name || 'Lead WhatsApp';
