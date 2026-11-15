@@ -13,14 +13,27 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
 
+const CALLMEBOT_PHONE = '558496656016';
+const CALLMEBOT_APIKEY = '1083057';
+
+export async function sendCallMeBotAlert(text) {
+  try {
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&text=${encodeURIComponent(text)}&apikey=${CALLMEBOT_APIKEY}`;
+    const res = await fetch(url);
+    console.log(`[CallMeBot Alert] Status: ${res.status}`);
+  } catch (err) {
+    console.error(`[CallMeBot Alert] Erro: ${err.message}`);
+  }
+}
+
 // Notifica o atendente Jarvis no Moto G60 em tempo real (Recuperação de PIX + Boas-vindas)
 async function notifyJarvisMotoG60(eventData) {
-  const tunnelBase = process.env.MOTO_G60_TUNNEL_URL || 'https://recorders-encyclopedia-markets-desert.trycloudflare.com';
+  const tunnelBase = process.env.MOTO_G60_TUNNEL_URL || 'https://preceding-notifications-meal-dollar.trycloudflare.com';
   const targetUrl = `${tunnelBase.replace(/\/+$/, '')}/api/cakto-event`;
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), 4000);
 
     const response = await fetch(targetUrl, {
       method: 'POST',
@@ -38,6 +51,8 @@ async function notifyJarvisMotoG60(eventData) {
     console.log(`[Jarvis Webhook Forward] Status: ${response.status}`);
   } catch (err) {
     console.warn(`[Jarvis Webhook Forward] Não foi possível contatar o Moto G60 no momento (${err.message}).`);
+    // Envia alerta de queda diretamente para o WhatsApp pessoal do Willian
+    await sendCallMeBotAlert(`🚨 *ALERTA GHOSTMARKET (JARVIS OFFLINE)*\n\nO servidor no Moto G60 não respondeu ao webhook!\n⚠️ *Evento:* ${eventData.eventType}\n👤 *Cliente:* ${eventData.customerName || 'N/A'}\n💵 *Valor:* R$ ${eventData.amount || 0}\n\nO acesso no SaaS foi liberado, mas o envio no WhatsApp pelo Jarvis falhou. Verifique se o celular está ligado e o Termux ativo!`);
   }
 }
 
@@ -138,6 +153,9 @@ export default async function handler(req, res) {
         pixCode
       });
 
+      // Notifica o dono diretamente no WhatsApp via CallMeBot
+      await sendCallMeBotAlert(`🎉 *NOVA VENDA CONFIRMADA NO GHOSTMARKET!* 💰\n\n👤 *Cliente:* ${customerName}\n📧 *E-mail:* ${customerEmail}\n📱 *WhatsApp:* ${customerPhone || 'N/A'}\n💵 *Valor:* R$ ${amount}\n📦 *Plano:* ${detectedPlan.toUpperCase()}\n\n✅ Acesso liberado no sistema!`);
+
       return res.status(200).json({
         success: true,
         message: 'Acesso liberado, transação salva e Jarvis notificado com sucesso'
@@ -171,6 +189,9 @@ export default async function handler(req, res) {
         plan: detectedPlan,
         pixCode
       });
+
+      // Notifica o dono diretamente no WhatsApp via CallMeBot
+      await sendCallMeBotAlert(`⚡ *NOVO PIX GERADO NA CAKTO* 🛒\n\n👤 *Cliente:* ${customerName}\n📱 *WhatsApp:* ${customerPhone || 'N/A'}\n💵 *Valor:* R$ ${amount}\n📦 *Plano:* ${detectedPlan.toUpperCase()}\n\n🤖 Jarvis acionado para recuperação automática!`);
 
       return res.status(200).json({
         success: true,
