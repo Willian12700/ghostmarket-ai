@@ -1,8 +1,10 @@
 // Cérebro de IA do Atendente GhostMarket (Suporte a Groq openai/gpt-oss-120b, Gemini 2.5 Flash e Pollinations OpenAI)
 // Recursos:
 // 1. Funil de Vendas Conversacional em 5 Etapas (Sem flood de emojis, sem empurrar links prematuramente)
-// 2. Modo Demonstração por Nicho e Teste de 5 Minutos (Proteção Anti-Abuso)
-// 3. Follow-up Humano e Fechamento com Regra de Ouro do Gmail da Cakto
+// 2. Resposta Fracionada em 2 Balões Naturais ([SPLIT] ou quebra de parágrafo)
+// 3. Spintax Dinâmico Anti-Ban (Variação de frases para proteger o chip de bloqueios)
+// 4. Modo Demonstração por Nicho e Teste de 5 Minutos (Proteção Anti-Abuso)
+// 5. Follow-up Humano e Fechamento com Regra de Ouro do Gmail da Cakto
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
@@ -24,6 +26,61 @@ export const LINK_FUNIL_BIO = 'https://ghostmarket-ai.vercel.app/bio';
 export const LINK_QUIZ = 'https://ghostmarket-ai.vercel.app/quiz';
 export const LINK_AFILIADOS = 'https://ghostmarket-ai.vercel.app/parceiros';
 export const LINK_SITE_OFICIAL = 'https://ghostmarket-ai.vercel.app';
+
+// -------------------------------------------------------------
+// SPINTAX DINÂMICO (ANTI-BAN)
+// Processa variações tipo: "{Fala|Opa|E aí} {irmão|parceiro}"
+// -------------------------------------------------------------
+export function resolveSpintax(text) {
+  if (!text || typeof text !== 'string') return '';
+  const spintaxRegex = /\{([^{}]+)\}/g;
+  let resolved = text;
+  while (spintaxRegex.test(resolved)) {
+    resolved = resolved.replace(spintaxRegex, (_, choices) => {
+      const options = choices.split('|');
+      const pick = options[Math.floor(Math.random() * options.length)];
+      return pick.trim();
+    });
+  }
+  return resolved;
+}
+
+// -------------------------------------------------------------
+// SPLIT DE MENSAGENS EM 2 BALÕES SEPARADOS (WHATSAPP NATURAL)
+// Divide mensagens longas em até 2 balões com digitação humana
+// -------------------------------------------------------------
+export function splitIntoWhatsAppBalloons(rawText) {
+  if (!rawText || typeof rawText !== 'string') return [];
+  const text = rawText.trim();
+  if (!text) return [];
+
+  // 1. Separador explícito sugerido pelo modelo
+  if (text.includes('[SPLIT]')) {
+    return text.split('[SPLIT]').map(s => s.trim()).filter(Boolean).slice(0, 2);
+  }
+  if (text.includes('\n---\n')) {
+    return text.split('\n---\n').map(s => s.trim()).filter(Boolean).slice(0, 2);
+  }
+
+  // 2. Se a mensagem for curta (< 75 caracteres), manda em 1 balão só
+  if (text.length < 75) {
+    return [text];
+  }
+
+  // 3. Divisão por quebra dupla de parágrafo (\n\n)
+  const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+  if (paragraphs.length >= 2) {
+    return [paragraphs[0], paragraphs.slice(1).join('\n\n')];
+  }
+
+  // 4. Divisão por primeira frase de saudação / reação (Ex: "Fala Carlos, beleza? A ferramenta...")
+  const greetingMatch = text.match(/^((?:Fala|Opa|E aí|Oi|Show|Fechou|Perfeito|Prontinho|Tranquilo|Beleza)[^.?!]*[.?!])\s+([\s\S]+)$/i);
+  if (greetingMatch && greetingMatch[1] && greetingMatch[2] && greetingMatch[2].length > 25) {
+    return [greetingMatch[1].trim(), greetingMatch[2].trim()];
+  }
+
+  return [text];
+}
 
 function loadUsedTrials() {
   try {
@@ -48,9 +105,10 @@ export async function requestTrialCodeForUser({ phone, name, jid }) {
 
   // 1. Checagem Anti-Abuso no cache local do dispositivo
   if (usedTrialsCache[clean]) {
+    const msg = resolveSpintax(`{Fala|Opa|E aí} ${firstName}, {vi aqui no sistema que esse número já usou o teste de 5 minutos.|seu número já utilizou o teste gratuito de 5 minutos anteriormente.}\n\nPra continuar criando sites e usando o Radar sem limites, você pode entrar no Plano Mensal (R$ 19,99) ou no Vitalício (R$ 49,99 único com 7 dias de garantia).\n\nQual dos dois faz mais sentido pra você hoje?`);
     return {
       alreadyUsed: true,
-      message: `Fala ${firstName}, vi aqui no sistema que esse número já usou o teste de 5 minutos.\n\nPra continuar criando sites e usando o Radar sem limites, você pode entrar no Plano Mensal (R$ 19,99) ou no Vitalício (R$ 49,99 único com 7 dias de garantia).\n\nQual dos dois faz mais sentido pra você hoje?`
+      message: msg
     };
   }
 
@@ -81,19 +139,21 @@ export async function requestTrialCodeForUser({ phone, name, jid }) {
       if (data.alreadyUsed) {
         usedTrialsCache[clean] = { code: data.previousCode, blockedAt: Date.now() };
         saveUsedTrials(usedTrialsCache);
+        const msg = resolveSpintax(`{Fala|Opa} ${firstName}, vi no sistema que esse número já utilizou o teste gratuito de 5 minutos.\n\nPra continuar usando a IA e o Radar de clientes sem limites, você pode entrar no Plano Mensal (R$ 19,99) ou no Vitalício (R$ 49,99 com 7 dias de garantia incondicional). Qual prefere?`);
         return {
           alreadyUsed: true,
-          message: `Fala ${firstName}, vi aqui no sistema que esse número já utilizou o teste gratuito de 5 minutos.\n\nPra continuar usando a IA e o Radar de clientes sem limites, você pode entrar no Plano Mensal (R$ 19,99) ou no Vitalício (R$ 49,99 com 7 dias de garantia incondicional). Qual prefere?`
+          message: msg
         };
       }
 
       if (data.success && data.code) {
         usedTrialsCache[clean] = { code: data.code, grantedAt: Date.now() };
         saveUsedTrials(usedTrialsCache);
+        const msg = resolveSpintax(`{Prontinho|Liberado|Fechado}, ${firstName}![SPLIT]Seu código de teste de 5 minutos é:\n\n👉 *${data.code}*\n\nAcesse pelo link: https://ghostmarket-ai.vercel.app/trial\n\nEle é válido para ativação agora e libera 100% das ferramentas (IA e Radar do Google Maps) por 5 minutos pra você testar na prática.`);
         return {
           success: true,
           code: data.code,
-          message: `Prontinho, ${firstName}! Seu código de teste de 5 minutos é:\n\n👉 *${data.code}*\n\nAcesse pelo link: https://ghostmarket-ai.vercel.app/trial\n\nEle é válido para ativação agora e libera 100% das ferramentas (IA e Radar do Google Maps) por 5 minutos pra você testar na prática.`
+          message: msg
         };
       }
     }
@@ -136,16 +196,17 @@ export async function requestTrialCodeForUser({ phone, name, jid }) {
     usedTrialsCache[clean] = { code, grantedAt: Date.now() };
     saveUsedTrials(usedTrialsCache);
 
+    const msg = resolveSpintax(`{Prontinho|Liberado}, ${firstName}![SPLIT]Seu código de teste de 5 minutos é:\n\n👉 *${code}*\n\nAcesse pelo link: https://ghostmarket-ai.vercel.app/trial\n\nVálido para ativação agora com 5 minutos de acesso ilimitado para você ver como funciona na prática.`);
     return {
       success: true,
       code,
-      message: `Prontinho, ${firstName}! Seu código de teste de 5 minutos é:\n\n👉 *${code}*\n\nAcesse pelo link: https://ghostmarket-ai.vercel.app/trial\n\nVálido para ativação agora com 5 minutos de acesso ilimitado para você ver como funciona na prática.`
+      message: msg
     };
   } catch (e) {
     console.error('Erro total fallback Firestore trial:', e.message);
     return {
       success: false,
-      message: `Fala ${firstName}, tive uma oscilação na conexão com o servidor agora. Me manda um "quero testar" de novo em 1 minutinho por favor?`
+      message: `Fala ${firstName}, tive uma oscilação na conexão agora. Me manda um "quero testar" de novo em 1 minutinho por favor?`
     };
   }
 }
@@ -158,7 +219,13 @@ REGRAS DE OURO DA PERSONA (FALE COMO UMA PESSOA REAL NO WHATSAPP):
 1. Fale como o Willian: direto, parceiro, gente boa, natural e profissional. Nada de parecer robô, atendente de telemarketing, vendedor desesperado ou inteligência artificial.
 2. REGRA ZERO EMOJI SPAM: NUNCA encha as mensagens de emojis. NUNCA termine frases ou mensagens com emojis repetitivos como 🚀, 🔥, 🤝, 🤖, 👻, 😊. Em 90% das mensagens use ZERO emojis. No máximo use 1 único emoji muito discreto apenas se soar extremamente natural.
 3. MENSAGENS CURTAS (1 A 3 LINHAS): Digite exatamente como uma pessoa digita no WhatsApp. Frases diretas e objetivas. NUNCA envie textões.
-4. REGRA BLINDADA DE LINKS:
+4. REGRA DOS 2 BALÕES SEPARADOS ([SPLIT]):
+   - Você pode usar o marcador [SPLIT] para dividir sua resposta em até 2 balões curtos e sequenciais, exatamente como no WhatsApp real:
+     - Balão 1: saudação rápida, reação ou confirmação (ex: "Fala parceiro, beleza?" ou "Show de bola!").
+     - [SPLIT]
+     - Balão 2: a explicação direta ou a pergunta de qualificação do funil.
+   - Não use [SPLIT] se a resposta for curta de uma única frase.
+5. REGRA BLINDADA DE LINKS:
    - NUNCA envie links na primeira mensagem nem de surpresa!
    - NUNCA envie links de teste nem de pagamento antes da hora. Se a pessoa perguntou como funciona, o que é, quanto custa, responda APENAS com texto explicativo e a pergunta do funil. NÃO MANDE LINK!
    - Envie o link de pagamento ([LINK_VITALICIO] ou [LINK_MENSAL]) SOMENTE quando o cliente disser expressamente que quer assinar, pedir o link, ou escolher o plano.
@@ -169,7 +236,7 @@ ARQUITETURA DO FUNIL DE VENDAS CONVERSACIONAL (SIGA RIGOROSAMENTE CADA PASSO):
 PASSO 1: CONEXÃO E QUALIFICAÇÃO
 - Quando o lead der oi ou perguntar sobre a ferramenta ("como funciona?", "vi seu vídeo"):
   - Se for só cumprimento ("opa", "bom dia", "olá"): responda apenas cumprimentando e perguntando como pode ajudar (ex: "Fala irmão, beleza? Como posso te ajudar hoje?").
-  - Se perguntou como funciona: explique em 2 linhas o que a ferramenta faz (cria sites profissionais completos em 60 segundos com IA e acha empresas sem site no Google Maps na cidade dele pra ele vender de R$ 300 a R$ 800 cada).
+  - Se perguntou como funciona: cumprimente no Balão 1 e no Balão 2 explique em 2 linhas o que a ferramenta faz (cria sites profissionais completos em 60 segundos com IA e acha empresas sem site no Google Maps na cidade dele pra ele vender de R$ 300 a R$ 800 cada).
   - Em seguida, faça UMA pergunta de qualificação simples:
     "Você já trabalha criando sites/atendendo clientes ou tá querendo começar agora do zero?"
   - NÃO envie links no Passo 1!
@@ -200,8 +267,7 @@ PASSO 5: FECHAMENTO E ENVIO DO LINK
 - Quando o cliente escolher o plano ou disser "manda o link", "como faço pra pagar?", "quero o vitalício":
   - Envie o link correspondente ([LINK_VITALICIO] ou [LINK_MENSAL]).
   - Dê a instrução de ouro do Gmail:
-    "Show! Aqui tá o seu link: [LINK_VITALICIO]
-    Na hora de pagar na Cakto, coloca o seu Gmail certinho! Assim que aprovar, você entra na plataforma e cria a sua conta usando esse mesmo Gmail que o acesso libera na hora."
+    "Show! Aqui tá o seu link: [LINK_VITALICIO][SPLIT]Na hora de pagar na Cakto, coloca o seu Gmail certinho! Assim que aprovar, você entra na plataforma e cria a sua conta usando esse mesmo Gmail que o acesso libera na hora."
 
 SOBRE TESTE GRÁTIS:
 - O teste gratuito de 5 minutos só é liberado se a pessoa pedir expressamente ("tem teste?", "posso testar?", "como faço pra testar?").
@@ -267,7 +333,7 @@ function detectNicheDemoFallback(lower) {
 
   for (const n of niches) {
     if (n.keys.some(k => lower.includes(k))) {
-      return `Pra ${n.title} fica muito profissional. A IA monta em menos de 1 minuto com ${n.features}.\n\nQualquer comércio desse paga R$ 400 a R$ 600 tranquilo num site desse. Você já tem algum cliente em mente ou tá querendo ver os planos pra começar?`;
+      return resolveSpintax(`{Pra|Para} ${n.title} fica muito profissional.[SPLIT]A IA monta em menos de 1 minuto com ${n.features}.\n\nQualquer comércio desse paga R$ 400 a R$ 600 tranquilo num site desse. Você já tem algum cliente em mente ou tá querendo ver os planos pra começar?`);
     }
   }
   return null;
@@ -311,7 +377,7 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
 
   // 2. CUPOM DE DESCONTO RELÂMPAGO (R$ 10 OFF / VITALÍCIO R$ 39,99 COM CUPOM VIP10)
   if (lowerUser.includes('cupom') || lowerUser.includes('desconto') || lowerUser.includes('39') || (lowerUser.includes('quero') && lowerUser.includes('vitalicio') && history.some(h => h.content?.includes('cupom')))) {
-    const resp = `Consegui liberar o cupom pra você!\n\nUse o cupom *VIP10* ou acesse direto pelo link com o desconto de R$ 10 aplicado (sai por R$ 39,99 à vista no Vitalício):\n👉 ${LINK_VITALICIO_DESCONTO}\n\nSó coloca o seu *Gmail* certinho na hora de pagar na Cakto, que o acesso libera automático pra ele.`;
+    const resp = resolveSpintax(`{Consegui liberar o cupom pra você!|Fechou, liberei seu desconto exclusivo!}[SPLIT]Use o cupom *VIP10* ou acesse direto pelo link com os R$ 10 de desconto aplicados (sai por R$ 39,99 à vista no Vitalício):\n👉 ${LINK_VITALICIO_DESCONTO}\n\nSó coloca o seu *Gmail* certinho na hora de pagar na Cakto, que o acesso libera automático pra ele.`);
     history.push({ role: 'assistant', content: resp });
     return resp;
   }
@@ -331,7 +397,7 @@ FIM DAS INSTRUÇÕES]
 Histórico da conversa no WhatsApp:
 ${conversationTranscript}
 
-Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguindo rigorosamente o funil de vendas, estilo natural, curto e sem flood de emojis:`;
+Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguindo rigorosamente o funil de vendas, estilo natural, curto, sem flood de emojis e usando [SPLIT] se dividir em 2 balões:`;
 
   // 1. Tentar GROQ API (openai/gpt-oss-120b - Ultra Rápido e Inteligente)
   const groqKey = (process.env.GROQ_API_KEY || ['gsk_IrK5rwS64x04Zvfy', 'LCKnWGdyb3FY3RnH8X1JM7Zssf72UrUc7Ivn'].join('')).trim();
@@ -350,7 +416,7 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
               { role: 'system', content: SYSTEM_PROMPT },
               ...history.map(m => ({ role: m.role, content: m.content }))
             ],
-            temperature: 0.6,
+            temperature: 0.65,
             max_tokens: 380
           })
         });
@@ -382,7 +448,7 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
             role: m.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: m.content }]
           })),
-          generationConfig: { temperature: 0.6, maxOutputTokens: 380 }
+          generationConfig: { temperature: 0.65, maxOutputTokens: 380 }
         })
       });
       if (geminiRes.ok) {
@@ -409,7 +475,7 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
           { role: 'user', content: mergedPrompt }
         ],
         model: 'openai',
-        temperature: 0.6
+        temperature: 0.65
       })
     });
 
@@ -432,14 +498,14 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
 
     // Cumprimento simples (oi, olá, boa tarde...)
     if (/^(oi|opa|ola|olá|bom dia|boa tarde|boa noite|fala|eai|e ai|salve)[\s!.]*$/i.test(lower)) {
-      const resp = "Fala irmão, beleza? Como posso te ajudar hoje?";
+      const resp = resolveSpintax("{Fala irmão, beleza?|Opa, tudo bem?|Fala parceiro, tranquilo?} Como posso te ajudar hoje?");
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
 
     // Pergunta sobre teste / versão grátis / demonstração
     if (lower.includes('teste') || lower.includes('testar') || lower.includes('olhada') || lower.includes('demonstra') || lower.includes('demo') || lower.includes('gratis') || lower.includes('grátis')) {
-      const resp = "Temos o Plano Vitalício com 7 dias de garantia incondicional pra você testar com risco zero! Se não curtir por qualquer motivo, devolvemos 100% do seu dinheiro na hora.\n\nQuer que eu te mande o link?";
+      const resp = resolveSpintax("Temos o Plano Vitalício com 7 dias de garantia incondicional pra você testar com risco zero! Se não curtir por qualquer motivo, devolvemos 100% do seu dinheiro na hora.[SPLIT]Quer que eu te passe o link pra ver como funciona?");
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
@@ -452,67 +518,67 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
     }
 
     if (lower.includes('vitalicio') || lower.includes('vitalício') || lower.includes('49')) {
-      const resp = `Fechou! Aqui tá o seu link do Plano Vitalício com 7 dias de garantia:\n👉 ${LINK_VITALICIO}\n\nSó lembra de colocar o seu *Gmail* certinho na Cakto, que o acesso libera na hora pra ele!`;
+      const resp = resolveSpintax(`{Fechou!|Show de bola!} Aqui tá o seu link do Plano Vitalício com 7 dias de garantia:\n👉 ${LINK_VITALICIO}[SPLIT]Só lembra de colocar o seu *Gmail* certinho na Cakto, que o acesso libera na hora pra ele!`);
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
 
     if (lower.includes('mensal') || lower.includes('19')) {
-      const resp = `Show de bola! Aqui tá o seu link do Plano Mensal:\n👉 ${LINK_MENSAL}\n\nSó lembra de colocar o seu *Gmail* certinho na Cakto, que o acesso libera na hora pra ele!`;
+      const resp = resolveSpintax(`{Show de bola!|Perfeito!} Aqui tá o seu link do Plano Mensal:\n👉 ${LINK_MENSAL}[SPLIT]Só lembra de colocar o seu *Gmail* certinho na Cakto, que o acesso libera na hora pra ele!`);
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
 
     if (lower.includes('afiliado') || lower.includes('parceiro') || lower.includes('comissao') || lower.includes('comissão')) {
-      const resp = `Dá pra ser nosso parceiro e ganhar 50% de comissão por indicação! Dá uma olhada aqui:\n👉 ${LINK_AFILIADOS}`;
+      const resp = resolveSpintax(`Dá pra ser nosso parceiro e ganhar 50% de comissão por indicação! Dá uma olhada aqui:\n👉 ${LINK_AFILIADOS}`);
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
 
     if (lower.includes('acesso') || lower.includes('como recebo') || lower.includes('onde recebo') || lower.includes('login') || lower.includes('painel') || lower.includes('email') || lower.includes('e-mail') || lower.includes('gmail')) {
-      const resp = `O acesso libera na hora no seu Gmail assim que o pagamento aprova.\nAí é só entrar na plataforma e criar sua conta usando esse mesmo Gmail.`;
+      const resp = resolveSpintax(`O acesso libera na hora no seu Gmail assim que o pagamento aprova.[SPLIT]Aí é só entrar na plataforma e criar sua conta usando esse mesmo Gmail.`);
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
 
     if (lower.includes('garantia') || lower.includes('seguro') || lower.includes('se eu nao gostar') || lower.includes('se eu não gostar') || lower.includes('reembolso')) {
-      const resp = `O Vitalício tem 7 dias de garantia incondicional! Se você não curtir por qualquer motivo, devolvemos 100% do seu dinheiro na hora sem burocracia.`;
+      const resp = resolveSpintax(`O Vitalício tem 7 dias de garantia incondicional! Se você não curtir por qualquer motivo, devolvemos 100% do seu dinheiro na hora sem burocracia.`);
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
 
     if (lower.includes('preço') || lower.includes('preco') || lower.includes('quanto custa') || lower.includes('valor') || lower.includes('plano') || lower.includes('quanto é') || lower.includes('quanto e')) {
-      const resp = `Temos 2 opções de planos:\n- *Mensal:* R$ 19,99/mês\n- *Vitalício:* R$ 49,99 pagamento único (com 7 dias de garantia incondicional)\n\nQual dos dois faz mais sentido pra você hoje?`;
+      const resp = resolveSpintax(`Temos 2 opções de planos:[SPLIT]- *Mensal:* R$ 19,99/mês\n- *Vitalício:* R$ 49,99 pagamento único (com 7 dias de garantia incondicional)\n\nQual dos dois faz mais sentido pra você hoje?`);
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
 
-    const defaultResp = "Fala irmão! Aqui é o Willian do GhostMarket AI.\n\nO GhostMarket cria sites profissionais completos em 60 segundos com IA e acha empresas sem site no Google Maps pra você vender de R$ 300 a R$ 800 cada.\n\nVocê já cria sites ou tá querendo começar do zero?";
+    const defaultResp = resolveSpintax("{Fala irmão!|Opa, tudo bem?|Fala parceiro!} Aqui é o Willian do GhostMarket AI.[SPLIT]O GhostMarket cria sites profissionais completos em 60 segundos com IA e acha empresas sem site no Google Maps pra você vender de R$ 300 a R$ 800 cada.\n\nVocê já cria sites ou tá querendo começar do zero?");
     history.push({ role: 'assistant', content: defaultResp });
     return defaultResp;
   }
 }
 
-// Gera mensagens de Follow-up Automático (sem emojis excessivos, tom humano e profissional)
+// Gera mensagens de Follow-up Automático com Spintax Dinâmico Anti-Ban
 export function buildFollowUpMessage(lead, stage) {
   const firstName = (lead.senderName || 'parceiro').split(' ')[0];
 
   if (stage === 1) {
     // Follow-up de 25 minutos
     if (lead.sentCheckoutLink) {
-      return `Fala ${firstName}, vi que te passei o link de acesso agorinha. Conseguiu abrir a página da Cakto certinho ou ficou alguma dúvida?\n\nLembrando que no Plano Vitalício (R$ 49,99 pagamento único) você tem 7 dias de garantia incondicional. Se precisar de qualquer ajuda, me avisa aqui.`;
+      return resolveSpintax(`{Fala|Opa|E aí} ${firstName}, {vi que te passei o link de acesso agorinha.|te mandei o link agorinha.} {Conseguiu abrir a página da Cakto certinho|Deu certo pra abrir o link aí} ou ficou alguma dúvida?[SPLIT]Lembrando que no Plano Vitalício (R$ 49,99 pagamento único) você tem 7 dias de garantia incondicional. {Se precisar de qualquer ajuda, me avisa aqui.|Qualquer dúvida me dá um toque aqui.}`);
     }
-    return `Oi ${firstName}, tudo certo por aí?\n\nMe diz uma coisa rápida: qual tipo de comércio você pensa em atender primeiro na sua cidade (tipo Barbearia, Hamburgueria, Dentista ou Oficina)? Ou prefere que eu já te passe os planos pra começar?`;
+    return resolveSpintax(`{Oi|Fala|Opa} ${firstName}, {tudo certo por aí?|tudo bem por aí?}[SPLIT]Me diz uma coisa rápida: qual tipo de comércio você pensa em atender primeiro na sua cidade (tipo Barbearia, Hamburgueria, Dentista ou Oficina)? Ou prefere que eu já te passe os planos pra começar?`);
   }
 
   if (stage === 2) {
     // Follow-up de 18 horas
-    return `Fala ${firstName}, passando rapidinho pra você não perder essa oportunidade.\n\nVárias empresas aí na sua região continuam no Google Maps sem site nenhum, só esperando alguém oferecer uma página pronta.\n\nSe quiser destravar seu acesso hoje:\n- Plano Mensal (R$ 19,99/mês): ${LINK_MENSAL}\n- Plano Vitalício (R$ 49,99 único com 7 dias de garantia): ${LINK_VITALICIO}\n\nLembrando: na hora de pagar na Cakto, coloque o seu Gmail certinho e depois crie sua conta no site com esse mesmo Gmail. Qualquer dúvida, estou por aqui!`;
+    return resolveSpintax(`{Fala|Opa|Oi} ${firstName}, {passando rapidinho pra você não perder essa oportunidade.|passando só pra te dar um toque rápido.}[SPLIT]{Várias empresas|Dezenas de empresas} aí na sua região continuam no Google Maps sem site nenhum, só esperando alguém oferecer uma página pronta.\n\nSe quiser destravar seu acesso hoje:\n- Plano Mensal (R$ 19,99/mês): ${LINK_MENSAL}\n- Plano Vitalício (R$ 49,99 único com 7 dias de garantia): ${LINK_VITALICIO}\n\nLembrando: na hora de pagar na Cakto, coloque o seu Gmail certinho e depois crie sua conta no site com esse mesmo Gmail. {Qualquer dúvida, estou por aqui!|Se precisar de qualquer ajuda é só me chamar!}`);
   }
 
   if (stage === 3) {
     // Follow-up de 24 horas adicionais - Gatilho de Cupom Relâmpago R$ 10 OFF (Vitalício por R$ 39,99)
-    return `Fala ${firstName}, tudo bem? Olha só, liberou aqui no sistema 1 cupom de desconto de R$ 10 pro Plano Vitalício (sai por R$ 39,99 em vez de R$ 49,99) válido até as 23:59 de hoje.\n\nSe quiser aproveitar essa condição especial com 7 dias de garantia incondicional, me avisa aqui que eu já te passo o link!`;
+    return resolveSpintax(`{Fala|Opa|E aí} ${firstName}, {tudo bem?|tudo certo?|tranquilo?}[SPLIT]Olha só, liberou aqui no sistema 1 cupom de desconto de R$ 10 pro Plano Vitalício (sai por R$ 39,99 em vez de R$ 49,99) válido até as 23:59 de hoje.\n\nSe quiser aproveitar essa condição especial com 7 dias de garantia incondicional, {me avisa aqui que eu já te passo o link!|me dá um toque aqui que te mando o link agora!}`);
   }
 
   return null;
@@ -535,7 +601,7 @@ export function buildCaktoPixRecoveryMessage({ customerName, customerEmail, plan
   const firstName = (customerName || 'parceiro').trim().split(' ')[0];
   const planLabel = plan === 'vitalicio' ? 'Plano Vitalício (R$ 49,99 pagamento único)' : 'Plano Mensal (R$ 19,99/mês)';
 
-  return `Fala ${firstName}, aqui é o Willian do GhostMarket AI.\n\nVi no sistema que você acabou de gerar o acesso ao *${planLabel}* na Cakto!\n\nAviso importante para o seu acesso: assim que o pagamento do seu PIX aprovar, a liberação é feita para o seu Gmail: *${customerEmail || 'o Gmail que você colocou'}*.\n\nQuando você abrir o site da plataforma para criar a sua conta, use exatamente esse mesmo Gmail para o sistema liberar o gerador de sites e o Radar de clientes sem travas.\n\nFicou alguma dúvida ou quer que eu te mande a chave Pix Copia e Cola por aqui para facilitar?`;
+  return resolveSpintax(`{Fala|Opa} ${firstName}, aqui é o Willian do GhostMarket AI.[SPLIT]Vi no sistema que você acabou de gerar o acesso ao *${planLabel}* na Cakto!\n\nAviso importante para o seu acesso: assim que o pagamento do seu PIX aprovar, a liberação é feita para o seu Gmail: *${customerEmail || 'o Gmail que você colocou'}*.\n\nQuando você abrir o site da plataforma para criar a sua conta, use exatamente esse mesmo Gmail para o sistema liberar o gerador de sites e o Radar de clientes sem travas.\n\nFicou alguma dúvida ou quer que eu te mande a chave Pix Copia e Cola por aqui para facilitar?`);
 }
 
 // Mensagem de Boas-vindas e Ativação Imediata após Pagamento Aprovado na Cakto
@@ -543,17 +609,17 @@ export function buildCaktoApprovedWelcomeMessage({ customerName, customerEmail, 
   const firstName = (customerName || 'parceiro').trim().split(' ')[0];
   const planLabel = plan === 'vitalicio' ? 'Plano Vitalício' : 'Plano Mensal';
 
-  return `Parabéns, ${firstName}!\n\nSeu pagamento do *${planLabel}* no GhostMarket AI foi confirmado com sucesso!\n\nComo acessar a plataforma agora:\n1. Já liberamos o acesso para o seu Gmail: *${customerEmail}*\n2. Acesse a plataforma oficial: https://ghostmarket-ai.vercel.app\n3. Crie a sua conta usando obrigatoriamente esse mesmo Gmail (${customerEmail})\n\nO sistema vai identificar seu pagamento na hora e liberar 100% das ferramentas sem créditos e sem travas.\n\nSe precisar de qualquer suporte, é só me chamar aqui a qualquer hora. Seja muito bem-vindo!`;
+  return resolveSpintax(`{Parabéns|Show de bola|Sensacional}, ${firstName}![SPLIT]Seu pagamento do *${planLabel}* no GhostMarket AI foi confirmado com sucesso!\n\nComo acessar a plataforma agora:\n1. Já liberamos o acesso para o seu Gmail: *${customerEmail}*\n2. Acesse a plataforma oficial: https://ghostmarket-ai.vercel.app\n3. Crie a sua conta usando obrigatoriamente esse mesmo Gmail (${customerEmail})\n\nO sistema vai identificar seu pagamento na hora e liberar 100% das ferramentas sem créditos e sem travas.\n\nSe precisar de qualquer suporte, é só me chamar aqui a qualquer hora. Seja muito bem-vindo!`);
 }
 
 export function buildQuizLeadOutreachMessage({ customerName, name, score, profile, bottleneck }) {
   const rawName = customerName || name || '';
   const firstName = rawName.trim().split(' ')[0] || '';
-  const greeting = firstName ? `Fala ${firstName}, tranquilo?` : 'Fala, tranquilo?';
+  const greeting = firstName ? resolveSpintax(`{Fala|Opa|E aí} ${firstName}, {tranquilo?|tudo bem?|beleza?}`) : resolveSpintax('{Fala|Opa|E aí}, {tranquilo?|tudo bem?}');
   const gargaloStr = bottleneck ? ` com foco principal em *${bottleneck}*` : '';
   const notaStr = score ? `nota ${score}/100` : 'o diagnóstico';
 
-  return `${greeting} Aqui é o Willian da Ghost AI.\n\nVi que você fez nosso diagnóstico de vendas agora e deu ${notaStr}${gargaloStr}.\n\nQueria entender melhor o seu momento: você já trabalha criando sites/atendendo clientes ou tá querendo começar do zero?`;
+  return `${greeting} Aqui é o Willian da Ghost AI.[SPLIT]Vi que você fez nosso diagnóstico de vendas agora e deu ${notaStr}${gargaloStr}.\n\nQueria entender melhor o seu momento: você já trabalha criando sites/atendendo clientes ou tá querendo começar do zero?`;
 }
 
 // Analisador Especialista de Retenção do TikTok (Algoritmo e Psicologia de Retenção)
