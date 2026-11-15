@@ -18,7 +18,9 @@ import {
   buildCaktoPixRecoveryMessage, 
   buildCaktoApprovedWelcomeMessage,
   buildQuizLeadOutreachMessage,
-  analyzeTikTokMetrics
+  analyzeTikTokMetrics,
+  splitIntoWhatsAppBalloons,
+  resolveSpintax
 } from './brain.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -348,6 +350,48 @@ function isWithinBusinessHoursBrazil() {
   }
 }
 
+// -------------------------------------------------------------
+// ENVIADOR HUMANIZADO: RESPOSTA EM ATÉ 2 BALÕES COM DIGITAÇÃO (3-5s)
+// Simula comportamento 100% humano no WhatsApp e resolve Spintax anti-ban
+// -------------------------------------------------------------
+async function sendHumanizedBalloons(sock, toJid, rawText) {
+  const resolved = resolveSpintax(rawText);
+  const balloons = splitIntoWhatsAppBalloons(resolved);
+
+  if (balloons.length <= 1) {
+    // 1 Balão curto: digitação dinâmica de 3.0s a 4.5s
+    await sock.sendPresenceUpdate('composing', toJid);
+    const delay = Math.floor(Math.random() * 1500) + 3000;
+    console.log(`⏳ Simulando digitação por ${(delay / 1000).toFixed(1)}s (1 balão)...`);
+    await new Promise(r => setTimeout(r, delay));
+    await sock.sendMessage(toJid, { text: balloons[0] || resolved });
+    await sock.sendPresenceUpdate('paused', toJid);
+  } else {
+    // 2 Balões Fracionados (WhatsApp 100% natural):
+    // Balão 1: saudação/reação rápida com digitação de 1.8s a 2.5s
+    console.log(`💬 [Balão 1/2]: "${balloons[0]}"`);
+    await sock.sendPresenceUpdate('composing', toJid);
+    const delay1 = Math.floor(Math.random() * 700) + 1800;
+    await new Promise(r => setTimeout(r, delay1));
+    await sock.sendMessage(toJid, { text: balloons[0] });
+    await sock.sendPresenceUpdate('paused', toJid);
+
+    // Pausa natural de leitura/respiro entre 1.2s e 1.8s
+    const pauseBetween = Math.floor(Math.random() * 600) + 1200;
+    await new Promise(r => setTimeout(r, pauseBetween));
+
+    // Balão 2: resposta principal com digitação de 2.5s a 4.0s
+    console.log(`💬 [Balão 2/2]: "${balloons[1]}"`);
+    await sock.sendPresenceUpdate('composing', toJid);
+    const delay2 = Math.floor(Math.random() * 1500) + 2500;
+    await new Promise(r => setTimeout(r, delay2));
+    await sock.sendMessage(toJid, { text: balloons[1] });
+    await sock.sendPresenceUpdate('paused', toJid);
+  }
+
+  return balloons;
+}
+
 // Processador da fila de eventos da Cakto (Recuperação de PIX e Boas-Vindas)
 async function processCaktoQueue() {
   if (!activeSock) return;
@@ -380,12 +424,9 @@ async function processCaktoQueue() {
         const contactExists = onWa && onWa.some(c => c.exists);
 
         if (contactExists) {
-          await activeSock.sendPresenceUpdate('composing', targetJid);
-          await new Promise(r => setTimeout(r, 1400));
-
           if (item.eventType === 'quiz_completed') {
             const quizMsg = buildQuizLeadOutreachMessage(item);
-            await activeSock.sendMessage(targetJid, { text: quizMsg });
+            await sendHumanizedBalloons(activeSock, targetJid, quizMsg);
             console.log(`🎯 [QUIZ LEAD DISPATCH] Mensagem do Quiz enviada para ${targetJid}`);
 
             // Adicionar ao follow-up do Jarvis
@@ -405,19 +446,18 @@ async function processCaktoQueue() {
             }
           } else if (item.eventType === 'purchase_approved' || item.eventType === 'approved' || item.eventType === 'paid') {
             const welcomeMsg = buildCaktoApprovedWelcomeMessage(item);
-            await activeSock.sendMessage(targetJid, { text: welcomeMsg });
+            await sendHumanizedBalloons(activeSock, targetJid, welcomeMsg);
             console.log(`🎉 [BOAS-VINDAS CAKTO] Mensagem enviada para ${targetJid}`);
           } else {
             const recoveryMsg = buildCaktoPixRecoveryMessage(item);
-            await activeSock.sendMessage(targetJid, { text: recoveryMsg });
+            await sendHumanizedBalloons(activeSock, targetJid, recoveryMsg);
             console.log(`⚡ [RECUPERAÇÃO PIX CAKTO] Mensagem enviada para ${targetJid}`);
 
             if (item.pixCode && item.pixCode.length > 20) {
-              await new Promise(r => setTimeout(r, 900));
+              await new Promise(r => setTimeout(r, 1200));
               await activeSock.sendMessage(targetJid, { text: item.pixCode });
             }
           }
-          await activeSock.sendPresenceUpdate('paused', targetJid);
         } else {
           console.log(`⚠️ Telefone ${formattedPhone} não encontrado no WhatsApp`);
         }
@@ -481,10 +521,7 @@ async function processFollowUpQueue() {
       const msgText = buildFollowUpMessage(lead, 1);
       if (msgText) {
         try {
-          await activeSock.sendPresenceUpdate('composing', jid);
-          await new Promise(r => setTimeout(r, 1200));
-          await activeSock.sendMessage(jid, { text: msgText });
-          await activeSock.sendPresenceUpdate('paused', jid);
+          await sendHumanizedBalloons(activeSock, jid, msgText);
           lead.stage = 1;
           lead.stage1SentAt = now;
           changed = true;
@@ -499,10 +536,7 @@ async function processFollowUpQueue() {
       const msgText = buildFollowUpMessage(lead, 2);
       if (msgText) {
         try {
-          await activeSock.sendPresenceUpdate('composing', jid);
-          await new Promise(r => setTimeout(r, 1200));
-          await activeSock.sendMessage(jid, { text: msgText });
-          await activeSock.sendPresenceUpdate('paused', jid);
+          await sendHumanizedBalloons(activeSock, jid, msgText);
           lead.stage = 2;
           lead.stage2SentAt = now;
           changed = true;
@@ -517,10 +551,7 @@ async function processFollowUpQueue() {
       const msgText = buildFollowUpMessage(lead, 3);
       if (msgText) {
         try {
-          await activeSock.sendPresenceUpdate('composing', jid);
-          await new Promise(r => setTimeout(r, 1200));
-          await activeSock.sendMessage(jid, { text: msgText });
-          await activeSock.sendPresenceUpdate('paused', jid);
+          await sendHumanizedBalloons(activeSock, jid, msgText);
           lead.stage = 3;
           lead.stage3SentAt = now;
           changed = true;
@@ -883,21 +914,15 @@ async function startGhostWhatsAppAgent() {
         console.log('🧠 Jarvis pensando na resposta de conversão...');
         const aiReply = await getAiResponse(from, text, { cleanPhone, senderName, jid: from });
 
-        // Simulação de digitação humana com "digitando..." visível por 3 a 5 segundos
-        await sock.sendPresenceUpdate('composing', from);
-        const humanTypingDelayMs = Math.floor(Math.random() * 2000) + 3000; // 3000ms a 5000ms (3 a 5s)
-        console.log(`⏳ Simulando digitação humana por ${(humanTypingDelayMs / 1000).toFixed(1)}s...`);
-        await new Promise((r) => setTimeout(r, humanTypingDelayMs));
+        // Envio fracionado em até 2 balões com digitação humana dinâmica (3-5s total) e Spintax anti-ban
+        const sentBalloons = await sendHumanizedBalloons(sock, from, aiReply);
+        const fullReply = sentBalloons.join('\n\n');
 
-        await sock.sendMessage(from, { text: aiReply });
-        await sock.sendPresenceUpdate('paused', from);
-
-        console.log(`🤖 [Jarvis respondeu]:`);
-        console.log(`"${aiReply}"\n`);
+        console.log(`🤖 [Jarvis respondeu com sucesso em ${sentBalloons.length} balão(ões)]\n`);
 
         // 4. Atualizar estado do Follow-up Automático
         const existingLead = leadsFollowUp[from] || {};
-        const replyHasCheckout = aiReply.includes('pay.cakto.com.br');
+        const replyHasCheckout = fullReply.includes('pay.cakto.com.br');
 
         leadsFollowUp[from] = {
           jid: from,
