@@ -1,7 +1,8 @@
 import makeWASocket, { 
   useMultiFileAuthState, 
   DisconnectReason, 
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  downloadMediaMessage
 } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcodeTerminal from 'qrcode-terminal';
@@ -20,7 +21,10 @@ import {
   buildQuizLeadOutreachMessage,
   analyzeTikTokMetrics,
   splitIntoWhatsAppBalloons,
-  resolveSpintax
+  resolveSpintax,
+  transcribeAudioWithWhisper,
+  extractTextFromImage,
+  verifyCustomerPurchase
 } from './brain.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -779,11 +783,124 @@ async function startGhostWhatsAppAgent() {
       const isBroadcast = from.includes('@broadcast') || from.endsWith('@newsletter');
       if (isGroup || isBroadcast) continue;
 
-      const text = extractMessageText(msg.message);
-      if (!text || text.trim().length === 0) continue;
-
       const senderName = msg.pushName || 'Cliente';
       const cleanPhone = from.replace('@s.whatsapp.net', '').replace('@lid', '');
+
+      // 0. VERIFICAÇÃO DE PAUSA MANUAL (HUMAN TAKEOVER):
+      if (isChatPaused(cleanPhone, from)) {
+        console.log(`⏸️ [CHAT PAUSADO] Mensagem de +${cleanPhone} recebida, mas IA está pausada para atendimento manual.`);
+        continue;
+      }
+
+      const inner =
+        msg.message?.ephemeralMessage?.message ||
+        msg.message?.viewOnceMessage?.message ||
+        msg.message?.viewOnceMessageV2?.message ||
+        msg.message?.documentWithCaptionMessage?.message ||
+        msg.message?.editedMessage?.message ||
+        msg.message?.deviceSentMessage?.message ||
+        msg.message;
+
+      const isAudio = Boolean(inner?.audioMessage);
+      const isImage = Boolean(inner?.imageMessage);
+      let text = extractMessageText(msg.message);
+
+      // Ouvido de IA: Transcrição com Groq Whisper para áudios recebidos
+      if (isAudio) {
+        console.log(`🎙️ [ÁUDIO RECEBIDO] Baixando e transcrevendo áudio de ${senderName} (+${cleanPhone})...`);
+        try {
+          const audioBuffer = await downloadMediaMessage(
+            msg,
+            'buffer',
+            {},
+            { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+          );
+          if (audioBuffer && audioBuffer.length > 0) {
+            const transcribed = await transcribeAudioWithWhisper(audioBuffer);
+            if (transcribed && transcribed.trim()) {
+              text = transcribed.trim();
+              console.log(`🎙️ [TRANSCRIÇÃO WHISPER]: "${text}"`);
+            } else {
+              console.log('⚠️ Áudio sem fala identificada ou ruído.');
+              await sendHumanizedBalloons(sock, from, resolveSpintax("{Opa|Fala parceiro}, não consegui ouvir o que você falou no áudio.[SPLIT]Consegue me mandar em texto rapidinho qual tipo de comércio você pensa em atender?"));
+              continue;
+            }
+          }
+        } catch (audioErr) {
+          console.error('Erro ao baixar/transcrever áudio:', audioErr.message);
+          await sendHumanizedBalloons(sock, from, resolveSpintax("{Opa|Fala parceiro}, deu um errinho pra carregar seu áudio aqui.[SPLIT]Consegue me mandar por mensagem de texto, por favor?"));
+          continue;
+        }
+      }
+
+      // Visão Computacional: OCR de Prints de Comprovante de Pagamento PIX / Cakto
+      if (isImage) {
+        console.log(`📸 [IMAGEM RECEBIDA] Baixando e analisando print/imagem de ${senderName} (+${cleanPhone})...`);
+        try {
+          const imageBuffer = await downloadMediaMessage(
+            msg,
+            'buffer',
+            {},
+            { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+          );
+
+          if (imageBuffer && imageBuffer.length > 0) {
+            const ocrText = await extractTextFromImage(imageBuffer);
+            console.log(`📸 [OCR DETECTADO]: "${(ocrText || '').replace(/\s+/g, ' ').slice(0, 150)}..."`);
+
+            const isReceipt = /(comprovante|pix|pagamento|transfer[eê]ncia|cakto|ghostmarket|r\$|efetuado|conclu[ií]do|banco|autentica[çc][ãa]o)/i.test(ocrText || '');
+
+            if (isReceipt) {
+              const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
+              const emailMatch = (ocrText || '').match(emailRegex);
+              const receiptEmail = emailMatch ? emailMatch[1].toLowerCase().trim() : null;
+
+              // Notificar Dono no WhatsApp imediatamente
+              if (resolvedOwnerJid && from !== resolvedOwnerJid) {
+                try {
+                  await sock.sendMessage(resolvedOwnerJid, {
+                    text: `💰 *COMPROVANTE DE PAGAMENTO RECEBIDO PELO JARVIS!*\n\n👤 *Cliente:* ${senderName}\n📱 *WhatsApp:* https://wa.me/${cleanPhone}\n📧 *E-mail identificado:* ${receiptEmail || 'Não visível no print'}\n\n🧾 *Texto do comprovante:*\n"${(ocrText || '').slice(0, 250)}..."`
+                  });
+                } catch (_) {}
+              }
+
+              if (receiptEmail) {
+                const verification = await verifyCustomerPurchase({ email: receiptEmail, phone: cleanPhone });
+                if (verification?.verified) {
+                  const reply = resolveSpintax(`{Show de bola|Sensacional|Perfeito}, ${senderName}! Analisei seu comprovante do PIX e localizei seu acesso aprovado no sistema com sucesso![SPLIT]Pra começar a usar agora é só acessar:\n👉 https://ghostmarket-ai.vercel.app\n\nEntra e cria a sua conta usando esse mesmo Gmail (*${receiptEmail}*). O sistema já reconhece sua compra na hora e libera o gerador de sites com IA e o Radar de clientes sem travas!\n\nVocê precisa de alguma ajuda ou orientação pra fechar o seu primeiro cliente?`);
+                  await sendHumanizedBalloons(sock, from, reply);
+                } else {
+                  const reply = resolveSpintax(`{Show de bola|Sensacional}, recebi seu comprovante do PIX aqui![SPLIT]Assim que a Cakto processar a compensação (costuma levar 1 a 2 minutinhos), seu acesso libera automático no Gmail *${receiptEmail}*.\n\nJá pode ir criando sua conta no link oficial: https://ghostmarket-ai.vercel.app com esse mesmo Gmail!`);
+                  await sendHumanizedBalloons(sock, from, reply);
+                }
+              } else {
+                const reply = resolveSpintax(`{Show de bola|Sensacional}, recebi seu comprovante do PIX aqui![SPLIT]Me passa aqui o seu *Gmail* que você usou na compra da Cakto, que eu já consulto o seu acesso no sistema agora pra confirmar e te orientar.`);
+                await sendHumanizedBalloons(sock, from, reply);
+              }
+
+              // Marcar lead como convertido
+              leadsFollowUp[from] = {
+                jid: from,
+                phone: cleanPhone,
+                senderName,
+                lastUserMessage: '[Comprovante de Pagamento PIX Enviado]',
+                lastInteractionAt: Date.now(),
+                stage: 0,
+                sentCheckoutLink: true,
+                converted: true
+              };
+              saveFollowUps(leadsFollowUp);
+              continue;
+            } else if (ocrText) {
+              text = text ? `${text}\n[Texto da imagem enviada pelo cliente: "${ocrText}"]` : `[O cliente enviou um print com o seguinte texto: "${ocrText}"]`;
+            }
+          }
+        } catch (imgErr) {
+          console.error('Erro ao processar imagem:', imgErr.message);
+        }
+      }
+
+      if (!text || text.trim().length === 0) continue;
 
       console.log(`📩 [${new Date().toLocaleTimeString('pt-BR')}] Mensagem de ${senderName} (+${cleanPhone}):`);
       console.log(`💬 "${text}"`);
