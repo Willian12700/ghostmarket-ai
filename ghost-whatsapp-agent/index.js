@@ -132,6 +132,7 @@ let followUpInterval = null;
 let caktoInterval = null;
 let watchdogInterval = null;
 let lastScheduledHour = null;
+let lastStatusPostHour = null;
 let lastBatteryAlertTime = 0;
 
 // Lê informações reais da bateria no Linux / Android (Moto G60)
@@ -243,98 +244,55 @@ function checkScheduledReportsAndWatchdog() {
   } catch (err) {
     console.error('Erro checagem sentinela bateria:', err.message);
   }
+
+  // 3. Auto-Postador de Status no WhatsApp (Stories do Chip - 11:00, 16:00 e 20:00)
+  try {
+    const brDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const hour = brDate.getHours();
+    const minute = brDate.getMinutes();
+
+    if ((hour === 11 || hour === 16 || hour === 20) && minute === 0 && lastStatusPostHour !== hour) {
+      lastStatusPostHour = hour;
+
+      const statusMessages = [
+        "🔥 Mais um site profissional entregue em 60 segundos com IA! O dono da barbearia pagou R$ 400 no Pix com 1 clique.",
+        "🚀 O Radar de Clientes do GhostMarket achou mais de 20 empresas sem site aqui na região hoje. Quem tem a ferramenta bota dinheiro no bolso todo dia!",
+        "⚡ Restam poucas vagas com acesso vitalício de R$ 49,99 único e 7 dias de garantia incondicional. Quem quiser ver como funciona, me chama no privado!"
+      ];
+
+      const pick = statusMessages[Math.floor(Math.random() * statusMessages.length)];
+      activeSock.sendMessage('status@broadcast', { text: pick }).catch(e => console.warn('Erro ao postar status:', e.message));
+      console.log(`📢 [STATUS WHATSAPP AUTO] Postado às ${hour}:00: "${pick.slice(0, 45)}..."`);
+    } else if (minute !== 0) {
+      lastStatusPostHour = null;
+    }
+  } catch (err) {
+    console.error('Erro loop status WhatsApp:', err.message);
+  }
 }
 
-// Garante que o health_server.js na porta 3333 tenha suporte a /api/cakto-event, /api/logs, /api/pause-chat e /api/paused-chats
+// Garante que o health_server.js na porta 3333 tenha suporte a /api/cakto-event, /api/logs, /api/pause-chat e upload de áudio
 function ensureHealthServerCaktoEndpoint() {
   const healthServerPath = path.join(__dirname, '..', 'ghost-whatsapp-server', 'health_server.js');
   if (!fs.existsSync(healthServerPath)) return;
 
   try {
-    const currentCode = fs.readFileSync(healthServerPath, 'utf-8');
-    if (currentCode.includes('/api/pause-chat')) return;
+    let currentCode = fs.readFileSync(healthServerPath, 'utf-8');
+    let changed = false;
 
-    console.log('⚡ Atualizando health_server.js com suporte a /api/pause-chat e /api/paused-chats...');
-    const updatedCode = currentCode.replace(
-      "const server = http.createServer((req, res) => {",
-      `const server = http.createServer((req, res) => {
-  if (req.url === '/api/logs') {
-    const errorLog = path.join(HOME, '.pm2', 'logs', 'ghost-whatsapp-agent-error.log');
-    const outLog = path.join(HOME, '.pm2', 'logs', 'ghost-whatsapp-agent-out.log');
-    let errContent = '';
-    let outContent = '';
-    try { if (fs.existsSync(errorLog)) errContent = fs.readFileSync(errorLog, 'utf-8').slice(-3000); } catch (_) {}
-    try { if (fs.existsSync(outLog)) outContent = fs.readFileSync(outLog, 'utf-8').slice(-3000); } catch (_) {}
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify({ outContent, errContent }));
-  }
+    if (!currentCode.includes('audioBase64') && currentCode.includes('payload.indexJs')) {
+      currentCode = currentCode.replace(
+        "if (payload.indexJs) fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'index.js'), payload.indexJs, 'utf-8');",
+        "if (payload.indexJs) fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'index.js'), payload.indexJs, 'utf-8');\n        if (payload.audioBase64) fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'audio_prova_social.mp3'), Buffer.from(payload.audioBase64, 'base64'));"
+      );
+      changed = true;
+    }
 
-  if (req.url === '/api/paused-chats') {
-    const pausedFile = path.join(HOME, 'ghost-whatsapp-agent', 'paused_chats.json');
-    let data = {};
-    try { if (fs.existsSync(pausedFile)) data = JSON.parse(fs.readFileSync(pausedFile, 'utf-8')); } catch (_) {}
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ pausedChats: data }));
-  }
-
-  if (req.method === 'POST' && req.url === '/api/pause-chat') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body);
-        if (payload.secret !== 'ghost_ota_2026') {
-          res.writeHead(403);
-          return res.end('Forbidden');
-        }
-        const phone = payload.phone;
-        const action = payload.action || 'pause';
-        const pausedFile = path.join(HOME, 'ghost-whatsapp-agent', 'paused_chats.json');
-        let data = {};
-        try { if (fs.existsSync(pausedFile)) data = JSON.parse(fs.readFileSync(pausedFile, 'utf-8')); } catch (_) {}
-        if (action === 'pause') {
-          data[phone] = { phone, paused: true, pausedAt: Date.now(), reason: payload.reason || 'Manual via Painel' };
-        } else {
-          delete data[phone];
-        }
-        fs.writeFileSync(pausedFile, JSON.stringify(data, null, 2), 'utf-8');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ success: true, phone, action, paused: action === 'pause' }));
-      } catch (err) {
-        res.writeHead(500);
-        return res.end(err.message);
-      }
-    });
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/api/cakto-event') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const event = JSON.parse(body);
-        const queueFile = path.join(HOME, 'ghost-whatsapp-agent', 'cakto_queue.json');
-        let queue = [];
-        if (fs.existsSync(queueFile)) {
-          try { queue = JSON.parse(fs.readFileSync(queueFile, 'utf-8')); } catch (_) {}
-        }
-        queue.push({ ...event, queuedAt: Date.now() });
-        fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2), 'utf-8');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ status: 'QUEUED_OK', count: queue.length }));
-      } catch (err) {
-        res.writeHead(400);
-        return res.end(err.message);
-      }
-    });
-    return;
-  }`
-    );
-
-    fs.writeFileSync(healthServerPath, updatedCode, 'utf-8');
-    exec('pm2 restart ghost-server 2>/dev/null || true');
-    console.log('✅ health_server.js atualizado com sucesso com suporte a /api/pause-chat!');
+    if (changed) {
+      fs.writeFileSync(healthServerPath, currentCode, 'utf-8');
+      exec('pm2 restart ghost-server 2>/dev/null || true');
+      console.log('✅ health_server.js atualizado com suporte a upload de áudio OTA!');
+    }
   } catch (e) {
     console.error('Erro ao verificar health_server:', e.message);
   }
@@ -359,7 +317,10 @@ function isWithinBusinessHoursBrazil() {
 // Simula comportamento 100% humano no WhatsApp e resolve Spintax anti-ban
 // -------------------------------------------------------------
 async function sendHumanizedBalloons(sock, toJid, rawText) {
-  const resolved = resolveSpintax(rawText);
+  let resolved = resolveSpintax(rawText);
+  const hasAudioProva = resolved.includes('[SEND_AUDIO_PROVA]');
+  resolved = resolved.replace(/\[SEND_AUDIO_PROVA\]/g, '').trim();
+
   const balloons = splitIntoWhatsAppBalloons(resolved);
 
   if (balloons.length <= 1) {
@@ -370,6 +331,22 @@ async function sendHumanizedBalloons(sock, toJid, rawText) {
     await new Promise(r => setTimeout(r, delay));
     await sock.sendMessage(toJid, { text: balloons[0] || resolved });
     await sock.sendPresenceUpdate('paused', toJid);
+
+    if (hasAudioProva) {
+      const audioPath = path.join(__dirname, 'audio_prova_social.mp3');
+      if (fs.existsSync(audioPath)) {
+        console.log(`🎙️ [ÁUDIO PROVA ELEVENLABS] Enviando áudio de prova social para ${toJid}...`);
+        await sock.sendPresenceUpdate('recording', toJid);
+        await new Promise(r => setTimeout(r, 1500));
+        await sock.sendMessage(toJid, {
+          audio: fs.readFileSync(audioPath),
+          mimetype: 'audio/mp4',
+          ptt: true,
+          contextInfo: { isForwarded: true, forwardingScore: 1 }
+        });
+        await sock.sendPresenceUpdate('paused', toJid);
+      }
+    }
   } else {
     // 2 Balões Fracionados (WhatsApp 100% natural):
     // Balão 1: saudação/reação rápida com digitação de 1.8s a 2.5s
@@ -379,6 +356,24 @@ async function sendHumanizedBalloons(sock, toJid, rawText) {
     await new Promise(r => setTimeout(r, delay1));
     await sock.sendMessage(toJid, { text: balloons[0] });
     await sock.sendPresenceUpdate('paused', toJid);
+
+    // Se tiver áudio de prova social, envia no meio como áudio encaminhado
+    if (hasAudioProva) {
+      const audioPath = path.join(__dirname, 'audio_prova_social.mp3');
+      if (fs.existsSync(audioPath)) {
+        console.log(`🎙️ [ÁUDIO PROVA ELEVENLABS] Enviando áudio de prova social para ${toJid}...`);
+        await sock.sendPresenceUpdate('recording', toJid);
+        await new Promise(r => setTimeout(r, 1500));
+        await sock.sendMessage(toJid, {
+          audio: fs.readFileSync(audioPath),
+          mimetype: 'audio/mp4',
+          ptt: true,
+          contextInfo: { isForwarded: true, forwardingScore: 1 }
+        });
+        await sock.sendPresenceUpdate('paused', toJid);
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
 
     // Pausa natural de leitura/respiro entre 1.2s e 1.8s
     const pauseBetween = Math.floor(Math.random() * 600) + 1200;
