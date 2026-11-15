@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { db } from '@/config/firebase';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, Loader2, Play, Phone, User, AlertCircle, PhoneCall } from 'lucide-react';
+import { Check, ChevronRight, Loader2, Play, Phone, User, AlertCircle, PhoneCall, Lock, Unlock, Share2, Gift, Copy } from 'lucide-react';
 
 const CFG = {
   zapSuporte: "558496162332",
@@ -44,6 +44,33 @@ export const QuizPublic = () => {
   const questionStartTime = useRef(Date.now());
   const [loadStep, setLoadStep] = useState(0);
   const [scoreAnim, setScoreAnim] = useState(0);
+  const [unlockedBonus, setUnlockedBonus] = useState(false);
+  const [copiedScript, setCopiedScript] = useState(false);
+
+  const handleShareDiagnostic = () => {
+    trackEvent('quiz_viral_share_clicked', { nota: result?.nota });
+    const shareText = `Mano, acabei de fazer o teste de vendas de sites com IA da Ghost AI e tirei nota ${result?.nota || 78}/100! 🚀 Faz aí pra ver quanto você tira: https://ghostmarket-ai.vercel.app/quiz`;
+    const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Diagnóstico GhostMarket AI',
+        text: shareText,
+        url: 'https://ghostmarket-ai.vercel.app/quiz'
+      }).then(() => {
+        setUnlockedBonus(true);
+        trackEvent('quiz_viral_bonus_unlocked', { method: 'native_share' });
+      }).catch(() => {
+        window.open(shareUrl, '_blank');
+        setUnlockedBonus(true);
+        trackEvent('quiz_viral_bonus_unlocked', { method: 'whatsapp_web' });
+      });
+    } else {
+      window.open(shareUrl, '_blank');
+      setUnlockedBonus(true);
+      trackEvent('quiz_viral_bonus_unlocked', { method: 'whatsapp_web' });
+    }
+  };
 
   const trackEvent = async (eventType: string, meta: any = {}) => {
     try {
@@ -432,6 +459,59 @@ export const QuizPublic = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Bônus Viral Destravável por Compartilhamento */}
+              <div className={`mb-8 p-6 rounded-2xl border transition-all duration-300 ${unlockedBonus ? 'bg-gradient-to-br from-[#0c2e1f] to-[#120e1d] border-emerald-500/60 shadow-[0_0_25px_rgba(16,185,129,0.2)]' : 'bg-gradient-to-br from-[#1a1330] to-[#120e1d] border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${unlockedBonus ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
+                    {unlockedBonus ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                    {unlockedBonus ? 'Bônus VIP Liberado!' : 'Bônus Exclusivo (Valor: R$ 197)'}
+                  </span>
+                  <span className="text-xs text-purple-200/50">100% Gratuito</span>
+                </div>
+
+                <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                  <Gift className={`w-5 h-5 ${unlockedBonus ? 'text-emerald-400' : 'text-amber-400'}`} />
+                  Pack Secreto: 5 Modelos Prontos de Sites + Copy de Abordagem WhatsApp
+                </h3>
+
+                {!unlockedBonus ? (
+                  <>
+                    <p className="text-sm text-purple-200/70 mb-4">
+                      Compartilhe seu diagnóstico no WhatsApp com 1 amigo para desbloquear o download imediato dos scripts validados de fechamento!
+                    </p>
+                    <button
+                      onClick={handleShareDiagnostic}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg shadow-emerald-600/20 active:scale-[0.98]"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Compartilhar no WhatsApp para Destravar</span>
+                    </button>
+                  </>
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    <p className="text-sm text-emerald-300 font-medium">
+                      Parabéns! Seu material foi desbloqueado com sucesso. Copie a copy mestra de abordagem abaixo:
+                    </p>
+                    <div className="bg-[#08070d] p-3.5 rounded-xl border border-emerald-500/30 text-xs font-mono text-purple-100 whitespace-pre-wrap leading-relaxed">
+{`"Opa [Nome], vi que sua loja [Nome da Loja] tá no Google Maps mas ainda não tem site oficial com botão de agendamento no WhatsApp. 
+Montei uma demonstração rápida em 60s pra você ver como ficaria: [Link]. 
+Se curtir, te entrego ela completa hoje por R$ 350. Ficou alguma dúvida?"`}
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`Opa [Nome], vi que sua loja [Nome da Loja] tá no Google Maps mas ainda não tem site oficial com botão de agendamento no WhatsApp. Montei uma demonstração rápida em 60s pra você ver como ficaria. Se curtir, te entrego ela completa hoje por R$ 350. Posso te mandar o link?`);
+                        setCopiedScript(true);
+                        setTimeout(() => setCopiedScript(false), 3000);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 font-bold py-2.5 px-4 rounded-xl text-sm transition-all"
+                    >
+                      {copiedScript ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedScript ? 'Copiado para a Área de Transferência!' : 'Copiar Script de Abordagem'}</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-5">
