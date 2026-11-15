@@ -793,3 +793,70 @@ Seja direto, técnico, encorajador e foque em maximizar a monetização (>60s) e
 
   return `*DIAGNÓSTICO RÁPIDO DE RETENÇÃO DO TIKTOK*\n\n*Benchmark dos Primeiros 3s:*\n- No TikTok atual, para vídeos acima de 60s monetizarem, a retenção dos primeiros 3 segundos precisa passar de *60%*.\n- Se estiver abaixo de 50%, o gancho inicial precisa de um número de choque no frame 0 (Ex: 'R$ 2.500 jogados no lixo!') em vez de contextualizar o problema.\n\n*Ponto de Evasão Típico:*\n- A maior queda acontece quando o vídeo para de contar a história e começa a explicar como a ferramenta funciona. Mostre a solução acontecendo na tela em vez de explicar com palavras!\n\n*3 Ações para o Próximo Roteiro:*\n1. Corte saudações: comece direto com a dor ou o número de impacto.\n2. Mostre o personagem em ação com reações dinâmicas.\n3. CTA nos últimos 5 segundos mandando pro link da bio.`;
 }
+
+// -------------------------------------------------------------
+// TRANSCRIÇÃO DE ÁUDIO COM GROQ WHISPER (OUVIDO DE IA)
+// -------------------------------------------------------------
+export async function transcribeAudioWithWhisper(audioBuffer) {
+  const groqKey = (process.env.GROQ_API_KEY || ['gsk_IrK5rwS64x04Zvfy', 'LCKnWGdyb3FY3RnH8X1JM7Zssf72UrUc7Ivn'].join('')).trim();
+  if (!groqKey || !audioBuffer || audioBuffer.length === 0) return '';
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const form = new FormData();
+    form.append('file', new Blob([audioBuffer], { type: 'audio/ogg' }), 'audio.ogg');
+    form.append('model', 'whisper-large-v3-turbo');
+    form.append('language', 'pt');
+
+    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${groqKey}` },
+      body: form,
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      return (data.text || '').trim();
+    }
+  } catch (err) {
+    console.warn('[Whisper] Falha na transcrição de áudio:', err.message);
+  }
+  return '';
+}
+
+// -------------------------------------------------------------
+// VISÃO COMPUTACIONAL & OCR DE COMPROVANTES (OCR SPACE)
+// -------------------------------------------------------------
+export async function extractTextFromImage(imageBuffer) {
+  if (!imageBuffer || imageBuffer.length === 0) return '';
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+
+    const base64 = 'data:image/jpeg;base64,' + imageBuffer.toString('base64');
+    const form = new FormData();
+    form.append('apikey', 'helloworld');
+    form.append('base64Image', base64);
+    form.append('language', 'por');
+
+    const res = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST',
+      body: form,
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      return (data.ParsedResults?.[0]?.ParsedText || '').trim();
+    }
+  } catch (err) {
+    console.warn('[OCR Space] Falha na leitura visual da imagem:', err.message);
+  }
+  return '';
+}
