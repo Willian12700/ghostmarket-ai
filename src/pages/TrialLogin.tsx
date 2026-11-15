@@ -16,6 +16,12 @@ export const TrialLogin = () => {
   const handleTestAccess = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    const deviceLock = typeof window !== 'undefined' ? localStorage.getItem('ghost_device_trial_lock') : null;
+    if (deviceLock) {
+      setError('🚫 Limite atingido: Este aparelho/navegador já utilizou um teste gratuito anteriormente. Para continuar gerando sites e buscando leads, adquira um plano oficial.');
+      return;
+    }
+
     if (code.length !== 6) {
       setError('O código deve ter exatos 6 dígitos.')
       return
@@ -45,6 +51,13 @@ export const TrialLogin = () => {
         return
       }
 
+      if (data.validUntil && Date.now() > data.validUntil) {
+        await auth.signOut();
+        setError('Este código de teste expirou o prazo limite para ativação (20 minutos).');
+        setLoading(false);
+        return;
+      }
+
       // Activate the code! 5 minutes from now.
       const durationMinutes = data.durationMinutes || 5;
       const expiresAt = Date.now() + durationMinutes * 60 * 1000;
@@ -66,6 +79,7 @@ export const TrialLogin = () => {
 
       // Salva no localstorage o limite local pra fazer logout
       localStorage.setItem('trial_expires_at', expiresAt.toString())
+      localStorage.setItem('ghost_device_trial_lock', Date.now().toString())
       
       // Manda pro painel
       navigate('/dashboard')
