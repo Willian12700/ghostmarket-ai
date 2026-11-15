@@ -69,7 +69,16 @@ export default async function handler(req, res) {
       transactions = snapTx.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (_) {}
 
-    // 5. Consultar Moto G60 em tempo real (Status, Leads do WhatsApp e Logs)
+    // 5. Buscar Chats Pausados no Firestore
+    let pausedChats = {};
+    try {
+      const snapPaused = await getDocs(collection(db, 'paused_chats'));
+      snapPaused.docs.forEach(d => {
+        pausedChats[d.id] = d.data();
+      });
+    } catch (_) {}
+
+    // 6. Consultar Moto G60 em tempo real (Status, Leads do WhatsApp, Pausados e Logs)
     let motoG60Online = false;
     let motoStatus = null;
     let whatsappLeads = {};
@@ -79,10 +88,11 @@ export default async function handler(req, res) {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 3500);
 
-      const [resStatus, resLeads, resLogs] = await Promise.allSettled([
+      const [resStatus, resLeads, resLogs, resPaused] = await Promise.allSettled([
         fetch(`${tunnelBase.replace(/\/+$/, '')}/api/status`, { signal: ctrl.signal }),
         fetch(`${tunnelBase.replace(/\/+$/, '')}/api/leads`, { signal: ctrl.signal }),
-        fetch(`${tunnelBase.replace(/\/+$/, '')}/api/logs`, { signal: ctrl.signal })
+        fetch(`${tunnelBase.replace(/\/+$/, '')}/api/logs`, { signal: ctrl.signal }),
+        fetch(`${tunnelBase.replace(/\/+$/, '')}/api/paused-chats`, { signal: ctrl.signal })
       ]);
       clearTimeout(t);
 
@@ -96,6 +106,12 @@ export default async function handler(req, res) {
       }
       if (resLogs.status === 'fulfilled' && resLogs.value.ok) {
         systemLogs = await resLogs.value.json();
+      }
+      if (resPaused.status === 'fulfilled' && resPaused.value.ok) {
+        const p = await resPaused.value.json();
+        if (p.pausedChats) {
+          pausedChats = { ...pausedChats, ...p.pausedChats };
+        }
       }
     } catch (err) {
       console.warn('Moto G60 inacessível no momento:', err.message);
@@ -112,6 +128,10 @@ export default async function handler(req, res) {
           name: 'Queens Technology (Jarvis)',
           phone: '558496162332'
         }
+      },
+      pausedChats: {
+        total: Object.keys(pausedChats).length,
+        items: pausedChats
       },
       whatsappLeads: {
         total: Object.keys(whatsappLeads).length,
