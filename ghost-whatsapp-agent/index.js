@@ -923,6 +923,7 @@ async function startGhostWhatsAppAgent() {
         // 4. Atualizar estado do Follow-up Automático
         const existingLead = leadsFollowUp[from] || {};
         const replyHasCheckout = fullReply.includes('pay.cakto.com.br');
+        const isConfirmedApproved = fullReply.includes('Encontrei aqui seu acesso aprovado');
 
         leadsFollowUp[from] = {
           jid: from,
@@ -932,9 +933,17 @@ async function startGhostWhatsAppAgent() {
           lastInteractionAt: Date.now(),
           stage: 0,
           sentCheckoutLink: Boolean(existingLead.sentCheckoutLink || replyHasCheckout),
-          converted: Boolean(existingLead.converted || hasPaid)
+          converted: Boolean(existingLead.converted || hasPaid || isConfirmedApproved)
         };
         saveFollowUps(leadsFollowUp);
+
+        if (isConfirmedApproved && resolvedOwnerJid && from !== resolvedOwnerJid) {
+          try {
+            await sock.sendMessage(resolvedOwnerJid, {
+              text: `✅ *CLIENTE ATIVADO VIA GMAIL PELO JARVIS!*\n\n👤 *Nome:* ${senderName}\n📱 *WhatsApp:* https://wa.me/${cleanPhone}\n🎉 *Status:* Acesso validado no sistema e onboarding entregue!`
+            });
+          } catch (_) {}
+        }
       } catch (err) {
         console.error('❌ Erro ao responder cliente no WhatsApp:', err.message);
       }
