@@ -3,8 +3,9 @@
 // 1. Funil de Vendas Conversacional em 5 Etapas (Sem flood de emojis, sem empurrar links prematuramente)
 // 2. Resposta Fracionada em 2 Balões Naturais ([SPLIT] ou quebra de parágrafo)
 // 3. Spintax Dinâmico Anti-Ban (Variação de frases para proteger o chip de bloqueios)
-// 4. Modo Demonstração por Nicho e Teste de 5 Minutos (Proteção Anti-Abuso)
-// 5. Follow-up Humano e Fechamento com Regra de Ouro do Gmail da Cakto
+// 4. Detector de Hesitação com Risco Zero (Garantia incondicional de 7 dias)
+// 5. Verificação Pós-Compra e Onboarding Imediato por Gmail
+// 6. Modo Demonstração por Nicho e Teste de 5 Minutos (Proteção Anti-Abuso)
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
@@ -16,6 +17,9 @@ const USED_TRIALS_FILE = path.join(__dirname, 'used_trials.json');
 
 // Histórico de conversa por contato (JID)
 const conversationMemory = new Map();
+
+// Controle de contatos que disseram que pagaram e estamos aguardando o e-mail
+const awaitingEmailVerification = new Map();
 
 export const LINK_MENSAL = 'https://pay.cakto.com.br/fiqwtse_1119916';
 export const LINK_VITALICIO = 'https://pay.cakto.com.br/yonkyi5_1119928';
@@ -211,6 +215,66 @@ export async function requestTrialCodeForUser({ phone, name, jid }) {
   }
 }
 
+// -------------------------------------------------------------
+// VERIFICADOR DE COMPRA / ACESSO POR GMAIL (FIRESTORE)
+// -------------------------------------------------------------
+export async function verifyCustomerPurchase({ email, phone }) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { error: 'E-mail inválido' };
+  }
+
+  // 1. Tentar via API oficial na Vercel (/api/verify-purchase)
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`https://ghostmarket-ai.vercel.app/api/verify-purchase?email=${encodeURIComponent(cleanEmail)}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (err) {
+    console.warn(`[Verify Purchase] Falha API Vercel (${err.message}), tentando Firestore REST...`);
+  }
+
+  // 2. Fallback direto Firestore REST
+  try {
+    const authRes = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDafvRbIgwriRgCis2sAmJeJ80RHmn30LA', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ returnSecureToken: true })
+    });
+    const authData = await authRes.json();
+    const idToken = authData.idToken;
+
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/ghostmarket-ai-2cc26/databases/(default)/documents/allowed_users/${encodeURIComponent(cleanEmail)}`;
+    const res = await fetch(firestoreUrl, {
+      headers: idToken ? { 'Authorization': `Bearer ${idToken}` } : {}
+    });
+
+    if (res.ok) {
+      const docData = await res.json();
+      const status = docData.fields?.status?.stringValue || 'approved';
+      const isApproved = status === 'approved' || status === 'paid' || status === 'ativo';
+      return {
+        verified: isApproved,
+        status,
+        plan: docData.fields?.plan?.stringValue || 'vitalicio',
+        email: cleanEmail
+      };
+    } else if (res.status === 404) {
+      return { verified: false, notFound: true, email: cleanEmail };
+    }
+  } catch (err) {
+    console.error('[Verify Purchase] Erro fallback Firestore REST:', err.message);
+  }
+
+  return { verified: false, notFound: true, email: cleanEmail };
+}
+
 // Base de conhecimento e Persona do Atendente GhostMarket
 const SYSTEM_PROMPT = `
 Você é o Willian, criador e dono do GhostMarket AI, respondendo diretamente no WhatsApp pelo celular.
@@ -268,6 +332,17 @@ PASSO 5: FECHAMENTO E ENVIO DO LINK
   - Envie o link correspondente ([LINK_VITALICIO] ou [LINK_MENSAL]).
   - Dê a instrução de ouro do Gmail:
     "Show! Aqui tá o seu link: [LINK_VITALICIO][SPLIT]Na hora de pagar na Cakto, coloca o seu Gmail certinho! Assim que aprovar, você entra na plataforma e cria a sua conta usando esse mesmo Gmail que o acesso libera na hora."
+
+REGRA DO DETECTOR DE HESITAÇÃO (GATILHO DE RISCO ZERO):
+- Se o cliente hesitar dizendo que "vai pensar", "tá meio apertado", "tô sem grana", "não sei se consigo vender", "depois eu vejo", "será que funciona pra mim", "tá caro":
+  1. Aja com empatia radical no Balão 1: "Irmão, super entendo! Dinheiro e tempo são coisas sérias."
+  2. No Balão 2, ofereça o Plano Vitalício de R$ 49,99 com o gatilho do risco zero: lembre que ele tem 7 dias de garantia incondicional pela Cakto (se em 7 dias não gostar ou achar que não é pra ele, devolvemos 100% do dinheiro na hora com 1 clique).
+  3. Diga com clareza: "O risco tá todo nas minhas costas, você não perde nada. Quer que eu te passe o link?"
+
+REGRA DE PÓS-COMPRA E ONBOARDING POR GMAIL:
+- Se o cliente disser que já pagou ("paguei, e agora?", "já paguei", "onde tá meu acesso?", "como eu entro?"):
+  - Se ele ainda não passou o Gmail: dê os parabéns no Balão 1 e no Balão 2 peça o Gmail que ele usou na compra da Cakto para consultar o sistema na hora.
+  - Se ele passou o Gmail (ou quando o sistema verificar que foi aprovado): oriente a acessar https://ghostmarket-ai.vercel.app, criar a conta com esse mesmo Gmail para liberar o sistema, e pergunte se ele precisa de ajuda ou orientação para fechar o primeiro cliente.
 
 SOBRE TESTE GRÁTIS:
 - O teste gratuito de 5 minutos só é liberado se a pessoa pedir expressamente ("tem teste?", "posso testar?", "como faço pra testar?").
@@ -352,6 +427,7 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
   }
 
   const lowerUser = userMessage.toLowerCase().trim();
+  const firstName = (extraData?.senderName || 'parceiro').trim().split(' ')[0];
 
   // 1. GERAÇÃO DE TESTE GRÁTIS DE 5 MINUTOS COM PROTEÇÃO ANTI-ABUSO
   // Evita falsos positivos quando a pessoa apenas fala "só pra testar", "fui testar", etc.
@@ -375,7 +451,56 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     }
   }
 
-  // 2. CUPOM DE DESCONTO RELÂMPAGO (R$ 10 OFF / VITALÍCIO R$ 39,99 COM CUPOM VIP10)
+  // 2. PÓS-COMPRA & VERIFICAÇÃO DE ACESSO POR GMAIL ("PAGUEI, E AGORA?")
+  const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
+  const emailMatch = userMessage.match(emailRegex);
+  const foundEmail = emailMatch ? emailMatch[1].toLowerCase().trim() : null;
+
+  const isPostPurchaseInquiry = /(paguei|j[aá] paguei|comprei|acabei de pagar|fiz o pix|j[aá] fiz|paguei o boleto|onde t[aá] meu acesso|onde ta meu acesso|como eu entro|como entro|como acessar|qual o site|link de acesso|e agora|j[aá] paguei aqui|j[aá] assinei|ja assinei|fiz o pagamento)/i.test(lowerUser);
+  const isAwaitingEmail = awaitingEmailVerification.get(jid) || false;
+
+  // Caso 2A: O cliente informou o e-mail (ou respondeu com o e-mail após a pergunta do Jarvis)
+  if (foundEmail && (isPostPurchaseInquiry || isAwaitingEmail || lowerUser.replace(foundEmail, '').trim().length < 35)) {
+    awaitingEmailVerification.delete(jid);
+    console.log(`🔍 [Pós-Compra] Verificando acesso para e-mail: ${foundEmail}`);
+    const verification = await verifyCustomerPurchase({ email: foundEmail, phone: extraData?.cleanPhone });
+
+    if (verification?.verified) {
+      const resp = resolveSpintax(`{Show de bola|Sensacional|Perfeito}, ${firstName}! Encontrei aqui seu acesso aprovado no sistema com sucesso![SPLIT]Pra começar a usar agora é só acessar:\n👉 https://ghostmarket-ai.vercel.app\n\nEntra e cria a sua conta usando esse mesmo Gmail (*${foundEmail}*). O sistema já reconhece sua compra na hora e libera o gerador de sites com IA e o Radar de clientes sem travas!\n\nVocê precisa de alguma ajuda ou orientação pra fechar o seu primeiro cliente?`);
+      history.push({ role: 'assistant', content: resp });
+      return resp;
+    }
+
+    if (verification?.status === 'pending') {
+      const resp = resolveSpintax(`{Fala|Opa} ${firstName}, localizei seu pedido aqui no sistema, mas o pagamento ainda consta como aguardando confirmação do banco.[SPLIT]Se você pagou via PIX ou boleto, às vezes leva alguns minutinhos pro banco compensar. Assim que a Cakto confirmar, seu acesso libera na hora no e-mail *${foundEmail}*!\n\nSe já fez o pagamento certinho, me avisa aqui se precisar de ajuda com a chave ou comprovante.`);
+      history.push({ role: 'assistant', content: resp });
+      return resp;
+    }
+
+    // Não encontrado ainda no sistema
+    const resp = resolveSpintax(`{Fala|Opa} ${firstName}, procurei aqui no sistema pelo e-mail *${foundEmail}*, mas não encontrei nenhuma compra aprovada com esse endereço ainda.[SPLIT]Dá uma conferida se você digitou alguma letrinha errada ou se usou outro Gmail na hora de preencher os dados na Cakto.\n\nQualquer coisa me manda aqui o e-mail certinho ou o comprovante que eu já verifico pra você na hora!`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // Caso 2B: O cliente disse "paguei, e agora?" mas ainda NÃO informou o Gmail
+  if (isPostPurchaseInquiry) {
+    awaitingEmailVerification.set(jid, true);
+    const resp = resolveSpintax(`{Show de bola|Sensacional|Parabéns}, parabéns pela decisão![SPLIT]Me passa aqui o seu *Gmail* que você usou na compra da Cakto, que eu já consulto o seu acesso no sistema agora pra confirmar e te orientar.`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // 3. DETECTOR AUTOMÁTICO DE HESITAÇÃO COM GATILHO DE RISCO ZERO (FEATURE 4)
+  const isHesitation = /(vou pensar|t[aá] meio apertado|t[aá] apertado|t[oô] sem grana|sem grana|sem dinheiro|grana curta|pouco dinheiro|depois eu vejo|depois vejo|mais pra frente|n[aã]o sei se consigo|n[aã]o sei se vendo|ser[aá] que consigo|ser[aá] que funciona|com medo|t[aá] caro|t[aá] meio caro|salgado|preciso pensar|vou ver com|vou falar com|n[aã]o tenho dinheiro agora|t[oô] apertado)/i.test(lowerUser);
+
+  if (isHesitation) {
+    const resp = resolveSpintax(`{Irmão|Parceiro}, super entendo! Dinheiro e tempo são coisas sérias.[SPLIT]Faz o seguinte: entra no Vitalício de R$ 49,99. Você tem 7 dias de garantia incondicional pela Cakto. Se em até 7 dias você achar que não é pra você ou não conseguir vender, devolvemos 100% do seu dinheiro na hora com 1 clique.\n\nO risco tá todo nas minhas costas, você não perde nada. Quer que eu te passe o link?`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // 4. CUPOM DE DESCONTO RELÂMPAGO (R$ 10 OFF / VITALÍCIO R$ 39,99 COM CUPOM VIP10)
   if (lowerUser.includes('cupom') || lowerUser.includes('desconto') || lowerUser.includes('39') || (lowerUser.includes('quero') && lowerUser.includes('vitalicio') && history.some(h => h.content?.includes('cupom')))) {
     const resp = resolveSpintax(`{Consegui liberar o cupom pra você!|Fechou, liberei seu desconto exclusivo!}[SPLIT]Use o cupom *VIP10* ou acesse direto pelo link com os R$ 10 de desconto aplicados (sai por R$ 39,99 à vista no Vitalício):\n👉 ${LINK_VITALICIO_DESCONTO}\n\nSó coloca o seu *Gmail* certinho na hora de pagar na Cakto, que o acesso libera automático pra ele.`);
     history.push({ role: 'assistant', content: resp });
