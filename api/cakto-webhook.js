@@ -15,7 +15,7 @@ const db = getFirestore(app);
 
 // Notifica o atendente Jarvis no Moto G60 em tempo real (Recuperação de PIX + Boas-vindas)
 async function notifyJarvisMotoG60(eventData) {
-  const tunnelBase = process.env.MOTO_G60_TUNNEL_URL || 'https://exposed-leadership-gaps-stopped.trycloudflare.com';
+  const tunnelBase = process.env.MOTO_G60_TUNNEL_URL || 'https://recorders-encyclopedia-markets-desert.trycloudflare.com';
   const targetUrl = `${tunnelBase.replace(/\/+$/, '')}/api/cakto-event`;
 
   try {
