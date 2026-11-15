@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   DollarSign,
   TrendingUp,
@@ -220,6 +221,12 @@ export const Finance = () => {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              to="/mensalidades"
+              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-900/30 transition-all"
+            >
+              <Clock className="w-4 h-4" /> Cobrador IA (Mensalidades)
+            </Link>
             <button
               type="button"
               onClick={handleExportCsv}

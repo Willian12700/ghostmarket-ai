@@ -275,6 +275,130 @@ export async function verifyCustomerPurchase({ email, phone }) {
   return { verified: false, notFound: true, email: cleanEmail };
 }
 
+// -------------------------------------------------------------
+// EXTRATOR INTELIGENTE DE AGENDAMENTO / PROMESSA DE PAGAMENTO
+// -------------------------------------------------------------
+export function extractPromisedPaymentDate(text, referenceDate = new Date()) {
+  if (!text || typeof text !== 'string') return null;
+  const lower = text.toLowerCase().trim();
+
+  // Expressões de promessa / agendamento / segurar vaga
+  const isPromise = /(segur|guard|reserv|vou pagar|pago|vou assinar|assino|vou fechar|fecho|consigo pagar|posso pagar|receb|compr|pegar|fechar)/i.test(lower) ||
+    /(at[eé] ter[çc]a|at[eé] quarta|at[eé] quinta|at[eé] sexta|at[eé] segunda|at[eé] s[aá]bado|at[eé] amanh[aã]|amanh[aã]|semana que vem|m[eê]s que vem|fim do m[eê]s|quinto dia [uú]til)/i.test(lower);
+
+  if (!isPromise) return null;
+
+  const now = referenceDate ? new Date(referenceDate) : new Date();
+  const currentDayOfWeek = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+  let target = new Date(now);
+  let matchedExpression = '';
+  let dayName = '';
+
+  // 1. Amanhã
+  if (/amanh[aã]/i.test(lower)) {
+    target.setDate(target.getDate() + 1);
+    matchedExpression = 'amanhã';
+    dayName = 'Amanhã';
+  }
+  // 2. Dias da semana específicos
+  else if (/ter[çc]a(-feira)?/i.test(lower)) {
+    let diff = (2 - currentDayOfWeek + 7) % 7;
+    if (diff === 0) diff = 7;
+    target.setDate(target.getDate() + diff);
+    matchedExpression = 'terça-feira';
+    dayName = 'Terça-feira';
+  }
+  else if (/quarta(-feira)?/i.test(lower)) {
+    let diff = (3 - currentDayOfWeek + 7) % 7;
+    if (diff === 0) diff = 7;
+    target.setDate(target.getDate() + diff);
+    matchedExpression = 'quarta-feira';
+    dayName = 'Quarta-feira';
+  }
+  else if (/quinta(-feira)?/i.test(lower)) {
+    let diff = (4 - currentDayOfWeek + 7) % 7;
+    if (diff === 0) diff = 7;
+    target.setDate(target.getDate() + diff);
+    matchedExpression = 'quinta-feira';
+    dayName = 'Quinta-feira';
+  }
+  else if (/sexta(-feira)?/i.test(lower)) {
+    let diff = (5 - currentDayOfWeek + 7) % 7;
+    if (diff === 0) diff = 7;
+    target.setDate(target.getDate() + diff);
+    matchedExpression = 'sexta-feira';
+    dayName = 'Sexta-feira';
+  }
+  else if (/segunda(-feira)?/i.test(lower)) {
+    let diff = (1 - currentDayOfWeek + 7) % 7;
+    if (diff === 0) diff = 7;
+    target.setDate(target.getDate() + diff);
+    matchedExpression = 'segunda-feira';
+    dayName = 'Segunda-feira';
+  }
+  else if (/s[aá]bado/i.test(lower)) {
+    let diff = (6 - currentDayOfWeek + 7) % 7;
+    if (diff === 0) diff = 7;
+    target.setDate(target.getDate() + diff);
+    matchedExpression = 'sábado';
+    dayName = 'Sábado';
+  }
+  else if (/domingo/i.test(lower)) {
+    let diff = (0 - currentDayOfWeek + 7) % 7;
+    if (diff === 0) diff = 7;
+    target.setDate(target.getDate() + diff);
+    matchedExpression = 'domingo';
+    dayName = 'Domingo';
+  }
+  // 3. Dia X do mês (ex: "dia 10", "dia 20", "dia 5", "recebo dia 5")
+  else if (/dia\s*(\d{1,2})/i.test(lower) || /(\d{1,2})\s*do\s*m[eê]s/i.test(lower)) {
+    const match = lower.match(/dia\s*(\d{1,2})/i) || lower.match(/(\d{1,2})\s*do\s*m[eê]s/i);
+    const dayNum = parseInt(match[1], 10);
+    if (dayNum >= 1 && dayNum <= 31) {
+      if (dayNum > now.getDate()) {
+        target.setDate(dayNum);
+      } else {
+        target.setMonth(target.getMonth() + 1);
+        target.setDate(dayNum);
+      }
+      matchedExpression = `dia ${dayNum}`;
+      dayName = `Dia ${dayNum}`;
+    } else {
+      return null;
+    }
+  }
+  // 4. Semana que vem
+  else if (/semana que vem/i.test(lower)) {
+    let diffToNextMonday = ((1 - currentDayOfWeek + 7) % 7) || 7;
+    target.setDate(target.getDate() + diffToNextMonday);
+    matchedExpression = 'semana que vem';
+    dayName = 'Segunda-feira (semana que vem)';
+  }
+  // 5. Fim do mês
+  else if (/fim do m[eê]s/i.test(lower)) {
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    target.setDate(lastDay);
+    matchedExpression = 'fim do mês';
+    dayName = `Dia ${lastDay} (fim do mês)`;
+  } else {
+    return null;
+  }
+
+  const yyyy = target.getFullYear();
+  const mm = String(target.getMonth() + 1).padStart(2, '0');
+  const dd = String(target.getDate()).padStart(2, '0');
+  const isoDate = `${yyyy}-${mm}-${dd}`;
+  const formatted = `${dayName}, ${dd}/${mm}`;
+
+  return {
+    hasPromise: true,
+    isoDate,
+    formatted,
+    dayName,
+    matchedExpression
+  };
+}
+
 // Base de conhecimento e Persona do Atendente GhostMarket
 const SYSTEM_PROMPT = `
 Você é o Willian, criador e dono do GhostMarket AI, respondendo diretamente no WhatsApp pelo celular.
@@ -344,6 +468,18 @@ REGRA DE PÓS-COMPRA E ONBOARDING POR GMAIL:
   - Se ele ainda não passou o Gmail: dê os parabéns no Balão 1 e no Balão 2 peça o Gmail que ele usou na compra da Cakto para consultar o sistema na hora.
   - Se ele passou o Gmail (ou quando o sistema verificar que foi aprovado): oriente a acessar https://ghostmarket-ai.vercel.app, criar a conta com esse mesmo Gmail para liberar o sistema, e pergunte se ele precisa de ajuda ou orientação para fechar o primeiro cliente.
 
+REGRA DE OURO DE CONTINUIDADE (PROIBIDO REINICIAR CONVERSA):
+- Se já existirem mensagens no histórico, você JÁ ESTÁ CONVERSANDO com essa pessoa!
+- NUNCA diga "Fala irmão, beleza?", "Opa, tudo bem?", "Aqui é o Willian do GhostMarket" se a conversa já estiver rolando.
+- NUNCA repita a pergunta de qualificação do Passo 1 ("Você já cria sites ou tá começando do zero?").
+- Vá direto à dúvida ou tema que o cliente enviou agora, mantendo o contexto da conversa.
+
+REGRA DO PROGRAMA DE AFILIADOS / PARCEIROS:
+- Se o cliente perguntar como se afiliar, indicar amigos ou ganhar comissão:
+  - Balão 1: "Irmão, com certeza! A gente tem programa oficial de parceiros da Ghost AI na Cakto."
+  - [SPLIT]
+  - Balão 2: "Você ganha 50% de comissão em cada indicação do Vitalício (R$ 50 no seu bolso por cada 2 vendas)! Pra se afiliar na Cakto e pegar seu link exclusivo de comissão: [LINK_AFILIADOS]"
+
 SOBRE TESTE GRÁTIS:
 - O teste gratuito de 5 minutos só é liberado se a pessoa pedir expressamente ("tem teste?", "posso testar?", "como faço pra testar?").
 - NUNCA ofereça teste por conta própria se ele não perguntou.
@@ -359,10 +495,15 @@ function cleanAndInjectLinks(rawReply) {
   let reply = (rawReply || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
   reply = reply.replace(/^(Jarvis|Willian):\s*/i, '').trim();
   reply = reply.replace(/\*\*([^*\n]+)\*\*/g, '*$1*');
-  reply = reply.replace(/\[LINK_MENSAL\]/g, LINK_MENSAL);
-  reply = reply.replace(/\[LINK_VITALICIO\]/g, LINK_VITALICIO);
-  reply = reply.replace(/\[LINK_VITALICIO_DESCONTO\]/g, LINK_VITALICIO_DESCONTO);
-  reply = reply.replace(/\[LINK_TRIAL\]/g, LINK_TRIAL);
+  reply = reply.replace(/\[LINK_MENSAL\]/gi, LINK_MENSAL);
+  reply = reply.replace(/\[LINK_VITALICIO\]/gi, LINK_VITALICIO);
+  reply = reply.replace(/\[LINK_VITALICIO_DESCONTO\]/gi, LINK_VITALICIO_DESCONTO);
+  reply = reply.replace(/\[LINK_TRIAL\]/gi, LINK_TRIAL);
+  reply = reply.replace(/\[LINK_AFILIADOS?\]/gi, LINK_AFILIADOS);
+  reply = reply.replace(/\[LINK_PARCEIROS?\]/gi, LINK_AFILIADOS);
+  reply = reply.replace(/\[AFILIADOS?\]/gi, LINK_AFILIADOS);
+  reply = reply.replace(/\[LINK_SITE_OFICIAL\]/gi, LINK_SITE_OFICIAL);
+  reply = reply.replace(/\[LINK_PAGAMENTO\]/gi, LINK_VITALICIO);
   
   // Remove emojis repetitivos ou finais de frase (🚀, 🔥, 🤝, 🤖, 👻, etc.)
   reply = reply.replace(/[\u{1F300}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]{2,}/gu, '');
@@ -428,6 +569,7 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
 
   const lowerUser = userMessage.toLowerCase().trim();
   const firstName = (extraData?.senderName || 'parceiro').trim().split(' ')[0];
+  const isOngoingConversation = history.length > 2;
 
   // 1. GERAÇÃO DE TESTE GRÁTIS DE 5 MINUTOS COM PROTEÇÃO ANTI-ABUSO
   // Evita falsos positivos quando a pessoa apenas fala "só pra testar", "fui testar", etc.
@@ -491,8 +633,15 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     return resp;
   }
 
+  // Se estávamos aguardando o e-mail mas o cliente mudou de assunto, não comprou ou fez outra pergunta
+  if (isAwaitingEmail && !foundEmail) {
+    if (/(n[aã]o comprei|ainda n[aã]o|n[aã]o paguei|quanto|como funciona|o que [eé]|teste|qual o pre[çc]o|afiliad|parceiro|n[aã]o quero|vou pagar)/i.test(lowerUser)) {
+      awaitingEmailVerification.delete(jid);
+    }
+  }
+
   // 3. GATILHO DE ÁUDIO DE PROVA SOCIAL COM ELEVENLABS (IDEIA 3)
-  const isProofQuery = /(ser[aá] que funciona|d[aá] dinheiro mesmo|d[aá] pra vender|ser[aá] que consigo vender|algu[eé]m j[aá] comprou|tem prova|funciona de verdade|ser[aá] que algu[eé]m compra|algu[eé]m compra site|d[aá] pra ganhar dinheiro|alguem compra|funciona mesmo)/i.test(lowerUser);
+  const isProofQuery = /(ser[aá] que funciona|d[aá] dinheiro mesmo|d[aá] pra vender|ser[aá] que consigo vender|algu[eé]m j[aá] comprou|tem prova|funciona de verdade|ser[aá] que algu[eé]m compra|algu[eé]m compra site|d[aá] pra ganhar dinheiro|alguem compra|funciona mesmo|manda [aá]udio|manda um [aá]udio|tem [aá]udio|[aá]udio de cliente|manda prova|tem depoimento|algu[eé]m j[aá] teve resultado|prova social)/i.test(lowerUser);
 
   if (isProofQuery) {
     const resp = resolveSpintax(`{Irmão|Parceiro}, escuta esse áudio de 10 segundos que um cliente nosso me mandou agorinha:[SEND_AUDIO_PROVA][SPLIT]Ele fechou em menos de 24 horas depois de pegar o acesso ao GhostMarket. É exatamente isso que acontece quando você oferece um site pronto pro comércio.\n\nQuer que eu te passe o link do Vitalício pra você começar hoje?`);
@@ -500,7 +649,33 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     return resp;
   }
 
-  // 4. DETECTOR AUTOMÁTICO DE HESITAÇÃO COM GATILHO DE RISCO ZERO (FEATURE 4)
+  // 4. DETECTOR DE OPT-OUT / DESINTERESSE (PARAR FOLLOW-UP AUTOMÁTICO)
+  const isOptOut = /(n[aã]o quero|n[aã]o vou querer|n[aã]o tenho interesse|sem interesse|deixa pra l[aá]|cancela|cancelar|n[aã]o precisa|desisti|para de mandar|tira meu n[uú]mero|n[aã]o me manda)/i.test(lowerUser);
+  if (isOptOut) {
+    awaitingEmailVerification.delete(jid);
+    const resp = resolveSpintax(`{Tranquilo irmão|Show parceiro|Sem problemas}, tá super de boa![SPLIT]Se em algum momento você quiser criar sites pra fazer uma renda extra ou atender os comércios aí da sua cidade, é só me dar um toque por aqui. Sucesso na caminhada!`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // 5. DETECTOR DE PAGAMENTO AGENDADO / SEGURAR VAGA (INTEGRAÇÃO COM AGENDA INTELIGENTE)
+  const promiseInfo = extractPromisedPaymentDate(userMessage);
+  if (promiseInfo?.hasPromise) {
+    awaitingEmailVerification.delete(jid);
+    const resp = resolveSpintax(`{Fechado irmão|Show de bola|Com certeza, parceiro}! Segurado com sucesso.[SPLIT]Já anotei aqui na minha agenda pra segurar a sua vaga no Plano Vitalício (com os 7 dias de garantia incondicional) até *${promiseInfo.formatted}*.\n\nNa data combinada eu te dou um toque por aqui logo de manhã com o seu link liberado. Tamo junto![PROMISE_DATE:${promiseInfo.isoDate}:${encodeURIComponent(promiseInfo.formatted)}]`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  const isScheduledPayment = /(vou pagar|pago dia|pago amanh[aã]|s[oó] dia|s[oó] amanh[aã]|semana que vem|m[eê]s que vem|quando receber|quinto dia [uú]til|fim do m[eê]s|quando virar|depois do dia|pago sexta|pago segunda|pago ter[çc]a|pago quarta|pago quinta|pago s[aá]bado|pago domingo|segur|reserv|guard)/i.test(lowerUser);
+  if (isScheduledPayment) {
+    awaitingEmailVerification.delete(jid);
+    const resp = resolveSpintax(`{Fechado irmão|Combinado parceiro|Perfeito}, tá anotado aqui![SPLIT]Assim que for o dia ou você receber me dá um toque aqui que eu libero a sua vaga no Vitalício com a garantia de 7 dias na hora pra você. Tamo junto!`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // 6. DETECTOR AUTOMÁTICO DE HESITAÇÃO COM GATILHO DE RISCO ZERO (FEATURE 4)
   const isHesitation = /(vou pensar|t[aá] meio apertado|t[aá] apertado|t[oô] sem grana|sem grana|sem dinheiro|grana curta|pouco dinheiro|depois eu vejo|depois vejo|mais pra frente|n[aã]o sei se consigo|n[aã]o sei se vendo|ser[aá] que consigo|com medo|t[aá] caro|t[aá] meio caro|salgado|preciso pensar|vou ver com|vou falar com|n[aã]o tenho dinheiro agora|t[oô] apertado)/i.test(lowerUser);
 
   if (isHesitation) {
@@ -509,14 +684,14 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     return resp;
   }
 
-  // 5. CUPOM DE DESCONTO RELÂMPAGO (R$ 10 OFF / VITALÍCIO R$ 39,99 COM CUPOM VIP10)
+  // 7. CUPOM DE DESCONTO RELÂMPAGO (R$ 10 OFF / VITALÍCIO R$ 39,99 COM CUPOM VIP10)
   if (lowerUser.includes('cupom') || lowerUser.includes('desconto') || lowerUser.includes('39') || (lowerUser.includes('quero') && lowerUser.includes('vitalicio') && history.some(h => h.content?.includes('cupom')))) {
     const resp = resolveSpintax(`{Consegui liberar o cupom pra você!|Fechou, liberei seu desconto exclusivo!}[SPLIT]Use o cupom *VIP10* ou acesse direto pelo link com os R$ 10 de desconto aplicados (sai por R$ 39,99 à vista no Vitalício):\n👉 ${LINK_VITALICIO_DESCONTO}\n\nSó coloca o seu *Gmail* certinho na hora de pagar na Cakto, que o acesso libera automático pra ele.`);
     history.push({ role: 'assistant', content: resp });
     return resp;
   }
 
-  // 6. ANTI-REEMBOLSO INTELIGENTE (IDEIA 17)
+  // 8. ANTI-REEMBOLSO INTELIGENTE (IDEIA 17)
   const isRefundQuery = /(quero cancelar|quero cancelamento|quero reembolso|reembolso|estorno|quero estorno|devolve meu dinheiro|devolver meu dinheiro|n[aã]o gostei|n[aã]o funcionou|n[aã]o consegui vender|n[aã]o consigo vender|cancela minha conta|cancelar assinatura)/i.test(lowerUser);
 
   if (isRefundQuery) {
@@ -525,8 +700,11 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     return resp;
   }
 
-  // 7. PROGRAMA DE AFILIADOS CAKTO / CASHBACK DO DONO (IDEIA 11)
-  const isAffiliateQuery = /(afiliado|afilia[çc][ãa]o|parceiro|indica[çc][ãa]o|indicar|comiss[aã]o|revenda|revender|recuperar o dinheiro|recuperar o valor)/i.test(lowerUser);
+  // 9. PROGRAMA DE AFILIADOS CAKTO / CASHBACK DO DONO (IDEIA 11) - APENAS INTENÇÃO REAL DE AFILIADO
+  const isAffiliateQuery = !foundEmail && !isPostPurchaseInquiry && (
+    /(como me afilio|quero me afiliar|programa de afiliad|programa de parceiro|ser afiliad|link de afiliad|link de parceiro|ganhar comiss[aã]o|revender o ghostmarket|vender como afiliad|quero afiliar|me afiliar|indicar pra ganhar|como funciona a afilia)/i.test(lowerUser) ||
+    (/(afiliad|afilia[çc][ãa]o|comiss[aã]o)/i.test(lowerUser) && /(como|onde|link|quero|posso|tem|funciona)/i.test(lowerUser))
+  );
 
   if (isAffiliateQuery) {
     const resp = resolveSpintax(`{Irmão|Parceiro}, sabia que tem como você recuperar o valor da ferramenta hoje mesmo sem nem precisar criar site?[SPLIT]A gente tem o programa oficial de parceiros da Ghost AI na Cakto. Se você indicar o Vitalício para apenas 2 amigos, você ganha 50% de comissão por venda (R$ 50 no seu bolso) e a ferramenta já se pagou 100% no mesmo dia!\n\nPra se afiliar e pegar seu link exclusivo de comissão na Cakto é só entrar aqui:\n👉 https://ghostmarket-ai.vercel.app/parceiros`);
@@ -542,8 +720,14 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     })
     .join('\n');
 
+  const continuityWarning = isOngoingConversation
+    ? "\n\n⚠️ REGRA CRÍTICA DE CONTINUIDADE: ESTA CONVERSA JÁ ESTÁ EM ANDAMENTO! O cliente NÃO está chegando agora. É EXPRESSAMENTE PROIBIDO dizer 'Fala irmão, beleza?', 'Aqui é o Willian do GhostMarket' ou fazer a pergunta do Passo 1 ('Você já cria sites ou tá começando do zero?'). Responda DIRETAMENTE ao que ele perguntou ou falou agora!"
+    : "";
+
+  const systemWithContinuity = SYSTEM_PROMPT + continuityWarning;
+
   const mergedPrompt = `[INSTRUÇÕES DO SISTEMA:
-${SYSTEM_PROMPT}
+${systemWithContinuity}
 FIM DAS INSTRUÇÕES]
 
 Histórico da conversa no WhatsApp:
@@ -565,7 +749,7 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
           body: JSON.stringify({
             model: groqModel,
             messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'system', content: systemWithContinuity },
               ...history.map(m => ({ role: m.role, content: m.content }))
             ],
             temperature: 0.65,
@@ -595,7 +779,7 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          systemInstruction: { parts: [{ text: systemWithContinuity }] },
           contents: history.map(m => ({
             role: m.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: m.content }]
@@ -650,6 +834,11 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
 
     // Cumprimento simples (oi, olá, boa tarde...)
     if (/^(oi|opa|ola|olá|bom dia|boa tarde|boa noite|fala|eai|e ai|salve)[\s!.]*$/i.test(lower)) {
+      if (isOngoingConversation) {
+        const resp = resolveSpintax("{Opa!|Fala!|Tô por aqui!} {Me diz|Diz aí}, como posso te ajudar?");
+        history.push({ role: 'assistant', content: resp });
+        return resp;
+      }
       const resp = resolveSpintax("{Fala irmão, beleza?|Opa, tudo bem?|Fala parceiro, tranquilo?} Como posso te ajudar hoje?");
       history.push({ role: 'assistant', content: resp });
       return resp;
@@ -705,6 +894,12 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
       return resp;
     }
 
+    if (isOngoingConversation) {
+      const ongoingDefault = resolveSpintax(`{Com certeza|Entendi perfeitamente|Boa pergunta}.[SPLIT]Você quer focar em ver como criar os sites com a IA ou prefere que eu te passe o link do plano pra já garantir o acesso com os 7 dias de garantia?`);
+      history.push({ role: 'assistant', content: ongoingDefault });
+      return ongoingDefault;
+    }
+
     const defaultResp = resolveSpintax("{Fala irmão!|Opa, tudo bem?|Fala parceiro!} Aqui é o Willian do GhostMarket AI.[SPLIT]O GhostMarket cria sites profissionais completos em 60 segundos com IA e acha empresas sem site no Google Maps pra você vender de R$ 300 a R$ 800 cada.\n\nVocê já cria sites ou tá querendo começar do zero?");
     history.push({ role: 'assistant', content: defaultResp });
     return defaultResp;
@@ -713,6 +908,9 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
 
 // Gera mensagens de Follow-up Automático com Spintax Dinâmico Anti-Ban
 export function buildFollowUpMessage(lead, stage) {
+  if (!lead || lead.converted || lead.stoppedFollowUp) {
+    return null;
+  }
   const firstName = (lead.senderName || 'parceiro').split(' ')[0];
 
   if (stage === 1) {
@@ -886,4 +1084,13 @@ export async function extractTextFromImage(imageBuffer) {
     console.warn('[OCR Space] Falha na leitura visual da imagem:', err.message);
   }
   return '';
+}
+
+// -------------------------------------------------------------
+// CONSTRUTOR DE MENSAGEM DE FECHAMENTO DE PROMESSA AGENDADA
+// -------------------------------------------------------------
+export function buildPromisedClosingMessage(senderName = '', offer = 'vitalicio') {
+  const firstName = senderName ? senderName.split(' ')[0] : 'Irmão';
+  const checkoutLink = offer === 'desconto' ? LINK_VITALICIO_DESCONTO : LINK_VITALICIO;
+  return resolveSpintax(`{Fala ${firstName}, bom dia!|Eai ${firstName}, tudo certo?|Fala ${firstName}, beleza?}[SPLIT]Passando como a gente combinou pra te liberar a sua vaga no Plano Vitalício com os 7 dias de garantia incondicional.\n\n👉 Acesse por aqui pra ativar seu acesso:\n${checkoutLink}\n\nAssim que você concluir me avisa aqui pra eu liberar o onboarding direto com você! Tamo junto.`);
 }

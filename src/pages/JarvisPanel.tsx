@@ -21,7 +21,12 @@ import {
   PieChart,
   Pause,
   Play,
-  X
+  X,
+  Calendar,
+  Send,
+  Trash2,
+  Plus,
+  CalendarCheck
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -29,11 +34,24 @@ export const JarvisPanel: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'whatsapp' | 'trials' | 'quiz' | 'sales' | 'logs'>('whatsapp');
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'schedule' | 'trials' | 'quiz' | 'sales' | 'logs'>('whatsapp');
   
   // Filtros WhatsApp
   const [leadSearch, setLeadSearch] = useState('');
   const [stageFilter, setStageFilter] = useState<'all' | '0' | '1' | '2' | '3' | 'converted' | 'paused'>('all');
+
+  // Agenda & Promessas de Pagamento
+  const [scheduleFilter, setScheduleFilter] = useState<'all' | 'today' | 'week' | 'pending' | 'reminded' | 'converted'>('all');
+  const [scheduleSearch, setScheduleSearch] = useState('');
+  const [showManualPromiseModal, setShowManualPromiseModal] = useState(false);
+  const [manualPromisePhone, setManualPromisePhone] = useState('');
+  const [manualPromiseName, setManualPromiseName] = useState('');
+  const [manualPromiseDate, setManualPromiseDate] = useState('');
+  const [manualPromiseOffer, setManualPromiseOffer] = useState<'vitalicio' | 'desconto'>('vitalicio');
+  const [manualPromiseMessage, setManualPromiseMessage] = useState('');
+  const [submittingPromise, setSubmittingPromise] = useState(false);
+  const [triggeringPromiseId, setTriggeringPromiseId] = useState<string | null>(null);
+  const [updatingPromiseId, setUpdatingPromiseId] = useState<string | null>(null);
 
   // Intervenção Humana / Controle de Pausa da IA
   const [pausePhoneInput, setPausePhoneInput] = useState('');
@@ -176,6 +194,39 @@ export const JarvisPanel: React.FC = () => {
     const clean = phone.replace(/\D/g, '');
     if (!clean) return;
     setPausingPhone(clean);
+
+    // Atualização otimista imediata para o botão responder no mesmo milissegundo
+    setData((prev: any) => {
+      if (!prev) return prev;
+      const current = { ...(prev.pausedChats?.items || {}) };
+      if (action === 'pause') {
+        current[clean] = { phone: clean, paused: true, reason: reason || 'Manual via Painel' };
+        if (clean.startsWith('55') && clean.length === 13) {
+          const w12 = clean.slice(0, 4) + clean.slice(5);
+          current[w12] = { phone: w12, paused: true, reason: reason || 'Manual via Painel' };
+        } else if (clean.startsWith('55') && clean.length === 12) {
+          const w13 = clean.slice(0, 4) + '9' + clean.slice(4);
+          current[w13] = { phone: w13, paused: true, reason: reason || 'Manual via Painel' };
+        }
+      } else {
+        delete current[clean];
+        if (clean.length >= 8) {
+          const suffix = clean.slice(-8);
+          for (const k of Object.keys(current)) {
+            if (k.endsWith(suffix)) delete current[k];
+          }
+        }
+      }
+      return {
+        ...prev,
+        pausedChats: {
+          ...prev.pausedChats,
+          items: current,
+          total: Object.keys(current).length
+        }
+      };
+    });
+
     try {
       const res = await fetch('/api/pause-chat', {
         method: 'POST',
@@ -194,14 +245,156 @@ export const JarvisPanel: React.FC = () => {
         fetchData();
       } else {
         alert(resData.error || 'Erro ao alterar pausa da IA');
+        fetchData();
       }
     } catch (err: any) {
       alert(`Erro: ${err.message}`);
+      fetchData();
     } finally {
       setPausingPhone(null);
       setTimeout(() => setFeedbackMsg(null), 4000);
     }
   };
+
+  // Agenda & Promessas de Fechamento
+  const handleCreateManualPromise = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPhone = manualPromisePhone.replace(/\D/g, '');
+    if (!cleanPhone || !manualPromiseDate) {
+      alert('Telefone e Data são obrigatórios!');
+      return;
+    }
+    setSubmittingPromise(true);
+    try {
+      const res = await fetch('/api/schedule-promise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          phone: cleanPhone,
+          senderName: manualPromiseName || 'Lead Agendado',
+          isoDate: manualPromiseDate,
+          offer: manualPromiseOffer,
+          leadMessage: manualPromiseMessage || 'Agendado manualmente via Mega Painel'
+        })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setFeedbackMsg(`Promessa para ${manualPromiseDate} agendada com sucesso!`);
+        setShowManualPromiseModal(false);
+        setManualPromisePhone('');
+        setManualPromiseName('');
+        setManualPromiseMessage('');
+        fetchData();
+      } else {
+        alert(resData.error || 'Erro ao agendar promessa');
+      }
+    } catch (err: any) {
+      alert(`Falha: ${err.message}`);
+    } finally {
+      setSubmittingPromise(false);
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    }
+  };
+
+  const handleTriggerPromise = async (id: string) => {
+    if (!confirm('Deseja disparar o lembrete de fechamento agora no WhatsApp pelo Jarvis?')) return;
+    setTriggeringPromiseId(id);
+    try {
+      const res = await fetch('/api/schedule-promise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'trigger_now', id })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setFeedbackMsg('Lembrete matinal enviado agora pelo Jarvis!');
+        fetchData();
+      } else {
+        alert(resData.error || 'Erro ao disparar lembrete');
+      }
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`);
+    } finally {
+      setTriggeringPromiseId(null);
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    }
+  };
+
+  const handleUpdatePromiseStatus = async (id: string, status: 'pending' | 'reminded' | 'converted' | 'cancelled') => {
+    setUpdatingPromiseId(id);
+    try {
+      const res = await fetch('/api/schedule-promise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_status', id, status })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setFeedbackMsg(`Status atualizado para: ${status === 'converted' ? 'Pago / Fechado' : status}`);
+        fetchData();
+      }
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`);
+    } finally {
+      setUpdatingPromiseId(null);
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    }
+  };
+
+  const handleDeletePromise = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
+    try {
+      const res = await fetch('/api/schedule-promise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setFeedbackMsg('Agendamento excluído!');
+        fetchData();
+      }
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`);
+    } finally {
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    }
+  };
+
+  // Processamento e métricas de Promessas Agendadas
+  const todayIso = new Date().toISOString().split('T')[0];
+  const todayFormatted = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date());
+
+  const rawPromises = data?.promises?.items || [];
+  const promisesArray: any[] = Array.isArray(rawPromises) ? rawPromises : Object.values(rawPromises);
+
+  const next7DaysIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const todayPromises = promisesArray.filter((p: any) => p.isoDate === todayIso);
+  const weekPromises = promisesArray.filter((p: any) => p.isoDate >= todayIso && p.isoDate <= next7DaysIso);
+  const convertedPromises = promisesArray.filter((p: any) => p.status === 'converted');
+  const pendingPromisesCount = promisesArray.filter((p: any) => p.status === 'pending').length;
+
+  const expectedRevenue = promisesArray
+    .filter((p: any) => p.status !== 'cancelled' && p.status !== 'converted')
+    .reduce((acc: number, p: any) => acc + (p.offer === 'desconto' ? 39.99 : 49.99), 0);
+
+  const filteredPromises = promisesArray.filter((p: any) => {
+    const cleanPhone = (p.phone || '').replace(/\D/g, '');
+    const nameMatch = (p.senderName || '').toLowerCase().includes(scheduleSearch.toLowerCase());
+    const phoneMatch = cleanPhone.includes(scheduleSearch.replace(/\D/g, ''));
+    const messageMatch = (p.leadMessage || '').toLowerCase().includes(scheduleSearch.toLowerCase());
+    const matchesSearch = !scheduleSearch || nameMatch || phoneMatch || messageMatch;
+
+    if (!matchesSearch) return false;
+
+    if (scheduleFilter === 'today') return p.isoDate === todayIso;
+    if (scheduleFilter === 'week') return p.isoDate >= todayIso && p.isoDate <= next7DaysIso;
+    if (scheduleFilter === 'pending') return p.status === 'pending';
+    if (scheduleFilter === 'reminded') return p.status === 'reminded';
+    if (scheduleFilter === 'converted') return p.status === 'converted';
+    return true;
+  });
 
   // Processamento e filtros de leads do WhatsApp
   const rawLeads = data?.whatsappLeads?.items || {};
@@ -211,9 +404,39 @@ export const JarvisPanel: React.FC = () => {
   const isPhonePaused = (phoneOrJid: string) => {
     if (!phoneOrJid) return false;
     const clean = phoneOrJid.replace(/\D/g, '');
+    if (!clean && !phoneOrJid) return false;
+
+    // Checagem direta por chave exata ou com 55
+    if (pausedChatsMap[phoneOrJid]) return true;
     if (clean && (pausedChatsMap[clean] || pausedChatsMap[`55${clean}`])) return true;
     if (clean.startsWith('55') && pausedChatsMap[clean.slice(2)]) return true;
-    if (pausedChatsMap[phoneOrJid]) return true;
+
+    // Comparação de 12 vs 13 dígitos no Brasil (com e sem o 9º dígito)
+    let ddd = '';
+    let rest = '';
+    if (clean.startsWith('55') && (clean.length === 12 || clean.length === 13)) {
+      ddd = clean.slice(2, 4);
+      rest = clean.slice(4);
+    } else if (!clean.startsWith('55') && (clean.length === 10 || clean.length === 11)) {
+      ddd = clean.slice(0, 2);
+      rest = clean.slice(2);
+    }
+
+    if (ddd && rest) {
+      const with9 = rest.length === 9 ? rest : ('9' + rest);
+      const without9 = rest.length === 9 ? rest.slice(1) : rest;
+      if (pausedChatsMap[`55${ddd}${with9}`] || pausedChatsMap[`55${ddd}${without9}`]) return true;
+      if (pausedChatsMap[`${ddd}${with9}`] || pausedChatsMap[`${ddd}${without9}`]) return true;
+    }
+
+    // Comparação pelos últimos 8 dígitos (únicos no DDD)
+    if (clean.length >= 8) {
+      const suffix = clean.slice(-8);
+      for (const k of Object.keys(pausedChatsMap)) {
+        if (k.endsWith(suffix)) return true;
+      }
+    }
+
     return false;
   };
 
@@ -423,6 +646,7 @@ export const JarvisPanel: React.FC = () => {
       <div className="flex flex-wrap items-center gap-2 border-b border-purple-900/40 pb-3">
         {[
           { id: 'whatsapp', label: 'Atendimentos WhatsApp (CRM)', icon: MessageSquare, count: leadsArray.length },
+          { id: 'schedule', label: 'Agenda & Promessas', icon: Calendar, count: pendingPromisesCount },
           { id: 'trials', label: 'Testes de 5 Minutos (Trial)', icon: Clock, count: data?.trials?.totalGenerated || 0 },
           { id: 'quiz', label: 'Funil do Quiz & Abordagens', icon: PieChart, count: data?.quiz?.totalCompletedWithPhone || 0 },
           { id: 'sales', label: 'Recuperação Cakto & Vendas', icon: DollarSign, count: data?.finance?.totalTransactions || 0 },
@@ -718,6 +942,278 @@ export const JarvisPanel: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* ABA: AGENDA & PROMESSAS DE FECHAMENTO (JARVIS SCHEDULER) */}
+        {/* ============================================================ */}
+        {activeTab === 'schedule' && (
+          <div className="space-y-6">
+            {/* Header & Ação Manual */}
+            <div className="bg-[#120e1d] border border-amber-900/40 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                    <Calendar className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-bold text-white">Agenda & Promessas de Fechamento</h2>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {promisesArray.length} {promisesArray.length === 1 ? 'Agendamento' : 'Agendamentos'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-purple-300/70 mt-0.5">
+                      Clientes que pediram para segurar vaga ou prometeram pagar em data específica. O Jarvis notifica você na hora e dispara o fechamento matinal automático com 7 dias de garantia.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowManualPromiseModal(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Agendar Promessa Manual</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Cards de Métricas da Agenda */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+                <div className="bg-black/30 border border-amber-900/30 rounded-xl p-3.5">
+                  <span className="text-[11px] font-bold text-amber-300/70 uppercase tracking-wider block mb-1">
+                    📅 Para Hoje ({todayFormatted})
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-amber-400">{todayPromises.length}</span>
+                    <span className="text-xs text-purple-300/60 font-medium">
+                      ({todayPromises.filter(p => p.status === 'reminded').length} lembrados)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-black/30 border border-purple-900/30 rounded-xl p-3.5">
+                  <span className="text-[11px] font-bold text-purple-300/70 uppercase tracking-wider block mb-1">
+                    🗓️ Próximos 7 Dias
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-white">{weekPromises.length}</span>
+                    <span className="text-xs text-purple-300/60 font-medium">fechamentos</span>
+                  </div>
+                </div>
+
+                <div className="bg-black/30 border border-emerald-900/30 rounded-xl p-3.5">
+                  <span className="text-[11px] font-bold text-emerald-400/80 uppercase tracking-wider block mb-1">
+                    💰 Faturamento Previsto
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-emerald-400">
+                      R$ {expectedRevenue.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-black/30 border border-blue-900/30 rounded-xl p-3.5">
+                  <span className="text-[11px] font-bold text-blue-400/80 uppercase tracking-wider block mb-1">
+                    ✅ Convertidos / Pagos
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-blue-400">{convertedPromises.length}</span>
+                    <span className="text-xs text-purple-300/60 font-medium">vendas ganhas</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filtros e Barra de Pesquisa */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#120e1d] border border-purple-900/30 rounded-2xl p-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                {[
+                  { id: 'all', label: 'Todos', count: promisesArray.length },
+                  { id: 'today', label: 'Hoje', count: todayPromises.length },
+                  { id: 'week', label: 'Esta Semana', count: weekPromises.length },
+                  { id: 'pending', label: 'Aguardando', count: promisesArray.filter(p => p.status === 'pending').length },
+                  { id: 'reminded', label: 'Lembrados', count: promisesArray.filter(p => p.status === 'reminded').length },
+                  { id: 'converted', label: 'Pagos / Fechados', count: convertedPromises.length }
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setScheduleFilter(f.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                      scheduleFilter === f.id
+                        ? 'bg-amber-500 text-black shadow-md shadow-amber-900/30'
+                        : 'bg-black/40 text-purple-300/70 hover:text-white border border-purple-900/30'
+                    }`}
+                  >
+                    {f.label} ({f.count})
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 text-purple-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Buscar cliente ou telefone..."
+                  value={scheduleSearch}
+                  onChange={e => setScheduleSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-black/40 border border-purple-900/40 rounded-xl text-xs text-white placeholder-purple-400/40 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* Lista de Promessas Agendadas */}
+            {filteredPromises.length === 0 ? (
+              <div className="bg-[#120e1d] border border-purple-900/30 rounded-2xl p-12 text-center">
+                <CalendarCheck className="w-12 h-12 text-purple-500/40 mx-auto mb-3" />
+                <p className="text-sm font-bold text-white">Nenhum agendamento encontrado</p>
+                <p className="text-xs text-purple-300/60 max-w-md mx-auto mt-1">
+                  Quando um lead disser "segura até terça", "pago amanhã" ou você cadastrar manualmente, a promessa aparecerá aqui e o Jarvis cuidará do fechamento automático.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredPromises.map((p: any) => {
+                  const isToday = p.isoDate === todayIso;
+                  const isPast = p.isoDate < todayIso;
+                  const isConverted = p.status === 'converted';
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`bg-[#120e1d] border rounded-2xl p-5 shadow-xl transition-all relative flex flex-col justify-between ${
+                        isConverted
+                          ? 'border-emerald-500/40 bg-emerald-950/10'
+                          : isToday
+                          ? 'border-amber-500/60 bg-amber-950/15 ring-1 ring-amber-500/30'
+                          : isPast
+                          ? 'border-purple-900/30 opacity-80'
+                          : 'border-purple-900/40 hover:border-purple-700/60'
+                      }`}
+                    >
+                      <div>
+                        {/* Top: Nome, Data e Badges */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-white text-sm sm:text-base">{p.senderName || 'Lead Interessado'}</span>
+                              {isToday && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black animate-pulse">
+                                  HOJE
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-purple-300/70 font-mono">+{p.phone}</span>
+                          </div>
+
+                          {/* Data Badge */}
+                          <div className="text-right">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold ${
+                              isConverted
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : isToday
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-black'
+                                : 'bg-purple-900/30 text-purple-300 border border-purple-900/40'
+                            }`}>
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>{p.formatted || p.isoDate}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Mensagem do Lead */}
+                        <div className="bg-black/40 border border-purple-900/30 rounded-xl p-3 mb-4">
+                          <span className="text-[10px] font-bold text-purple-400/80 uppercase tracking-wider block mb-1">
+                            💬 Mensagem do Cliente
+                          </span>
+                          <p className="text-xs text-purple-200/90 italic leading-relaxed">
+                            "{p.leadMessage || 'Cliente pediu para segurar vaga ou agendou pagamento'}"
+                          </p>
+                        </div>
+
+                        {/* Badges de Status & Oferta */}
+                        <div className="flex flex-wrap items-center gap-2 mb-4 text-xs">
+                          <span className="px-2.5 py-1 rounded-lg font-bold bg-purple-950/60 text-purple-300 border border-purple-900/40">
+                            {p.offer === 'desconto' ? '🏷️ Vitalício R$ 39,99 (Cupom)' : '💎 Vitalício R$ 49,99'}
+                          </span>
+
+                          {p.status === 'pending' && (
+                            <span className="px-2.5 py-1 rounded-lg font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              ⏳ Aguardando Data
+                            </span>
+                          )}
+                          {p.status === 'reminded' && (
+                            <span className="px-2.5 py-1 rounded-lg font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                              📨 Lembrete Enviado ({new Date(p.remindedAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
+                            </span>
+                          )}
+                          {p.status === 'converted' && (
+                            <span className="px-2.5 py-1 rounded-lg font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              ✅ Pago & Confirmado
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Botões de Ação */}
+                      <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-purple-900/30">
+                        {p.status !== 'converted' && (
+                          <button
+                            onClick={() => handleTriggerPromise(p.id)}
+                            disabled={triggeringPromiseId === p.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition-all cursor-pointer shadow-md disabled:opacity-50"
+                            title="Dispara o lembrete de fechamento com o link e 7 dias de garantia agora no WhatsApp"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>{triggeringPromiseId === p.id ? 'Disparando...' : 'Disparar Lembrete Agora'}</span>
+                          </button>
+                        )}
+
+                        {p.status !== 'converted' ? (
+                          <button
+                            onClick={() => handleUpdatePromiseStatus(p.id, 'converted')}
+                            disabled={updatingPromiseId === p.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all cursor-pointer shadow-md disabled:opacity-50"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Marcar como Pago</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleUpdatePromiseStatus(p.id, 'pending')}
+                            disabled={updatingPromiseId === p.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-900/40 hover:bg-purple-900/60 text-purple-300 transition-all cursor-pointer"
+                          >
+                            <span>Reabrir Promessa</span>
+                          </button>
+                        )}
+
+                        <a
+                          href={`https://wa.me/${p.phone}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1a1429] hover:bg-[#251d3b] text-purple-300 hover:text-white border border-purple-900/40 transition-all cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Abrir WhatsApp</span>
+                        </a>
+
+                        <button
+                          onClick={() => handleDeletePromise(p.id)}
+                          className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded-xl transition-all ml-auto cursor-pointer"
+                          title="Excluir este agendamento"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -1084,6 +1580,106 @@ export const JarvisPanel: React.FC = () => {
         )}
 
       </div>
+
+      {/* MODAL DE AGENDAMENTO MANUAL DE PROMESSA */}
+      {showManualPromiseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#120e1d] border border-amber-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowManualPromiseModal(false)}
+              className="absolute top-4 right-4 text-purple-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-amber-500/20 text-amber-400 rounded-xl">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Nova Promessa de Fechamento</h3>
+                <p className="text-xs text-purple-300/70">O Jarvis assumirá o disparo automático na data combinada</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateManualPromise} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-purple-300/80 mb-1">Telefone WhatsApp</label>
+                <input
+                  type="text"
+                  placeholder="Ex: 5584999999999 ou 84999999999"
+                  value={manualPromisePhone}
+                  onChange={e => setManualPromisePhone(e.target.value)}
+                  className="w-full px-3 py-2 bg-black/40 border border-purple-900/40 rounded-xl text-sm text-white placeholder-purple-400/30 focus:outline-none focus:border-amber-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-purple-300/80 mb-1">Nome do Cliente</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Carlos Silva"
+                  value={manualPromiseName}
+                  onChange={e => setManualPromiseName(e.target.value)}
+                  className="w-full px-3 py-2 bg-black/40 border border-purple-900/40 rounded-xl text-sm text-white placeholder-purple-400/30 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-purple-300/80 mb-1">Data Prometida</label>
+                <input
+                  type="date"
+                  value={manualPromiseDate}
+                  onChange={e => setManualPromiseDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-black/40 border border-purple-900/40 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-purple-300/80 mb-1">Oferta / Plano</label>
+                <select
+                  value={manualPromiseOffer}
+                  onChange={e => setManualPromiseOffer(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-black/40 border border-purple-900/40 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                >
+                  <option value="vitalicio">Plano Vitalício (R$ 49,99)</option>
+                  <option value="desconto">Plano Vitalício com Cupom VIP10 (R$ 39,99)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-purple-300/80 mb-1">O que o cliente disse / Observação</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Pediu pra segurar até terça feira que recebe"
+                  value={manualPromiseMessage}
+                  onChange={e => setManualPromiseMessage(e.target.value)}
+                  className="w-full px-3 py-2 bg-black/40 border border-purple-900/40 rounded-xl text-sm text-white placeholder-purple-400/30 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowManualPromiseModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-purple-300 hover:text-white cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingPromise}
+                  className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/30 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {submittingPromise ? 'Salvando...' : 'Salvar Promessa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

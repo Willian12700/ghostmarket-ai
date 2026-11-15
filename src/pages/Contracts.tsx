@@ -14,7 +14,8 @@ import {
   TrendingUp,
   DollarSign,
   Users,
-  CheckCircle2
+  CheckCircle2,
+  Clock
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -109,6 +110,7 @@ function DraggableCard({
     opacity: isDragging ? 0.4 : 1
   }
 
+  const navigate = useNavigate()
   const cleanPhone = (card.phone || '').replace(/\D/g, '')
 
   const handleWhatsApp = () => {
@@ -188,6 +190,17 @@ function DraggableCard({
             <FileText className="w-3 h-3" />
             <span>PDF</span>
           </button>
+          {card.status === 'Fechado' && (
+            <button
+              type="button"
+              onClick={() => navigate('/mensalidades')}
+              title="Gerenciar Mensalidades & Cobrança IA deste cliente"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 text-[10px] font-semibold transition-colors cursor-pointer"
+            >
+              <Clock className="w-3 h-3" />
+              <span>Mensalidade</span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1">

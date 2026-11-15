@@ -24,7 +24,9 @@ import {
   resolveSpintax,
   transcribeAudioWithWhisper,
   extractTextFromImage,
-  verifyCustomerPurchase
+  verifyCustomerPurchase,
+  extractPromisedPaymentDate,
+  buildPromisedClosingMessage
 } from './brain.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +38,24 @@ const LOCK_FILE = path.join(__dirname, 'agent.pid');
 const FOLLOWUP_FILE = path.join(__dirname, 'leads_followup.json');
 const CAKTO_QUEUE_FILE = path.join(__dirname, 'cakto_queue.json');
 const PAUSED_CHATS_FILE = path.join(__dirname, 'paused_chats.json');
+const SCHEDULED_PROMISES_FILE = path.join(__dirname, 'scheduled_promises.json');
+
+// Prova Social em Áudio gerada com ElevenLabs
+let AUDIO_PROVA_BASE64 = null;
+try {
+  const audioMod = await import('./audio_data.js');
+  AUDIO_PROVA_BASE64 = audioMod.AUDIO_PROVA_BASE64;
+} catch (_) {}
+
+const audioProvaPath = path.join(__dirname, 'audio_prova_social.mp3');
+if (!fs.existsSync(audioProvaPath) && AUDIO_PROVA_BASE64) {
+  try {
+    fs.writeFileSync(audioProvaPath, Buffer.from(AUDIO_PROVA_BASE64, 'base64'));
+    console.log('✅ [Áudio Prova] Arquivo audio_prova_social.mp3 gerado a partir do audio_data.js!');
+  } catch (e) {
+    console.error('Erro ao escrever audio_prova_social.mp3:', e.message);
+  }
+}
 
 // Tempos de Follow-up Automático
 const FOLLOWUP_STAGE1_MS = 25 * 60 * 1000;       // 25 minutos
@@ -64,7 +84,7 @@ function saveFollowUps(data) {
 let leadsFollowUp = loadFollowUps();
 
 // Gestão de Chats Pausados (Intervenção Humana / Takeover Manual)
-function loadPausedChats() {
+export function loadPausedChats() {
   try {
     if (fs.existsSync(PAUSED_CHATS_FILE)) {
       return JSON.parse(fs.readFileSync(PAUSED_CHATS_FILE, 'utf-8'));
@@ -75,7 +95,7 @@ function loadPausedChats() {
   return {};
 }
 
-function savePausedChats(data) {
+export function savePausedChats(data) {
   try {
     fs.writeFileSync(PAUSED_CHATS_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (e) {
@@ -83,32 +103,199 @@ function savePausedChats(data) {
   }
 }
 
-let pausedChatsCache = loadPausedChats();
+// Gestão de Promessas de Pagamento & Agenda Inteligente
+export function loadPromises() {
+  try {
+    if (fs.existsSync(SCHEDULED_PROMISES_FILE)) {
+      return JSON.parse(fs.readFileSync(SCHEDULED_PROMISES_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Erro ao ler scheduled_promises.json:', e.message);
+  }
+  return {};
+}
 
+export function savePromises(data) {
+  try {
+    fs.writeFileSync(SCHEDULED_PROMISES_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Erro ao salvar scheduled_promises.json:', e.message);
+  }
+}
+
+async function syncPromiseToFirestore(promise) {
+  try {
+    if (!promise || !promise.id) return;
+    const authRes = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDafvRbIgwriRgCis2sAmJeJ80RHmn30LA', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ returnSecureToken: true })
+    });
+    const authData = await authRes.json();
+    const idToken = authData.idToken;
+    if (!idToken) return;
+
+    const docFields = {
+      fields: {
+        id: { stringValue: promise.id },
+        phone: { stringValue: promise.phone || '' },
+        jid: { stringValue: promise.jid || '' },
+        senderName: { stringValue: promise.senderName || '' },
+        isoDate: { stringValue: promise.isoDate || '' },
+        formatted: { stringValue: promise.formatted || '' },
+        leadMessage: { stringValue: promise.leadMessage || '' },
+        status: { stringValue: promise.status || 'pending' },
+        offer: { stringValue: promise.offer || 'vitalicio' },
+        createdAt: { integerValue: String(promise.createdAt || Date.now()) }
+      }
+    };
+    if (promise.remindedAt) docFields.fields.remindedAt = { integerValue: String(promise.remindedAt) };
+    if (promise.convertedAt) docFields.fields.convertedAt = { integerValue: String(promise.convertedAt) };
+
+    await fetch(`https://firestore.googleapis.com/v1/projects/ghostmarket-ai-2cc26/databases/(default)/documents/scheduled_promises/${promise.id}`, {
+      method: 'PATCH',
+      headers: { 
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(docFields)
+    });
+  } catch (err) {
+    console.warn('Erro ao sincronizar promessa com Firestore:', err.message);
+  }
+}
+
+// Retorna todas as variações possíveis de um número de WhatsApp brasileiro (12 e 13 dígitos, com/sem 55, JID e últimos 8 dígitos)
+export function getPhoneVariants(rawPhoneOrJid) {
+  if (!rawPhoneOrJid) return [];
+  const str = String(rawPhoneOrJid).trim();
+  const digits = str.replace(/\D/g, '');
+  const variants = new Set();
+
+  if (str) variants.add(str.toLowerCase());
+  if (digits) {
+    variants.add(digits);
+    variants.add(`${digits}@s.whatsapp.net`);
+  }
+
+  let ddd = '';
+  let rest = '';
+
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    ddd = digits.slice(2, 4);
+    rest = digits.slice(4);
+  } else if (!digits.startsWith('55') && (digits.length === 10 || digits.length === 11)) {
+    ddd = digits.slice(0, 2);
+    rest = digits.slice(2);
+  }
+
+  if (ddd && rest) {
+    const with9 = rest.length === 9 ? rest : ('9' + rest);
+    const without9 = rest.length === 9 ? rest.slice(1) : rest;
+
+    variants.add(`55${ddd}${with9}`);
+    variants.add(`55${ddd}${without9}`);
+    variants.add(`${ddd}${with9}`);
+    variants.add(`${ddd}${without9}`);
+    variants.add(`55${ddd}${with9}@s.whatsapp.net`);
+    variants.add(`55${ddd}${without9}@s.whatsapp.net`);
+  }
+
+  if (digits.length >= 8) {
+    variants.add(digits.slice(-8));
+  }
+
+  return Array.from(variants);
+}
+
+// Identifica se um chat está pausado recarregando o disco em tempo real e checando todas as variações
 export function isChatPaused(phone, jid) {
-  const clean = formatBrazilWhatsAppPhone(phone) || (phone ? String(phone).replace(/\D/g, '') : null);
-  if (clean && pausedChatsCache[clean]) return true;
-  if (jid && pausedChatsCache[jid]) return true;
+  const paused = loadPausedChats();
+  const pausedKeys = Object.keys(paused);
+  if (pausedKeys.length === 0) return false;
+
+  const checkVariants = [
+    ...getPhoneVariants(phone),
+    ...getPhoneVariants(jid)
+  ];
+
+  for (const v of checkVariants) {
+    if (!v) continue;
+    if (paused[v] && paused[v].paused !== false) {
+      return true;
+    }
+  }
+
+  for (const pausedKey of pausedKeys) {
+    const pData = paused[pausedKey];
+    if (pData && pData.paused === false) continue;
+    const pVariants = getPhoneVariants(pausedKey);
+    for (const pv of pVariants) {
+      if (checkVariants.includes(pv)) {
+        return true;
+      }
+    }
+    // Comparação por DDD + 8 últimos dígitos
+    const cleanP = pausedKey.replace(/\D/g, '');
+    const cleanCheck = (phone || jid || '').replace(/\D/g, '');
+    if (cleanP.length >= 8 && cleanCheck.length >= 8 && cleanP.slice(-8) === cleanCheck.slice(-8)) {
+      return true;
+    }
+  }
+
   return false;
 }
 
 export function setChatPaused(phoneOrJid, paused = true, reason = 'Atendimento Manual') {
-  const clean = formatBrazilWhatsAppPhone(phoneOrJid) || String(phoneOrJid).replace(/\D/g, '');
-  const key = clean || phoneOrJid;
+  const pausedChats = loadPausedChats();
+  const variants = getPhoneVariants(phoneOrJid);
+
   if (paused) {
-    pausedChatsCache[key] = {
-      phone: key,
+    const entry = {
+      phone: String(phoneOrJid),
       paused: true,
       pausedAt: Date.now(),
       reason
     };
+    for (const v of variants) {
+      pausedChats[v] = entry;
+    }
   } else {
-    delete pausedChatsCache[key];
-    if (clean) delete pausedChatsCache[clean];
-    if (phoneOrJid) delete pausedChatsCache[phoneOrJid];
+    for (const v of variants) {
+      delete pausedChats[v];
+    }
+    const clean = String(phoneOrJid).replace(/\D/g, '');
+    if (clean.length >= 8) {
+      const suffix = clean.slice(-8);
+      for (const k of Object.keys(pausedChats)) {
+        if (k.endsWith(suffix)) {
+          delete pausedChats[k];
+        }
+      }
+    }
   }
-  savePausedChats(pausedChatsCache);
-  return pausedChatsCache[key];
+
+  savePausedChats(pausedChats);
+  return pausedChats;
+}
+
+// Rastreamento de mensagens enviadas pela IA para auto-pausar quando o humano digita no WhatsApp
+const botSentMessageIds = new Set();
+function recordBotMessageId(id) {
+  if (!id) return;
+  botSentMessageIds.add(id);
+  if (botSentMessageIds.size > 1000) {
+    const first = botSentMessageIds.values().next().value;
+    botSentMessageIds.delete(first);
+  }
+}
+
+async function sendBotMessage(sock, toJid, content) {
+  const res = await sock.sendMessage(toJid, content);
+  if (res?.key?.id) {
+    recordBotMessageId(res.key.id);
+  }
+  return res;
 }
 
 try {
@@ -277,25 +464,324 @@ function ensureHealthServerCaktoEndpoint() {
   if (!fs.existsSync(healthServerPath)) return;
 
   try {
-    let currentCode = fs.readFileSync(healthServerPath, 'utf-8');
-    let changed = false;
+    const desiredCode = `const http = require('http');
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
 
-    if (!currentCode.includes('audioBase64') && currentCode.includes('payload.indexJs')) {
-      currentCode = currentCode.replace(
-        "if (payload.indexJs) fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'index.js'), payload.indexJs, 'utf-8');",
-        "if (payload.indexJs) fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'index.js'), payload.indexJs, 'utf-8');\n        if (payload.audioBase64) fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'audio_prova_social.mp3'), Buffer.from(payload.audioBase64, 'base64'));"
-      );
-      changed = true;
+const PORT = 3333;
+const HOME = '/data/data/com.termux/files/home';
+const FOLLOWUP_FILE = path.join(HOME, 'ghost-whatsapp-agent', 'leads_followup.json');
+const PAUSED_FILE = path.join(HOME, 'ghost-whatsapp-agent', 'paused_chats.json');
+const PROMISES_FILE = path.join(HOME, 'ghost-whatsapp-agent', 'scheduled_promises.json');
+
+function getPhoneVariants(rawPhoneOrJid) {
+  if (!rawPhoneOrJid) return [];
+  const str = String(rawPhoneOrJid).trim();
+  const digits = str.replace(/\\D/g, '');
+  const variants = new Set();
+  if (str) variants.add(str.toLowerCase());
+  if (digits) variants.add(digits);
+  if (digits) variants.add(digits + '@s.whatsapp.net');
+
+  let ddd = '';
+  let rest = '';
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    ddd = digits.slice(2, 4);
+    rest = digits.slice(4);
+  } else if (!digits.startsWith('55') && (digits.length === 10 || digits.length === 11)) {
+    ddd = digits.slice(0, 2);
+    rest = digits.slice(2);
+  }
+
+  if (ddd && rest) {
+    const with9 = rest.length === 9 ? rest : ('9' + rest);
+    const without9 = rest.length === 9 ? rest.slice(1) : rest;
+    variants.add('55' + ddd + with9);
+    variants.add('55' + ddd + without9);
+    variants.add(ddd + with9);
+    variants.add(ddd + without9);
+    variants.add('55' + ddd + with9 + '@s.whatsapp.net');
+    variants.add('55' + ddd + without9 + '@s.whatsapp.net');
+  }
+
+  if (digits.length >= 8) {
+    variants.add(digits.slice(-8));
+  }
+  return Array.from(variants);
+}
+
+function loadPaused() {
+  try {
+    if (fs.existsSync(PAUSED_FILE)) {
+      return JSON.parse(fs.readFileSync(PAUSED_FILE, 'utf-8'));
     }
+  } catch (_) {}
+  return {};
+}
 
-    if (changed) {
-      fs.writeFileSync(healthServerPath, currentCode, 'utf-8');
+function savePaused(data) {
+  try {
+    fs.writeFileSync(PAUSED_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (_) {}
+}
+
+function loadPromises() {
+  try {
+    if (fs.existsSync(PROMISES_FILE)) {
+      return JSON.parse(fs.readFileSync(PROMISES_FILE, 'utf-8'));
+    }
+  } catch (_) {}
+  return {};
+}
+
+function savePromises(data) {
+  try {
+    fs.writeFileSync(PROMISES_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (_) {}
+}
+
+const server = http.createServer((req, res) => {
+  if (req.method === 'POST' && req.url === '/api/ota') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        if (payload.secret !== 'ghost_ota_2026') {
+          res.writeHead(403);
+          return res.end('Forbidden');
+        }
+        if (payload.brainJs) {
+          fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'brain.js'), payload.brainJs, 'utf-8');
+        }
+        if (payload.indexJs) {
+          fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'index.js'), payload.indexJs, 'utf-8');
+        }
+        if (payload.audioDataJs) {
+          fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'audio_data.js'), payload.audioDataJs, 'utf-8');
+        }
+        if (payload.audioBase64) {
+          fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'audio_prova_social.mp3'), Buffer.from(payload.audioBase64, 'base64'));
+        }
+        exec('/data/data/com.termux/files/usr/bin/node /data/data/com.termux/files/usr/lib/node_modules/pm2/bin/pm2 restart ghost-whatsapp-agent', () => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'OTA_SUCCESS' }));
+        });
+      } catch (err) {
+        res.writeHead(500);
+        res.end(err.message);
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/pause-chat') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        if (payload.secret !== 'ghost_ota_2026') {
+          res.writeHead(403);
+          return res.end('Forbidden');
+        }
+        const phone = payload.phone;
+        const action = payload.action || 'pause';
+        const reason = payload.reason || 'Manual via Painel';
+        const paused = loadPaused();
+        const variants = getPhoneVariants(phone);
+
+        if (action === 'pause') {
+          const entry = { phone: String(phone), paused: true, pausedAt: Date.now(), reason };
+          for (const v of variants) {
+            paused[v] = entry;
+          }
+        } else {
+          for (const v of variants) {
+            delete paused[v];
+          }
+          const clean = String(phone).replace(/\\D/g, '');
+          if (clean.length >= 8) {
+            const suffix = clean.slice(-8);
+            for (const k of Object.keys(paused)) {
+              if (k.endsWith(suffix)) delete paused[k];
+            }
+          }
+        }
+        savePaused(paused);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, phone, action, paused: action === 'pause' }));
+      } catch (err) {
+        res.writeHead(500);
+        res.end(err.message);
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/paused-chats') {
+    const paused = loadPaused();
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify({ success: true, count: Object.keys(paused).length, pausedChats: paused }));
+  }
+
+  if (req.url === '/api/leads') {
+    let leads = {};
+    try {
+      if (fs.existsSync(FOLLOWUP_FILE)) {
+        leads = JSON.parse(fs.readFileSync(FOLLOWUP_FILE, 'utf-8'));
+      }
+    } catch (_) {}
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify({ status: 'OK', count: Object.keys(leads).length, leads }, null, 2));
+  }
+
+  if (req.method === 'POST' && req.url === '/api/schedule-promise') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        if (payload.secret !== 'ghost_ota_2026') {
+          res.writeHead(403);
+          return res.end('Forbidden');
+        }
+        const action = payload.action || 'create';
+        const promises = loadPromises();
+
+        if (action === 'create') {
+          const cleanPhone = String(payload.phone || '').replace(/\\D/g, '');
+          const id = payload.id || ('promise_' + cleanPhone + '_' + payload.isoDate);
+          const entry = {
+            id,
+            phone: cleanPhone,
+            jid: cleanPhone + '@s.whatsapp.net',
+            senderName: payload.senderName || 'Lead Interessado',
+            isoDate: payload.isoDate,
+            formatted: payload.formatted || payload.isoDate,
+            leadMessage: payload.leadMessage || 'Agendamento manual via Painel',
+            status: 'pending',
+            offer: payload.offer || 'vitalicio',
+            createdAt: Date.now(),
+            remindedAt: null,
+            convertedAt: null,
+            triggerImmediate: false
+          };
+          promises[id] = entry;
+          savePromises(promises);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, promise: entry }));
+        }
+
+        if (action === 'update_status') {
+          const { id, status } = payload;
+          if (promises[id]) {
+            promises[id].status = status;
+            if (status === 'converted') promises[id].convertedAt = Date.now();
+            savePromises(promises);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: true, promise: promises[id] }));
+          }
+          res.writeHead(404);
+          return res.end(JSON.stringify({ error: 'Promise not found' }));
+        }
+
+        if (action === 'trigger_now') {
+          const { id } = payload;
+          if (promises[id]) {
+            promises[id].triggerImmediate = true;
+            savePromises(promises);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: true, triggered: id }));
+          }
+          res.writeHead(404);
+          return res.end(JSON.stringify({ error: 'Promise not found' }));
+        }
+
+        if (action === 'delete') {
+          const { id } = payload;
+          if (promises[id]) {
+            delete promises[id];
+            savePromises(promises);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: true, deleted: id }));
+          }
+          res.writeHead(404);
+          return res.end(JSON.stringify({ error: 'Promise not found' }));
+        }
+
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Unknown action' }));
+      } catch (err) {
+        res.writeHead(500);
+        res.end(err.message);
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/promises') {
+    const promises = loadPromises();
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify({ success: true, count: Object.keys(promises).length, promises }));
+  }
+
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify({
+    status: 'ONLINE 24/7 (JARVIS V3: AUTO TAKEOVER + FULL PAUSE)',
+    server: 'Moto G60 Linux Server (Termux)',
+    node_version: process.version,
+    arch: os.arch(),
+    platform: os.platform(),
+    uptime_seconds: Math.round(process.uptime()),
+    free_ram_mb: Math.round(os.freemem() / 1024 / 1024),
+    total_ram_mb: Math.round(os.totalmem() / 1024 / 1024),
+    timestamp: new Date().toISOString()
+  }, null, 2));
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log('GhostAI Moto G60 Server V3 ativo na porta ' + PORT);
+});`;
+
+    let currentCode = fs.readFileSync(healthServerPath, 'utf-8');
+    if (!currentCode.includes('JARVIS V3: AUTO TAKEOVER + FULL PAUSE') || !currentCode.includes('/api/schedule-promise')) {
+      fs.writeFileSync(healthServerPath, desiredCode, 'utf-8');
       exec('pm2 restart ghost-server 2>/dev/null || true');
-      console.log('✅ health_server.js atualizado com suporte a upload de áudio OTA!');
+      console.log('✅ health_server.js atualizado com suporte completo a /api/schedule-promise, /api/promises e /api/pause-chat!');
     }
   } catch (e) {
     console.error('Erro ao verificar health_server:', e.message);
   }
+}
+
+// Sincronização automática contínua de chats pausados com o Firestore
+async function syncFirestorePausedChats() {
+  try {
+    const authRes = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDafvRbIgwriRgCis2sAmJeJ80RHmn30LA', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ returnSecureToken: true })
+    });
+    const authData = await authRes.json();
+    const idToken = authData.idToken;
+    if (!idToken) return;
+
+    const res = await fetch('https://firestore.googleapis.com/v1/projects/ghostmarket-ai-2cc26/databases/(default)/documents/paused_chats', {
+      headers: { 'Authorization': `Bearer ${idToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.documents && Array.isArray(data.documents)) {
+      for (const d of data.documents) {
+        const id = d.name.split('/').pop();
+        const reason = d.fields?.reason?.stringValue || 'Painel Web';
+        setChatPaused(id, true, reason);
+      }
+    }
+  } catch (_) {}
 }
 
 function isWithinBusinessHoursBrazil() {
@@ -318,6 +804,7 @@ function isWithinBusinessHoursBrazil() {
 // -------------------------------------------------------------
 async function sendHumanizedBalloons(sock, toJid, rawText) {
   let resolved = resolveSpintax(rawText);
+  resolved = resolved.replace(/\[PROMISE_DATE:[^\]]+\]/g, '').trim();
   const hasAudioProva = resolved.includes('[SEND_AUDIO_PROVA]');
   resolved = resolved.replace(/\[SEND_AUDIO_PROVA\]/g, '').trim();
 
@@ -329,22 +816,39 @@ async function sendHumanizedBalloons(sock, toJid, rawText) {
     const delay = Math.floor(Math.random() * 1500) + 3000;
     console.log(`⏳ Simulando digitação por ${(delay / 1000).toFixed(1)}s (1 balão)...`);
     await new Promise(r => setTimeout(r, delay));
-    await sock.sendMessage(toJid, { text: balloons[0] || resolved });
+    await sendBotMessage(sock, toJid, { text: balloons[0] || resolved });
     await sock.sendPresenceUpdate('paused', toJid);
 
     if (hasAudioProva) {
       const audioPath = path.join(__dirname, 'audio_prova_social.mp3');
+      if (!fs.existsSync(audioPath) && AUDIO_PROVA_BASE64) {
+        try { fs.writeFileSync(audioPath, Buffer.from(AUDIO_PROVA_BASE64, 'base64')); } catch (_) {}
+      }
       if (fs.existsSync(audioPath)) {
         console.log(`🎙️ [ÁUDIO PROVA ELEVENLABS] Enviando áudio de prova social para ${toJid}...`);
-        await sock.sendPresenceUpdate('recording', toJid);
-        await new Promise(r => setTimeout(r, 1500));
-        await sock.sendMessage(toJid, {
-          audio: fs.readFileSync(audioPath),
-          mimetype: 'audio/mp4',
-          ptt: true,
-          contextInfo: { isForwarded: true, forwardingScore: 1 }
-        });
-        await sock.sendPresenceUpdate('paused', toJid);
+        try {
+          await sock.sendPresenceUpdate('recording', toJid);
+          await new Promise(r => setTimeout(r, 1500));
+          const audioBuf = fs.readFileSync(audioPath);
+          try {
+            await sendBotMessage(sock, toJid, {
+              audio: audioBuf,
+              mimetype: 'audio/mp4',
+              ptt: true,
+              contextInfo: { isForwarded: true, forwardingScore: 1 }
+            });
+          } catch (pttErr) {
+            console.warn('Fallback envio áudio para audio/mpeg:', pttErr.message);
+            await sendBotMessage(sock, toJid, {
+              audio: audioBuf,
+              mimetype: 'audio/mpeg',
+              contextInfo: { isForwarded: true, forwardingScore: 1 }
+            });
+          }
+          await sock.sendPresenceUpdate('paused', toJid);
+        } catch (audioSendErr) {
+          console.error('Erro ao enviar áudio prova:', audioSendErr.message);
+        }
       }
     }
   } else {
@@ -354,24 +858,41 @@ async function sendHumanizedBalloons(sock, toJid, rawText) {
     await sock.sendPresenceUpdate('composing', toJid);
     const delay1 = Math.floor(Math.random() * 700) + 1800;
     await new Promise(r => setTimeout(r, delay1));
-    await sock.sendMessage(toJid, { text: balloons[0] });
+    await sendBotMessage(sock, toJid, { text: balloons[0] });
     await sock.sendPresenceUpdate('paused', toJid);
 
     // Se tiver áudio de prova social, envia no meio como áudio encaminhado
     if (hasAudioProva) {
       const audioPath = path.join(__dirname, 'audio_prova_social.mp3');
+      if (!fs.existsSync(audioPath) && AUDIO_PROVA_BASE64) {
+        try { fs.writeFileSync(audioPath, Buffer.from(AUDIO_PROVA_BASE64, 'base64')); } catch (_) {}
+      }
       if (fs.existsSync(audioPath)) {
         console.log(`🎙️ [ÁUDIO PROVA ELEVENLABS] Enviando áudio de prova social para ${toJid}...`);
-        await sock.sendPresenceUpdate('recording', toJid);
-        await new Promise(r => setTimeout(r, 1500));
-        await sock.sendMessage(toJid, {
-          audio: fs.readFileSync(audioPath),
-          mimetype: 'audio/mp4',
-          ptt: true,
-          contextInfo: { isForwarded: true, forwardingScore: 1 }
-        });
-        await sock.sendPresenceUpdate('paused', toJid);
-        await new Promise(r => setTimeout(r, 2000));
+        try {
+          await sock.sendPresenceUpdate('recording', toJid);
+          await new Promise(r => setTimeout(r, 1500));
+          const audioBuf = fs.readFileSync(audioPath);
+          try {
+            await sendBotMessage(sock, toJid, {
+              audio: audioBuf,
+              mimetype: 'audio/mp4',
+              ptt: true,
+              contextInfo: { isForwarded: true, forwardingScore: 1 }
+            });
+          } catch (pttErr) {
+            console.warn('Fallback envio áudio para audio/mpeg:', pttErr.message);
+            await sendBotMessage(sock, toJid, {
+              audio: audioBuf,
+              mimetype: 'audio/mpeg',
+              contextInfo: { isForwarded: true, forwardingScore: 1 }
+            });
+          }
+          await sock.sendPresenceUpdate('paused', toJid);
+          await new Promise(r => setTimeout(r, 2000));
+        } catch (audioSendErr) {
+          console.error('Erro ao enviar áudio prova:', audioSendErr.message);
+        }
       }
     }
 
@@ -384,7 +905,7 @@ async function sendHumanizedBalloons(sock, toJid, rawText) {
     await sock.sendPresenceUpdate('composing', toJid);
     const delay2 = Math.floor(Math.random() * 1500) + 2500;
     await new Promise(r => setTimeout(r, delay2));
-    await sock.sendMessage(toJid, { text: balloons[1] });
+    await sendBotMessage(sock, toJid, { text: balloons[1] });
     await sock.sendPresenceUpdate('paused', toJid);
   }
 
@@ -498,13 +1019,100 @@ async function processCaktoQueue() {
   } catch (_) {}
 }
 
+// -------------------------------------------------------------
+// SENTINELA DA AGENDA & PROMESSAS DE FECHAMENTO
+// -------------------------------------------------------------
+let lastPromiseCheckHour = null;
+
+async function checkScheduledPaymentPromises(sock) {
+  if (!sock) return;
+
+  const promises = loadPromises();
+  const promiseList = Object.values(promises);
+  if (!promiseList.length) return;
+
+  // 1. Processar disparos imediatos manuais solicitados pelo Painel
+  for (const p of promiseList) {
+    if (p.triggerImmediate && p.status !== 'converted') {
+      try {
+        console.log(`🚀 [DISPARO MANUAL] Enviando lembrete de promessa para ${p.phone}...`);
+        const closingMsg = buildPromisedClosingMessage(p.senderName, p.offer);
+        await sendHumanizedBalloons(sock, p.jid, closingMsg);
+        p.triggerImmediate = false;
+        p.status = 'reminded';
+        p.remindedAt = Date.now();
+        promises[p.id] = p;
+        savePromises(promises);
+        syncPromiseToFirestore(p).catch(() => {});
+
+        if (resolvedOwnerJid && p.jid !== resolvedOwnerJid) {
+          await sock.sendMessage(resolvedOwnerJid, {
+            text: `🚀 *LEMBRETE DE VENDA DISPARADO PELO PAINEL!*\n\n👤 *Cliente:* ${p.senderName}\n📱 *WhatsApp:* https://wa.me/${p.phone}\n🗓️ *Data Combinada:* ${p.formatted}\n👉 Mensagem humanizada com link enviada com sucesso!`
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao disparar lembrete imediato de promessa:', err.message);
+      }
+    }
+  }
+
+  // 2. Disparo Matinal Automático (entre 09:30 e 11:30 no horário de Brasília)
+  try {
+    const brDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const hour = brDate.getHours();
+
+    if (hour >= 9 && hour < 12 && lastPromiseCheckHour !== hour) {
+      lastPromiseCheckHour = hour;
+
+      const yyyy = brDate.getFullYear();
+      const mm = String(brDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(brDate.getDate()).padStart(2, '0');
+      const todayIso = `${yyyy}-${mm}-${dd}`;
+
+      for (const p of Object.values(promises)) {
+        if (p.status === 'pending' && !p.remindedAt && p.isoDate <= todayIso) {
+          if (isChatPaused(p.phone, p.jid)) {
+            console.log(`⏸️ [AGENDA] Chat ${p.phone} está pausado manualmente, pulando disparo automático.`);
+            continue;
+          }
+
+          try {
+            console.log(`📅 [AGENDA] Enviando lembrete matinal agendado para ${p.phone} (${p.formatted})...`);
+            const closingMsg = buildPromisedClosingMessage(p.senderName, p.offer);
+            await sendHumanizedBalloons(sock, p.jid, closingMsg);
+            p.status = 'reminded';
+            p.remindedAt = Date.now();
+            promises[p.id] = p;
+            savePromises(promises);
+            syncPromiseToFirestore(p).catch(() => {});
+
+            if (resolvedOwnerJid && p.jid !== resolvedOwnerJid) {
+              await sock.sendMessage(resolvedOwnerJid, {
+                text: `📅 *LEMBRETE MATINAL DE VENDA DISPARADO PELO JARVIS!*\n\n👤 *Cliente:* ${p.senderName}\n📱 *WhatsApp:* https://wa.me/${p.phone}\n🗓️ *Data Combinada:* ${p.formatted}\n👉 *Jarvis liberou o link do Vitalício com os 7 dias de garantia!*`
+              });
+            }
+            // Delay suave entre disparos
+            await new Promise(r => setTimeout(r, 6000));
+          } catch (err) {
+            console.error(`Erro ao disparar lembrete de promessa para ${p.phone}:`, err.message);
+          }
+        }
+      }
+    } else if (hour < 9 || hour >= 12) {
+      lastPromiseCheckHour = null;
+    }
+  } catch (err) {
+    console.error('Erro na checagem de promessas de pagamento:', err.message);
+  }
+}
+
 async function processFollowUpQueue() {
   if (!activeSock) return;
   const now = Date.now();
   let changed = false;
 
   for (const [jid, lead] of Object.entries(leadsFollowUp)) {
-    if (!lead || lead.converted || lead.stage >= 3) continue;
+    if (!lead || lead.converted || lead.stoppedFollowUp || lead.stage >= 3) continue;
     if (resolvedOwnerJid && jid === resolvedOwnerJid) continue;
 
     // Se o chat estiver pausado manualmente, NÃO enviar mensagem de follow-up!
@@ -627,6 +1235,15 @@ async function startGhostWhatsAppAgent() {
 
   ensureHealthServerCaktoEndpoint();
 
+  // Sincronização contínua de chats pausados com o Firestore
+  syncFirestorePausedChats().catch(() => {});
+  let firestorePauseInterval = null;
+  if (!firestorePauseInterval) {
+    firestorePauseInterval = setInterval(() => {
+      syncFirestorePausedChats().catch(() => {});
+    }, 12 * 1000);
+  }
+
   if (!followUpInterval) {
     followUpInterval = setInterval(() => {
       processFollowUpQueue().catch(e => console.error('Erro loop follow-up:', e.message));
@@ -649,6 +1266,13 @@ async function startGhostWhatsAppAgent() {
     watchdogInterval = setInterval(() => {
       checkScheduledReportsAndWatchdog();
     }, 60 * 1000);
+  }
+
+  let promisesInterval = null;
+  if (!promisesInterval) {
+    promisesInterval = setInterval(() => {
+      checkScheduledPaymentPromises(activeSock).catch(e => console.error('Erro loop promessas:', e.message));
+    }, 10 * 1000);
   }
 
   console.log('\n==================================================');
@@ -772,7 +1396,15 @@ async function startGhostWhatsAppAgent() {
       const from = msg.key?.remoteJid;
       if (!from || from === 'status@broadcast') continue;
 
-      if (msg.key?.fromMe) continue;
+      if (msg.key?.fromMe) {
+        // Se a mensagem partiu da gente mas NÃO foi gerada pelo robô: foi o humano digitando!
+        const msgId = msg.key?.id;
+        if (msgId && !botSentMessageIds.has(msgId) && from && !from.includes('@broadcast') && !from.endsWith('@g.us')) {
+          console.log(`👤 [TAKEOVER MANUAL DETECTADO] O operador enviou mensagem manual para ${from}. Pausando IA automaticamente!`);
+          setChatPaused(from, true, 'Operador digitou diretamente no WhatsApp');
+        }
+        continue;
+      }
 
       const isGroup = from.endsWith('@g.us');
       const isBroadcast = from.includes('@broadcast') || from.endsWith('@newsletter');
@@ -783,7 +1415,7 @@ async function startGhostWhatsAppAgent() {
 
       // 0. VERIFICAÇÃO DE PAUSA MANUAL (HUMAN TAKEOVER):
       if (isChatPaused(cleanPhone, from)) {
-        console.log(`⏸️ [CHAT PAUSADO] Mensagem de +${cleanPhone} recebida, mas IA está pausada para atendimento manual.`);
+        console.log(`⏸️ [CHAT PAUSADO - ATENDIMENTO MANUAL] Mensagem de +${cleanPhone} recebida, mas IA está pausada para atendimento manual.`);
         continue;
       }
 
@@ -1002,13 +1634,21 @@ async function startGhostWhatsAppAgent() {
         continue;
       }
 
-      // 1. Verificar se o lead confirmou que já pagou
-      const paidRegex = /(ja paguei|já paguei|comprei|acabei de pagar|paguei o pix|já assinei|ja assinei|fiz o pagamento|pagamento aprovado)/i;
+      // 1. Verificar se o lead confirmou que já comprou/pagou
+      const paidRegex = /(j[aá] paguei|comprei|j[aá] comprei|acabei de pagar|fiz o pix|j[aá] fiz|paguei|t[aá] pago|ta pago|j[aá] assinei|ja assinei|fiz o pagamento|pagamento feito|pago|paguei o pix|pagamento aprovado)/i;
       const hasPaid = paidRegex.test(text);
+
+      // 1B. Verificar se o lead pediu cancelamento / opt-out / não quer mais mensagens
+      const optOutRegex = /(n[aã]o quero|n[aã]o vou querer|n[aã]o tenho interesse|sem interesse|deixa pra l[aá]|cancela|cancelar|n[aã]o precisa|desisti|n[aã]o gostei|para de mandar|tira meu n[uú]mero|n[aã]o me manda)/i;
+      const isOptOut = optOutRegex.test(text);
+
+      // 1C. Verificar se o lead agendou o pagamento para uma data futura
+      const scheduledRegex = /(vou pagar|pago dia|pago amanh[aã]|s[oó] dia|s[oó] amanh[aã]|semana que vem|m[eê]s que vem|quando receber|quinto dia [uú]til|fim do m[eê]s|quando virar|depois do dia|pago sexta|pago segunda|pago ter[çc]a|pago quarta|pago quinta|pago s[aá]bado|pago domingo)/i;
+      const isScheduled = scheduledRegex.test(text);
 
       // 2. Identificar se é Lead Quente
       const hotLeadRegex = /(pix|pagar|pagamento|assinar|cartao|cartão|boleto|comprar|fechar|humano|atendente|falar com alguem|falar com o dono|link de pagamento|vitalicio|vitalício|mensal)/i;
-      const isHotLead = hotLeadRegex.test(text) || hasPaid;
+      const isHotLead = (hotLeadRegex.test(text) || hasPaid) && !isOptOut;
 
       if (isHotLead && resolvedOwnerJid && from !== resolvedOwnerJid) {
         try {
@@ -1032,10 +1672,71 @@ async function startGhostWhatsAppAgent() {
 
         console.log(`🤖 [Jarvis respondeu com sucesso em ${sentBalloons.length} balão(ões)]\n`);
 
+        // 3B. Identificar e Registrar Promessa de Pagamento / Segurar Vaga
+        let detectedPromise = null;
+        const promiseTagMatch = aiReply.match(/\[PROMISE_DATE:([^:]+):([^\]]+)\]/);
+        if (promiseTagMatch) {
+          const isoDate = promiseTagMatch[1];
+          const formatted = decodeURIComponent(promiseTagMatch[2]);
+          detectedPromise = {
+            id: `promise_${cleanPhone}_${isoDate}`,
+            phone: cleanPhone,
+            jid: from,
+            senderName: senderName || 'Lead Interessado',
+            isoDate,
+            formatted,
+            leadMessage: text,
+            status: 'pending',
+            offer: 'vitalicio',
+            createdAt: Date.now(),
+            remindedAt: null,
+            convertedAt: null
+          };
+        } else {
+          const extracted = extractPromisedPaymentDate(text);
+          if (extracted?.hasPromise) {
+            detectedPromise = {
+              id: `promise_${cleanPhone}_${extracted.isoDate}`,
+              phone: cleanPhone,
+              jid: from,
+              senderName: senderName || 'Lead Interessado',
+              isoDate: extracted.isoDate,
+              formatted: extracted.formatted,
+              leadMessage: text,
+              status: 'pending',
+              offer: 'vitalicio',
+              createdAt: Date.now(),
+              remindedAt: null,
+              convertedAt: null
+            };
+          }
+        }
+
+        if (detectedPromise) {
+          const promises = loadPromises();
+          promises[detectedPromise.id] = {
+            ...(promises[detectedPromise.id] || {}),
+            ...detectedPromise
+          };
+          savePromises(promises);
+          syncPromiseToFirestore(detectedPromise).catch(() => {});
+
+          if (resolvedOwnerJid && from !== resolvedOwnerJid) {
+            try {
+              await sock.sendMessage(resolvedOwnerJid, {
+                text: `📅 *NOVO AGENDAMENTO DE VENDA IDENTIFICADO!*\n\n👤 *Nome:* ${senderName}\n📱 *WhatsApp do Lead:* https://wa.me/${cleanPhone}\n🗓️ *Data Combinada:* ${detectedPromise.formatted}\n💬 *Mensagem do Lead:*\n"${text}"\n\n👉 *O Jarvis agendou o disparo automático matinal para ${detectedPromise.formatted}!*`
+              });
+            } catch (_) {}
+          }
+        }
+
         // 4. Atualizar estado do Follow-up Automático
         const existingLead = leadsFollowUp[from] || {};
         const replyHasCheckout = fullReply.includes('pay.cakto.com.br');
         const isConfirmedApproved = fullReply.includes('Encontrei aqui seu acesso aprovado');
+
+        const isConverted = Boolean(existingLead.converted || hasPaid || isConfirmedApproved);
+        const shouldStopFollowUp = Boolean(isConverted || isOptOut || isScheduled || detectedPromise || existingLead.stoppedFollowUp);
 
         leadsFollowUp[from] = {
           jid: from,
@@ -1043,9 +1744,11 @@ async function startGhostWhatsAppAgent() {
           senderName,
           lastUserMessage: text,
           lastInteractionAt: Date.now(),
-          stage: 0,
+          stage: shouldStopFollowUp ? 99 : 0,
           sentCheckoutLink: Boolean(existingLead.sentCheckoutLink || replyHasCheckout),
-          converted: Boolean(existingLead.converted || hasPaid || isConfirmedApproved)
+          converted: isConverted,
+          stoppedFollowUp: shouldStopFollowUp,
+          stopReason: isConverted ? 'converted' : isOptOut ? 'opt_out' : (isScheduled || detectedPromise) ? 'scheduled_payment' : null
         };
         saveFollowUps(leadsFollowUp);
 

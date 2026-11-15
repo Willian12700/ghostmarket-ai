@@ -18,6 +18,7 @@ import { SiteBuilder } from '@/pages/SiteBuilder'
 import { ImageToLink } from '@/pages/ImageToLink'
 import { HostedSites } from '@/pages/HostedSites'
 import { Finance } from '@/pages/Finance'
+import { Subscriptions } from '@/pages/Subscriptions'
 import { Products } from '@/pages/Products'
 import { Checkout } from '@/pages/Checkout'
 import { SiteViewer } from '@/pages/SiteViewer'
@@ -108,6 +109,9 @@ function App() {
               <Route path="/sites" element={<HostedSites />} />
               <Route path="/hosted-sites" element={<HostedSites />} />
               <Route path="/finance" element={<Finance />} />
+              <Route path="/mensalidades" element={<Subscriptions />} />
+              <Route path="/cobrancas" element={<Subscriptions />} />
+              <Route path="/subscriptions" element={<Subscriptions />} />
               <Route path="/proposta" element={<PropostaPdf />} />
               <Route path="/products" element={<Products />} />
               <Route path="/scanner" element={<Scanner />} />

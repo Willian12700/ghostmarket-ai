@@ -30,7 +30,8 @@ import {
   ArrowUpRight,
   Sparkles,
   Megaphone,
-  Cpu
+  Cpu,
+  Clock
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils/cn'
@@ -113,6 +114,7 @@ export const Sidebar = ({ isOpen, onClose, onOpenCommandPalette }: SidebarProps)
       label: 'Gestão & CRM',
       items: [
         { to: '/contracts', icon: FileText, label: 'CRM Comercial (Kanban)' },
+        { to: '/mensalidades', icon: Clock, label: 'Cobrador IA & Mensalidades' },
         { to: '/proposta', icon: FileText, label: 'Proposta & Contrato PDF' },
         { to: '/finance', icon: PieChart, label: 'Financeiro & Receita' }
       ]

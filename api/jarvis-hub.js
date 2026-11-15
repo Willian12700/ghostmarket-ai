@@ -78,7 +78,18 @@ export default async function handler(req, res) {
       });
     } catch (_) {}
 
-    // 6. Consultar Moto G60 em tempo real (Status, Leads do WhatsApp, Pausados e Logs)
+    // 5B. Buscar Promessas de Pagamento Agendadas no Firestore
+    const promisesMap = {};
+    try {
+      const snapPromises = await getDocs(collection(db, 'scheduled_promises'));
+      snapPromises.docs.forEach(d => {
+        promisesMap[d.id] = { id: d.id, ...d.data() };
+      });
+    } catch (e) {
+      console.warn('Erro ao ler Firestore scheduled_promises:', e.message);
+    }
+
+    // 6. Consultar Moto G60 em tempo real (Status, Leads do WhatsApp, Pausados, Promessas e Logs)
     let motoG60Online = false;
     let motoStatus = null;
     let whatsappLeads = {};
@@ -88,11 +99,12 @@ export default async function handler(req, res) {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 3500);
 
-      const [resStatus, resLeads, resLogs, resPaused] = await Promise.allSettled([
+      const [resStatus, resLeads, resLogs, resPaused, resPromises] = await Promise.allSettled([
         fetch(`${tunnelBase.replace(/\/+$/, '')}/api/status`, { signal: ctrl.signal }),
         fetch(`${tunnelBase.replace(/\/+$/, '')}/api/leads`, { signal: ctrl.signal }),
         fetch(`${tunnelBase.replace(/\/+$/, '')}/api/logs`, { signal: ctrl.signal }),
-        fetch(`${tunnelBase.replace(/\/+$/, '')}/api/paused-chats`, { signal: ctrl.signal })
+        fetch(`${tunnelBase.replace(/\/+$/, '')}/api/paused-chats`, { signal: ctrl.signal }),
+        fetch(`${tunnelBase.replace(/\/+$/, '')}/api/promises`, { signal: ctrl.signal })
       ]);
       clearTimeout(t);
 
@@ -113,9 +125,21 @@ export default async function handler(req, res) {
           pausedChats = { ...pausedChats, ...p.pausedChats };
         }
       }
+      if (resPromises.status === 'fulfilled' && resPromises.value.ok) {
+        const pData = await resPromises.value.json();
+        if (pData.promises) {
+          Object.values(pData.promises).forEach(p => {
+            if (p && p.id) {
+              promisesMap[p.id] = { ...(promisesMap[p.id] || {}), ...p };
+            }
+          });
+        }
+      }
     } catch (err) {
       console.warn('Moto G60 inacessível no momento:', err.message);
     }
+
+    const promisesList = Object.values(promisesMap).sort((a, b) => (a.isoDate || '').localeCompare(b.isoDate || ''));
 
     return res.status(200).json({
       success: true,
@@ -149,6 +173,11 @@ export default async function handler(req, res) {
       finance: {
         totalTransactions: transactions.length,
         items: transactions
+      },
+      promises: {
+        total: promisesList.length,
+        pendingCount: promisesList.filter(p => p.status === 'pending').length,
+        items: promisesList
       },
       logs: systemLogs
     });

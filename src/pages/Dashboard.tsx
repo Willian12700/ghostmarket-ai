@@ -88,6 +88,16 @@ const QUICK_TOOLS = [
     gradient: 'from-indigo-500/20 via-violet-500/10 to-transparent',
     iconColor: 'text-indigo-400',
     borderHover: 'hover:border-indigo-500/50'
+  },
+  {
+    title: 'Cobrador IA',
+    desc: 'Mensalidades e cobrança WhatsApp',
+    to: '/mensalidades',
+    icon: Clock,
+    badge: 'NOVO',
+    gradient: 'from-amber-500/20 via-yellow-500/10 to-transparent',
+    iconColor: 'text-amber-400',
+    borderHover: 'hover:border-amber-500/50'
   }
 ]
 
