@@ -20,7 +20,9 @@ import {
   Info, 
   Phone, 
   Calendar,
-  Layers
+  Layers,
+  Bot,
+  Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -66,7 +68,19 @@ const getDeviceInfo = (ua?: string) => {
   return { name, isMobile, app };
 };
 
-const LeadDetailsModal = ({ session, onClose, events }: { session: any, onClose: () => void, events: any[] }) => {
+const LeadDetailsModal = ({ 
+  session, 
+  onClose, 
+  events,
+  onTriggerJarvis,
+  triggeringJarvisId
+}: { 
+  session: any, 
+  onClose: () => void, 
+  events: any[],
+  onTriggerJarvis?: (session: any) => void,
+  triggeringJarvisId?: string | null
+}) => {
   const [answers, setAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -196,15 +210,33 @@ const LeadDetailsModal = ({ session, onClose, events }: { session: any, onClose:
             </div>
             
             {hasPhone ? (
-              <a 
-                href={getWhatsappLink(session.phone, session.name, session.score || 0, session.bottleneck || 'N/A')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors shadow-lg shadow-green-500/20"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Chamar no WhatsApp
-              </a>
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                {session.jarvis_contacted ? (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs sm:text-sm font-bold">
+                    <Bot className="w-4 h-4 text-purple-400" />
+                    Jarvis já Chamou
+                  </div>
+                ) : onTriggerJarvis && session.status === 'Concluído' ? (
+                  <button
+                    onClick={() => onTriggerJarvis(session)}
+                    disabled={triggeringJarvisId === session.id}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50"
+                  >
+                    <Bot className="w-4 h-4" />
+                    {triggeringJarvisId === session.id ? 'Chamando...' : 'Chamar com Jarvis'}
+                  </button>
+                ) : null}
+
+                <a 
+                  href={getWhatsappLink(session.phone, session.name, session.score || 0, session.bottleneck || 'N/A')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors shadow-lg shadow-green-500/20"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Abrir WhatsApp
+                </a>
+              </div>
             ) : (
               <div 
                 className="ml-auto flex items-center gap-2 px-4 py-2 bg-white/5 text-gray-500 text-xs sm:text-sm font-medium rounded-xl border border-white/10 cursor-not-allowed"
@@ -330,6 +362,64 @@ export const QuizAnalytics = () => {
   // Tabs & filtros da tabela
   const [activeTab, setActiveTab] = useState<'participants' | 'all_views'>('participants');
   const [filterStatus, setFilterStatus] = useState<'all' | 'with_contact' | 'completed' | 'abandoned'>('all');
+
+  const [isSyncingJarvis, setIsSyncingJarvis] = useState(false);
+  const [triggeringJarvisId, setTriggeringJarvisId] = useState<string | null>(null);
+  const [jarvisFeedback, setJarvisFeedback] = useState<string | null>(null);
+
+  const handleSyncJarvis = async () => {
+    setIsSyncingJarvis(true);
+    setJarvisFeedback(null);
+    try {
+      const res = await fetch('/api/quiz-lead?action=sync');
+      const data = await res.json();
+      if (data.success) {
+        setJarvisFeedback(`🤖 Jarvis sincronizado: ${data.dispatchedCount} lead(s) contatado(s) com sucesso!`);
+        fetchData();
+      } else {
+        setJarvisFeedback(`Erro ao sincronizar: ${data.error || 'Falha no envio'}`);
+      }
+    } catch (e: any) {
+      setJarvisFeedback(`Erro: ${e.message}`);
+    } finally {
+      setIsSyncingJarvis(false);
+      setTimeout(() => setJarvisFeedback(null), 5000);
+    }
+  };
+
+  const handleTriggerJarvis = async (sessionItem: any) => {
+    if (!sessionItem || !sessionItem.phone) return;
+    setTriggeringJarvisId(sessionItem.id);
+    try {
+      const res = await fetch('/api/quiz-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionItem.id,
+          name: sessionItem.name || '',
+          phone: sessionItem.phone,
+          score: sessionItem.score || 0,
+          profile: sessionItem.profile || 'Iniciante',
+          bottleneck: sessionItem.bottleneck || 'Atrair clientes'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setJarvisFeedback(`🚀 Jarvis acionado para ${sessionItem.name || sessionItem.phone}!`);
+        setSessions(prev => prev.map(s => s.id === sessionItem.id ? { ...s, jarvis_contacted: true } : s));
+        if (selectedSession && selectedSession.id === sessionItem.id) {
+          setSelectedSession((prev: any) => ({ ...prev, jarvis_contacted: true }));
+        }
+      } else {
+        alert(data.error || 'Erro ao disparar Jarvis');
+      }
+    } catch (e: any) {
+      alert(`Erro ao acionar Jarvis: ${e.message}`);
+    } finally {
+      setTriggeringJarvisId(null);
+      setTimeout(() => setJarvisFeedback(null), 4000);
+    }
+  };
 
   const isAdmin = user?.email === 'willrandrier@gmail.com';
   const isPartner = user?.email === 'souza.abencoado4@gmail.com';
@@ -683,9 +773,27 @@ export const QuizAnalytics = () => {
                       {f.label} ({f.count})
                     </button>
                   ))}
+                  {activeTab === 'participants' && (
+                    <button
+                      onClick={handleSyncJarvis}
+                      disabled={isSyncingJarvis}
+                      className="ml-auto px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md active:scale-95 disabled:opacity-50"
+                      title="Varre os leads com WhatsApp que concluíram o quiz e dispara o Jarvis no privado"
+                    >
+                      <Bot className={`w-3.5 h-3.5 ${isSyncingJarvis ? 'animate-spin' : ''}`} />
+                      {isSyncingJarvis ? 'Disparando Jarvis...' : 'Disparar Jarvis (Pendentes)'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
+
+            {jarvisFeedback && (
+              <div className="mx-6 mt-3 px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-xl text-xs font-semibold text-purple-300 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>{jarvisFeedback}</span>
+              </div>
+            )}
 
             {/* Visualização 1: Tabela de Participantes */}
             {activeTab === 'participants' && (
@@ -778,6 +886,26 @@ export const QuizAnalytics = () => {
                           </td>
                           <td className="px-5 sm:px-6 py-4">
                             <div className="flex items-center gap-2">
+                              {s.jarvis_contacted ? (
+                                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-md text-[10px] font-bold flex items-center gap-1" title="Jarvis já contatou no WhatsApp">
+                                  <Bot className="w-3 h-3 text-purple-400" />
+                                  Jarvis Chamou
+                                </span>
+                              ) : s.status === 'Concluído' && s.phone ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTriggerJarvis(s);
+                                  }}
+                                  disabled={triggeringJarvisId === s.id}
+                                  className="px-2 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-md text-[10px] font-bold flex items-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                                  title="Chamar lead com o Jarvis no WhatsApp agora"
+                                >
+                                  <Bot className="w-3 h-3" />
+                                  {triggeringJarvisId === s.id ? 'Chamando...' : 'Chamar'}
+                                </button>
+                              ) : null}
+
                               {clickedGhost && (
                                 <span className="px-2 py-0.5 bg-[#7c3aed]/20 text-[#c4b5fd] border border-[#7c3aed]/30 rounded-md text-[10px] font-bold uppercase" title="Clicou em Ghost AI">
                                   SaaS
@@ -890,6 +1018,8 @@ export const QuizAnalytics = () => {
             session={selectedSession} 
             events={events}
             onClose={() => setSelectedSession(null)} 
+            onTriggerJarvis={handleTriggerJarvis}
+            triggeringJarvisId={triggeringJarvisId}
           />
         )}
       </AnimatePresence>
