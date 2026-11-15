@@ -491,8 +491,17 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     return resp;
   }
 
-  // 3. DETECTOR AUTOMÁTICO DE HESITAÇÃO COM GATILHO DE RISCO ZERO (FEATURE 4)
-  const isHesitation = /(vou pensar|t[aá] meio apertado|t[aá] apertado|t[oô] sem grana|sem grana|sem dinheiro|grana curta|pouco dinheiro|depois eu vejo|depois vejo|mais pra frente|n[aã]o sei se consigo|n[aã]o sei se vendo|ser[aá] que consigo|ser[aá] que funciona|com medo|t[aá] caro|t[aá] meio caro|salgado|preciso pensar|vou ver com|vou falar com|n[aã]o tenho dinheiro agora|t[oô] apertado)/i.test(lowerUser);
+  // 3. GATILHO DE ÁUDIO DE PROVA SOCIAL COM ELEVENLABS (IDEIA 3)
+  const isProofQuery = /(ser[aá] que funciona|d[aá] dinheiro mesmo|d[aá] pra vender|ser[aá] que consigo vender|algu[eé]m j[aá] comprou|tem prova|funciona de verdade|ser[aá] que algu[eé]m compra|algu[eé]m compra site|d[aá] pra ganhar dinheiro|alguem compra|funciona mesmo)/i.test(lowerUser);
+
+  if (isProofQuery) {
+    const resp = resolveSpintax(`{Irmão|Parceiro}, escuta esse áudio de 10 segundos que um cliente nosso me mandou agorinha:[SEND_AUDIO_PROVA][SPLIT]Ele fechou em menos de 24 horas depois de pegar o acesso ao GhostMarket. É exatamente isso que acontece quando você oferece um site pronto pro comércio.\n\nQuer que eu te passe o link do Vitalício pra você começar hoje?`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // 4. DETECTOR AUTOMÁTICO DE HESITAÇÃO COM GATILHO DE RISCO ZERO (FEATURE 4)
+  const isHesitation = /(vou pensar|t[aá] meio apertado|t[aá] apertado|t[oô] sem grana|sem grana|sem dinheiro|grana curta|pouco dinheiro|depois eu vejo|depois vejo|mais pra frente|n[aã]o sei se consigo|n[aã]o sei se vendo|ser[aá] que consigo|com medo|t[aá] caro|t[aá] meio caro|salgado|preciso pensar|vou ver com|vou falar com|n[aã]o tenho dinheiro agora|t[oô] apertado)/i.test(lowerUser);
 
   if (isHesitation) {
     const resp = resolveSpintax(`{Irmão|Parceiro}, super entendo! Dinheiro e tempo são coisas sérias.[SPLIT]Faz o seguinte: entra no Vitalício de R$ 49,99. Você tem 7 dias de garantia incondicional pela Cakto. Se em até 7 dias você achar que não é pra você ou não conseguir vender, devolvemos 100% do seu dinheiro na hora com 1 clique.\n\nO risco tá todo nas minhas costas, você não perde nada. Quer que eu te passe o link?`);
@@ -500,9 +509,27 @@ export async function getAiResponse(jid, userMessage, extraData = {}) {
     return resp;
   }
 
-  // 4. CUPOM DE DESCONTO RELÂMPAGO (R$ 10 OFF / VITALÍCIO R$ 39,99 COM CUPOM VIP10)
+  // 5. CUPOM DE DESCONTO RELÂMPAGO (R$ 10 OFF / VITALÍCIO R$ 39,99 COM CUPOM VIP10)
   if (lowerUser.includes('cupom') || lowerUser.includes('desconto') || lowerUser.includes('39') || (lowerUser.includes('quero') && lowerUser.includes('vitalicio') && history.some(h => h.content?.includes('cupom')))) {
     const resp = resolveSpintax(`{Consegui liberar o cupom pra você!|Fechou, liberei seu desconto exclusivo!}[SPLIT]Use o cupom *VIP10* ou acesse direto pelo link com os R$ 10 de desconto aplicados (sai por R$ 39,99 à vista no Vitalício):\n👉 ${LINK_VITALICIO_DESCONTO}\n\nSó coloca o seu *Gmail* certinho na hora de pagar na Cakto, que o acesso libera automático pra ele.`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // 6. ANTI-REEMBOLSO INTELIGENTE (IDEIA 17)
+  const isRefundQuery = /(quero cancelar|quero cancelamento|quero reembolso|reembolso|estorno|quero estorno|devolve meu dinheiro|devolver meu dinheiro|n[aã]o gostei|n[aã]o funcionou|n[aã]o consegui vender|n[aã]o consigo vender|cancela minha conta|cancelar assinatura)/i.test(lowerUser);
+
+  if (isRefundQuery) {
+    const resp = resolveSpintax(`{Irmão|Parceiro}, relaxa 100%! Sua garantia incondicional de 7 dias pela Cakto tá totalmente protegida, e se você quiser estornar, devolvemos sem burocracia.[SPLIT]Mas antes de você desistir de colocar R$ 400 no bolso: me manda aqui um print ou o texto de como você abordou os comércios aí da sua cidade.\n\nEu vou analisar a sua copy de graça agora e te mostrar o ajuste exato pra você fechar o seu primeiro cliente hoje. Me manda aqui!`);
+    history.push({ role: 'assistant', content: resp });
+    return resp;
+  }
+
+  // 7. PROGRAMA DE AFILIADOS CAKTO / CASHBACK DO DONO (IDEIA 11)
+  const isAffiliateQuery = /(afiliado|afilia[çc][ãa]o|parceiro|indica[çc][ãa]o|indicar|comiss[aã]o|revenda|revender|recuperar o dinheiro|recuperar o valor)/i.test(lowerUser);
+
+  if (isAffiliateQuery) {
+    const resp = resolveSpintax(`{Irmão|Parceiro}, sabia que tem como você recuperar o valor da ferramenta hoje mesmo sem nem precisar criar site?[SPLIT]A gente tem o programa oficial de parceiros da Ghost AI na Cakto. Se você indicar o Vitalício para apenas 2 amigos, você ganha 50% de comissão por venda (R$ 50 no seu bolso) e a ferramenta já se pagou 100% no mesmo dia!\n\nPra se afiliar e pegar seu link exclusivo de comissão na Cakto é só entrar aqui:\n👉 https://ghostmarket-ai.vercel.app/parceiros`);
     history.push({ role: 'assistant', content: resp });
     return resp;
   }
