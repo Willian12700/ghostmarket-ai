@@ -59,21 +59,37 @@ export default async function handler(req, res) {
       console.error("Erro ao registrar log do webhook:", logErr.message);
     }
 
-    const rawEmail = payload?.data?.customer?.email || payload?.customer?.email || payload?.email;
-    const customerEmail = rawEmail ? String(rawEmail).toLowerCase().trim() : '';
+    const rawEmail = payload?.data?.customer?.email || payload?.customer?.email || payload?.email || '';
+    const customerEmail = String(rawEmail).toLowerCase().trim();
 
-    const rawPhone = payload?.data?.customer?.phone || payload?.customer?.phone || payload?.data?.phone || payload?.phone || '';
+    const rawPhone = payload?.data?.customer?.phone || payload?.data?.customer?.cellphone || payload?.data?.customer?.mobile || payload?.customer?.phone || payload?.data?.phone || payload?.phone || '';
     const customerPhone = String(rawPhone).trim();
 
     const rawName = payload?.data?.customer?.name || payload?.customer?.name || payload?.data?.name || payload?.name || 'Cliente';
     const customerName = String(rawName).trim();
 
-    const amount = Number(payload?.data?.transaction?.amount || payload?.data?.amount || payload?.amount || 0);
-    const offerName = String(payload?.data?.offer?.name || payload?.data?.product?.name || payload?.product_name || '').toLowerCase();
+    let rawAmount = Number(payload?.data?.amount || payload?.data?.total || payload?.data?.transaction?.amount || payload?.amount || 0);
+    // Na Cakto, valores podem vir em centavos (ex: 2990 = R$ 29.90 ou 4990 = R$ 49.90)
+    if (rawAmount >= 1000 && !payload?.data?.transaction?.amount) {
+      rawAmount = rawAmount / 100;
+    }
+    const amount = rawAmount;
+
+    const offerName = String(payload?.data?.offer?.name || payload?.data?.product?.name || payload?.product_name || payload?.data?.productName || '').toLowerCase();
     const detectedPlan = (amount >= 39 || offerName.includes('vital') || offerName.includes('elite') || offerName.includes('49')) ? 'vitalicio' : 'mensal';
 
-    const pixCode = payload?.data?.transaction?.pix_code || payload?.data?.pix_code || payload?.pix_code || payload?.data?.transaction?.pix_qr_code || '';
-    const eventType = String(payload?.event || payload?.status || '').toLowerCase().trim();
+    const pixCode = (
+      payload?.data?.pix?.qrCode ||
+      payload?.data?.pix?.qrcode ||
+      payload?.data?.pix?.qr_code ||
+      payload?.data?.payment?.pix?.qrCode ||
+      payload?.data?.transaction?.pix_code ||
+      payload?.data?.pix_code ||
+      payload?.pix_code ||
+      payload?.data?.transaction?.pix_qr_code ||
+      ''
+    );
+    const eventType = String(payload?.event || payload?.status || payload?.type || '').toLowerCase().trim();
 
     if (!customerEmail && !customerPhone) {
       return res.status(400).json({ error: 'Nenhum e-mail ou telefone identificado no payload' });
@@ -130,6 +146,8 @@ export default async function handler(req, res) {
 
     // 2. PIX Gerado / Aguardando Pagamento / Carrinho Abandonado (Recuperação Automática pelo Jarvis)
     const isPendingPayment = (
+      eventType === 'pix_gerado' ||
+      eventType === 'checkout_abandonment' ||
       eventType === 'waiting_payment' ||
       eventType === 'pix_generated' ||
       eventType === 'pix_created' ||
@@ -137,7 +155,9 @@ export default async function handler(req, res) {
       eventType === 'cart_abandoned' ||
       eventType === 'checkout_abandoned' ||
       eventType === 'abandoned_cart' ||
+      eventType === 'boleto_gerado' ||
       eventType === 'billet_created' ||
+      eventType === 'purchase_refused' ||
       eventType === 'refused'
     );
 
