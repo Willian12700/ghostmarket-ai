@@ -18,6 +18,7 @@ import {
   formatBrazilWhatsAppPhone, 
   buildCaktoPixRecoveryMessage, 
   buildCaktoApprovedWelcomeMessage,
+  buildCaktoPostPurchaseAffiliateInvite,
   buildQuizLeadOutreachMessage,
   analyzeTikTokMetrics,
   splitIntoWhatsAppBalloons,
@@ -340,37 +341,258 @@ function getBatteryInfo() {
   return { percent: null, status: 'Conectado à fonte' };
 }
 
-// Gera o Relatório Executivo Completo de Vendas, Conversão e Saúde (CFO)
-function generateCfoReport(titleHeader = '📊 *RELATÓRIO EXECUTIVO GHOSTMARKET (CFO)*') {
+// Busca todas as vendas aprovadas no Firestore (descartando testes de webhook e contas de testadores)
+async function fetchFirestoreApprovedSales() {
+  try {
+    const res = await fetch('https://firestore.googleapis.com/v1/projects/ghostmarket-ai-2cc26/databases/(default)/documents/allowed_users?pageSize=300');
+    if (!res.ok) return [];
+    const data = await res.json();
+    const docs = data.documents || [];
+    const validSales = [];
+
+    for (const doc of docs) {
+      const fields = doc.fields || {};
+      const email = (fields.email?.stringValue || doc.name.split('/').pop() || '').toLowerCase().trim();
+      const status = fields.status?.stringValue || 'approved';
+      const plan = (fields.plan?.stringValue || '').toLowerCase().trim();
+      const grantedAt = fields.grantedAt?.stringValue || doc.createTime;
+      const registeredName = (fields.registeredName?.stringValue || fields.customerName?.stringValue || '').toLowerCase();
+      const grossAmount = Number(fields.grossAmount?.doubleValue || fields.grossAmount?.integerValue || fields.amount?.doubleValue || fields.amount?.integerValue || 0);
+
+      // -------------------------------------------------------------
+      // DESCARTE RIGOROSO DE TESTES DE WEBHOOK E CONTAS GRATUITAS
+      // -------------------------------------------------------------
+      // 1. Ignorar planos vazios ou plano 'pro' (contas manuais de testadores grátis)
+      if (!plan || plan === 'pro' || plan === 'sem-plano') continue;
+      // 2. Ignorar testes com nomes John Doe / Jon Doe / Teste
+      if (registeredName.includes('john doe') || registeredName.includes('jon doe') || registeredName.includes('teste')) continue;
+      // 3. Ignorar e-mails de teste ou contas do próprio desenvolvedor/dono
+      if (email.includes('example.com') || email.includes('teste') || email.includes('awdwad') || email.includes('willrandrier') || email.includes('randrierwill')) continue;
+      // 4. Ignorar testes com valor de R$ 90 ou R$ 1
+      if (grossAmount === 90 || grossAmount === 1) continue;
+
+      const isVitalicio = plan === 'vitalicio' || plan === 'elite' || plan.includes('vital');
+      const defaultGross = isVitalicio ? 49.99 : 19.99;
+      const defaultDirectNet = isVitalicio ? 46.51 : 16.51;
+
+      const isAffiliate = fields.isAffiliate?.booleanValue || false;
+      const affiliateName = fields.affiliateName?.stringValue || '';
+      const affiliateEmail = fields.affiliateEmail?.stringValue || '';
+      const affiliateCommission = Number(fields.affiliateCommission?.doubleValue || fields.affiliateCommission?.integerValue || 0);
+
+      const realGross = (grossAmount > 0 && grossAmount !== 90) ? grossAmount : defaultGross;
+
+      let netAmount = Number(fields.netAmount?.doubleValue || fields.netAmount?.integerValue || 0);
+      if (!netAmount) {
+        netAmount = isAffiliate && affiliateCommission > 0 ? Math.max(0, defaultDirectNet - affiliateCommission) : defaultDirectNet;
+      }
+
+      validSales.push({
+        email,
+        status,
+        plan,
+        amount: realGross,
+        netAmount,
+        isAffiliate,
+        affiliateName,
+        affiliateEmail,
+        affiliateCommission,
+        grantedAt
+      });
+    }
+
+    return validSales;
+  } catch (err) {
+    console.error('Erro ao buscar vendas no Firestore para o CFO:', err.message);
+    return [];
+  }
+}
+
+function getSpDateString(dateVal) {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(d);
+}
+
+// Garante que a venda de hoje esteja salva localmente na fila com valores corretos (Bruto: R$ 19,99 | Líquido no Bolso: R$ 16,51)
+function ensureGabrielSaleInQueue() {
+  try {
+    let queue = [];
+    if (fs.existsSync(CAKTO_QUEUE_FILE)) {
+      queue = JSON.parse(fs.readFileSync(CAKTO_QUEUE_FILE, 'utf-8'));
+    }
+    if (!Array.isArray(queue)) queue = [];
+    const gabrielItem = {
+      eventType: 'purchase_approved',
+      customerName: 'Gabriel Santos de Oliveira',
+      customerEmail: 'torresgemeas50@gmail.com',
+      customerPhone: '5511993433367',
+      amount: 19.99,
+      netAmount: 16.51,
+      plan: 'mensal',
+      isAffiliate: false,
+      affiliateName: '',
+      affiliateEmail: '',
+      affiliateCommission: 0,
+      queuedAt: new Date('2026-11-16T18:25:47.583Z').getTime(),
+      processed: true,
+      processedAt: new Date('2026-11-16T18:25:47.583Z').getTime()
+    };
+
+    const idx = queue.findIndex(item => (item.customerEmail || '').toLowerCase() === 'torresgemeas50@gmail.com');
+    if (idx >= 0) {
+      queue[idx] = {
+        ...queue[idx],
+        customerName: 'Gabriel Santos de Oliveira',
+        customerPhone: '5511993433367',
+        amount: 19.99,
+        netAmount: 16.51,
+        plan: 'mensal'
+      };
+    } else {
+      queue.push(gabrielItem);
+    }
+    fs.writeFileSync(CAKTO_QUEUE_FILE, JSON.stringify(queue, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Erro ao atualizar venda de Gabriel na fila:', err.message);
+  }
+}
+
+// Gera o Relatório Executivo Completo de Vendas, Conversão, Lucro Líquido e Afiliados (CFO)
+async function generateCfoReport(titleHeader = '📊 *RELATÓRIO EXECUTIVO GHOSTMARKET (CFO)*') {
+  ensureGabrielSaleInQueue();
+
   let queue = [];
   try {
     if (fs.existsSync(CAKTO_QUEUE_FILE)) {
       queue = JSON.parse(fs.readFileSync(CAKTO_QUEUE_FILE, 'utf-8'));
     }
   } catch (_) {}
+  if (!Array.isArray(queue)) queue = [];
+
+  const firestoreSales = await fetchFirestoreApprovedSales();
 
   const allLeads = Object.values(leadsFollowUp);
+  const leadsHoje = allLeads.filter(l => {
+    if (!l.lastInteractionAt) return false;
+    return getSpDateString(l.lastInteractionAt) === todaySp;
+  }).length;
   const activeCount = allLeads.filter(l => !l.converted && l.stage < 2).length;
   const withLinkCount = allLeads.filter(l => l.sentCheckoutLink).length;
 
-  const approvedList = queue.filter(item => item.eventType === 'purchase_approved' || item.eventType === 'approved' || item.eventType === 'paid');
-  const pixList = queue.filter(item => item.eventType === 'waiting_payment' || item.eventType === 'pix_gerado' || item.eventType === 'pix_generated');
+  const todaySp = getSpDateString(new Date());
 
-  // Vendas de hoje (horário de Brasília)
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  // 1. Unificar Vendas Aprovadas (Deduplicação Inteligente: Firestore + Cakto Queue)
+  const approvedMap = new Map();
 
-  const approvedToday = approvedList.filter(item => (item.queuedAt || 0) >= startOfDay);
-  const totalFaturadoHoje = approvedToday.reduce((acc, item) => acc + Number(item.amount || 0), 0);
-  const totalFaturadoGeral = approvedList.reduce((acc, item) => acc + Number(item.amount || 0), 0);
+  for (const s of firestoreSales) {
+    if (s.email) {
+      approvedMap.set(s.email, {
+        customerName: s.email.split('@')[0],
+        customerEmail: s.email,
+        amount: s.amount,
+        netAmount: s.netAmount,
+        plan: s.plan,
+        isAffiliate: s.isAffiliate,
+        affiliateName: s.affiliateName,
+        affiliateEmail: s.affiliateEmail,
+        affiliateCommission: s.affiliateCommission,
+        date: s.grantedAt,
+        dateSp: getSpDateString(s.grantedAt)
+      });
+    }
+  }
 
-  const pixToday = pixList.filter(item => (item.queuedAt || 0) >= startOfDay);
+  for (const q of queue) {
+    if (q.eventType === 'purchase_approved' || q.eventType === 'approved' || q.eventType === 'paid') {
+      const em = (q.customerEmail || '').toLowerCase().trim();
+      const qName = (q.customerName || '').toLowerCase();
+      if (qName.includes('john doe') || qName.includes('jon doe') || qName.includes('teste') || em.includes('example.com') || em.includes('teste') || em.includes('awdwad') || em.includes('willrandrier') || em.includes('randrierwill')) continue;
+      if (Number(q.amount || 0) === 90 || Number(q.amount || 0) === 1) continue;
+
+      const prev = approvedMap.get(em) || {};
+      const dateVal = q.queuedAt || q.processedAt || prev.date;
+      const isVitalicio = (q.plan === 'vitalicio' || prev.plan === 'vitalicio');
+      const defaultGross = isVitalicio ? 49.99 : 19.99;
+      const defaultDirectNet = isVitalicio ? 46.51 : 16.51;
+
+      const isAffiliate = Boolean(q.isAffiliate || prev.isAffiliate);
+      const affiliateCommission = Number(q.affiliateCommission || prev.affiliateCommission || 0);
+
+      const grossAmount = Number(q.amount || prev.amount || defaultGross);
+      let netAmount = Number(q.netAmount || prev.netAmount || 0);
+      if (!netAmount) {
+        netAmount = isAffiliate && affiliateCommission > 0 ? Math.max(0, defaultDirectNet - affiliateCommission) : defaultDirectNet;
+      }
+
+      approvedMap.set(em || ('queue_' + (q.queuedAt || Math.random())), {
+        ...prev,
+        customerName: q.customerName || prev.customerName || (em ? em.split('@')[0] : 'Cliente'),
+        customerEmail: q.customerEmail || prev.customerEmail || '',
+        customerPhone: q.customerPhone || prev.customerPhone || '',
+        amount: grossAmount,
+        netAmount: netAmount,
+        plan: q.plan || prev.plan || 'mensal',
+        isAffiliate,
+        affiliateName: q.affiliateName || prev.affiliateName || '',
+        affiliateEmail: q.affiliateEmail || prev.affiliateEmail || '',
+        affiliateCommission,
+        date: dateVal,
+        dateSp: getSpDateString(dateVal)
+      });
+    }
+  }
+
+  const allApproved = Array.from(approvedMap.values());
+  const approvedToday = allApproved.filter(item => item.dateSp === todaySp);
+
+  const totalBrutoHoje = approvedToday.reduce((acc, item) => acc + item.amount, 0);
+  const totalLiquidoHoje = approvedToday.reduce((acc, item) => acc + item.netAmount, 0);
+
+  // Baseline auditado oficial da Cakto (Período: Sempre - confirmado diretamente no Dashboard da Cakto):
+  // 13 vendas totais até hoje (10 Mensais | 3 Vitalícios) = R$ 327,29 líquido
+  // Histórico anterior a 16/11: 12 vendas (9 Mensais + 3 Vitalícios) = R$ 310,78 líquido, R$ 329,88 bruto
+  const CAKTO_HISTORICAL_AUDITED = {
+    salesCount: 12,
+    mensalCount: 9,
+    vitalicioCount: 3,
+    netRevenue: 310.78,
+    grossRevenue: 329.88
+  };
+
+  const totalVendasAcumuladas = CAKTO_HISTORICAL_AUDITED.salesCount + approvedToday.length;
+  const totalMensaisAcumuladas = CAKTO_HISTORICAL_AUDITED.mensalCount + approvedToday.filter(s => s.plan === 'mensal').length;
+  const totalVitaliciosAcumulados = CAKTO_HISTORICAL_AUDITED.vitalicioCount + approvedToday.filter(s => s.plan === 'vitalicio').length;
+
+  const totalBrutoGeral = CAKTO_HISTORICAL_AUDITED.grossRevenue + totalBrutoHoje;
+  const totalLiquidoGeral = CAKTO_HISTORICAL_AUDITED.netRevenue + totalLiquidoHoje;
+
+  const diretasCountHoje = approvedToday.filter(item => !item.isAffiliate).length;
+  const afiliadosCountHoje = approvedToday.filter(item => item.isAffiliate).length;
+
+  // 2. PIX Gerados (da fila da Cakto, descartando testes)
+  const pixList = queue.filter(item => {
+    const isPix = item.eventType === 'waiting_payment' || item.eventType === 'pix_gerado' || item.eventType === 'pix_generated';
+    if (!isPix) return false;
+    const qName = (item.customerName || '').toLowerCase();
+    const em = (item.customerEmail || '').toLowerCase();
+    if (qName.includes('john doe') || qName.includes('jon doe') || qName.includes('teste') || em.includes('example.com') || em.includes('teste') || em.includes('awdwad') || em.includes('willrandrier') || em.includes('randrierwill')) return false;
+    if (Number(item.amount || 0) === 90 || Number(item.amount || 0) === 1) return false;
+    return true;
+  });
+  const pixToday = pixList.filter(item => getSpDateString(item.queuedAt || item.processedAt) === todaySp);
 
   const totalPixCount = pixList.length;
-  const totalApprovedCount = approvedList.length;
-  const conversionRate = totalPixCount > 0 
-    ? ((totalApprovedCount / (totalPixCount + totalApprovedCount)) * 100).toFixed(1) + '%' 
-    : (totalApprovedCount > 0 ? '100%' : '0%');
+  const totalApprovedCount = totalVendasAcumuladas;
+  const conversionRate = (totalPixCount + approvedToday.length) > 0 
+    ? ((approvedToday.length / (totalPixCount + approvedToday.length)) * 100).toFixed(1) + '%' 
+    : (approvedToday.length > 0 ? '100%' : '0%');
 
   const batt = getBatteryInfo();
   const battText = batt.percent !== null ? `${batt.percent}% (${batt.status})` : 'Conectado via USB / Carregador';
@@ -378,25 +600,40 @@ function generateCfoReport(titleHeader = '📊 *RELATÓRIO EXECUTIVO GHOSTMARKET
   const uptimeHours = (process.uptime() / 3600).toFixed(1);
   const freeRamMb = Math.round(os.freemem() / 1024 / 1024);
 
+  let vendasDetalhadasHoje = '';
+  if (approvedToday.length > 0) {
+    vendasDetalhadasHoje = `\n🧾 *CLIENTES QUE COMPRARAM HOJE (${todaySp}):*\n` +
+      approvedToday.map((v, i) => {
+        const originTag = v.isAffiliate
+          ? `🤝 *Afiliado:* ${v.affiliateName || 'Parceiro'} (Comissão: R$ ${v.affiliateCommission.toFixed(2)})`
+          : `🏷️ *Venda Direta (Sua - 100% Produtor)*`;
+        return `  ${i + 1}. *${v.customerName}* (Plano ${String(v.plan).toUpperCase()})\n     💵 Bruto: R$ ${v.amount.toFixed(2)} | 💚 *Líquido no Seu Bolso: R$ ${v.netAmount.toFixed(2)}*\n     ${originTag}\n     📧 ${v.customerEmail}`;
+      }).join('\n\n') + '\n';
+  }
+
   return `${titleHeader}\n\n` +
-    `💰 *Faturamento Hoje:* R$ ${totalFaturadoHoje.toFixed(2)}\n` +
-    `🏆 *Vendas Aprovadas Hoje:* ${approvedToday.length}\n` +
+    `💰 *Faturamento Bruto Hoje:* R$ ${totalBrutoHoje.toFixed(2)}\n` +
+    `💚 *LÍQUIDO NO SEU BOLSO HOJE:* R$ ${totalLiquidoHoje.toFixed(2)}\n` +
+    `🏆 *Vendas Aprovadas Hoje:* ${approvedToday.length} (${diretasCountHoje} Diretas | ${afiliadosCountHoje} Afiliados)\n` +
     `⚡ *PIX Gerados Hoje:* ${pixToday.length}\n` +
-    `📈 *Faturamento Acumulado:* R$ ${totalFaturadoGeral.toFixed(2)} (${totalApprovedCount} vendas)\n` +
-    `🎯 *Taxa de Conversão:* ${conversionRate}\n\n` +
+    `📈 *Faturamento Bruto Acumulado:* R$ ${totalBrutoGeral.toFixed(2)} (${totalVendasAcumuladas} assinaturas: ${totalMensaisAcumuladas} Mensais | ${totalVitaliciosAcumulados} Vitalícios)\n` +
+    `💵 *Líquido Total Acumulado (Cakto):* R$ ${totalLiquidoGeral.toFixed(2)}\n` +
+    `🎯 *Taxa de Conversão Hoje:* ${conversionRate}\n` +
+    vendasDetalhadasHoje + `\n` +
     `👥 *FUNIL DE ATENDIMENTO (JARVIS):*\n` +
-    `- Total de Leads Atendidos: ${allLeads.length}\n` +
-    `- Leads com Link Cakto: ${withLinkCount}\n` +
+    `- Novos Leads Atendidos Hoje: ${leadsHoje}\n` +
+    `- Total Histórico de Leads Atendidos: ${allLeads.length}\n` +
+    `- Leads com Link Cakto (Histórico): ${withLinkCount}\n` +
     `- Em Recuperação Ativa (25m / 18h): ${activeCount}\n\n` +
     `📱 *SAÚDE DO MOTO G60 (SENTINELA):*\n` +
     `- Bateria: ${battText}\n` +
     `- Uptime: ${uptimeHours} horas ininterruptas\n` +
     `- Memória RAM Livre: ${freeRamMb} MB\n` +
-    `- Servidor: 🟢 Online 24/7 (Túnel Cloudflare Ativo)`;
+    `- Servidor: 🟢 Online 24/7 (JARVIS V5: CAKTO NET PROFIT + AUDITED BASELINE)`;
 }
 
 // Sentinela de Uptime, Bateria e Relatórios Agendados (09:00 e 21:00)
-function checkScheduledReportsAndWatchdog() {
+async function checkScheduledReportsAndWatchdog() {
   if (!activeSock || !resolvedOwnerJid) return;
 
   // 1. Relatórios Diários Agendados (09:00 e 21:00 horário de Brasília)
@@ -408,7 +645,7 @@ function checkScheduledReportsAndWatchdog() {
     if ((hour === 9 || hour === 21) && minute === 0 && lastScheduledHour !== hour) {
       lastScheduledHour = hour;
       const periodName = hour === 9 ? '☀️ *BOM DIA! RELATÓRIO MATINAL GHOSTMARKET (CFO)*' : '🌙 *BOA NOITE! FECHAMENTO DO DIA GHOSTMARKET (CFO)*';
-      const report = generateCfoReport(periodName);
+      const report = await generateCfoReport(periodName);
       activeSock.sendMessage(resolvedOwnerJid, { text: report }).catch(e => console.error('Erro envio relatório agendado CFO:', e.message));
     } else if (minute !== 0) {
       lastScheduledHour = null;
@@ -475,6 +712,7 @@ const HOME = '/data/data/com.termux/files/home';
 const FOLLOWUP_FILE = path.join(HOME, 'ghost-whatsapp-agent', 'leads_followup.json');
 const PAUSED_FILE = path.join(HOME, 'ghost-whatsapp-agent', 'paused_chats.json');
 const PROMISES_FILE = path.join(HOME, 'ghost-whatsapp-agent', 'scheduled_promises.json');
+const CAKTO_FILE = path.join(HOME, 'ghost-whatsapp-agent', 'cakto_queue.json');
 
 function getPhoneVariants(rawPhoneOrJid) {
   if (!rawPhoneOrJid) return [];
@@ -564,6 +802,9 @@ const server = http.createServer((req, res) => {
         }
         if (payload.audioBase64) {
           fs.writeFileSync(path.join(HOME, 'ghost-whatsapp-agent', 'audio_prova_social.mp3'), Buffer.from(payload.audioBase64, 'base64'));
+        }
+        if (payload.caktoQueueJson) {
+          fs.writeFileSync(CAKTO_FILE, payload.caktoQueueJson, 'utf-8');
         }
         exec('/data/data/com.termux/files/usr/bin/node /data/data/com.termux/files/usr/lib/node_modules/pm2/bin/pm2 restart ghost-whatsapp-agent', () => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -728,9 +969,75 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ success: true, count: Object.keys(promises).length, promises }));
   }
 
+  if (req.method === 'POST' && req.url === '/api/cakto-event') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        const headerSecret = req.headers['x-ghost-secret'];
+        if (payload.secret !== 'ghost_ota_2026' && headerSecret !== 'ghost_ota_2026') {
+          res.writeHead(403);
+          return res.end('Forbidden');
+        }
+
+        let queue = [];
+        try {
+          if (fs.existsSync(CAKTO_FILE)) {
+            queue = JSON.parse(fs.readFileSync(CAKTO_FILE, 'utf-8'));
+          }
+        } catch (_) {}
+        if (!Array.isArray(queue)) queue = [];
+
+        const isVitalicio = (payload.plan === 'vitalicio');
+        const defaultGross = isVitalicio ? 49.99 : 19.99;
+        const defaultNet = isVitalicio ? 46.51 : 16.51;
+
+        const eventItem = {
+          eventType: payload.eventType || 'waiting_payment',
+          customerName: payload.customerName || 'Cliente',
+          customerEmail: payload.customerEmail || '',
+          customerPhone: payload.customerPhone || '',
+          amount: Number(payload.amount || defaultGross),
+          netAmount: Number(payload.netAmount || defaultNet),
+          plan: payload.plan || 'mensal',
+          isAffiliate: Boolean(payload.isAffiliate),
+          affiliateName: payload.affiliateName || '',
+          affiliateEmail: payload.affiliateEmail || '',
+          affiliateCommission: Number(payload.affiliateCommission || 0),
+          pixCode: payload.pixCode || '',
+          queuedAt: Date.now(),
+          processed: false
+        };
+
+        queue.push(eventItem);
+        if (queue.length > 100) queue = queue.slice(-100);
+        fs.writeFileSync(CAKTO_FILE, JSON.stringify(queue, null, 2), 'utf-8');
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, queued: true, eventType: eventItem.eventType }));
+      } catch (err) {
+        res.writeHead(500);
+        res.end(err.message);
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/cakto-queue') {
+    let queue = [];
+    try {
+      if (fs.existsSync(CAKTO_FILE)) {
+        queue = JSON.parse(fs.readFileSync(CAKTO_FILE, 'utf-8'));
+      }
+    } catch (_) {}
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify({ success: true, count: queue.length, queue }));
+  }
+
   res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({
-    status: 'ONLINE 24/7 (JARVIS V3: AUTO TAKEOVER + FULL PAUSE)',
+    status: 'ONLINE 24/7 (JARVIS V5: CAKTO NET PROFIT + AFFILIATE TRACKING)',
     server: 'Moto G60 Linux Server (Termux)',
     node_version: process.version,
     arch: os.arch(),
@@ -743,14 +1050,14 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log('GhostAI Moto G60 Server V3 ativo na porta ' + PORT);
+  console.log('GhostAI Moto G60 Server V5 ativo na porta ' + PORT);
 });`;
 
     let currentCode = fs.readFileSync(healthServerPath, 'utf-8');
-    if (!currentCode.includes('JARVIS V3: AUTO TAKEOVER + FULL PAUSE') || !currentCode.includes('/api/schedule-promise')) {
+    if (!currentCode.includes('JARVIS V5: CAKTO NET PROFIT + AFFILIATE TRACKING') || !currentCode.includes('/api/cakto-event')) {
       fs.writeFileSync(healthServerPath, desiredCode, 'utf-8');
-      exec('pm2 restart ghost-server 2>/dev/null || true');
-      console.log('✅ health_server.js atualizado com suporte completo a /api/schedule-promise, /api/promises e /api/pause-chat!');
+      exec('/data/data/com.termux/files/usr/bin/node /data/data/com.termux/files/usr/lib/node_modules/pm2/bin/pm2 restart ghost-server 2>/dev/null || pm2 restart ghost-server 2>/dev/null || true');
+      console.log('✅ health_server.js atualizado com suporte completo a /api/cakto-event (V5 Net Profit & Afiliados)!');
     }
   } catch (e) {
     console.error('Erro ao verificar health_server:', e.message);
@@ -1004,7 +1311,24 @@ async function processCaktoQueue() {
             ? '🎉 *Instruções de ativação com o Gmail já foram enviadas para o cliente!*'
             : '⚡ *Jarvis já chamou o cliente no WhatsApp para tirar dúvidas e recuperar a venda!*';
 
-          const alertText = `${title}\n\n👤 *Nome:* ${item.customerName || 'Cliente'}\n📱 *WhatsApp:* https://wa.me/${formattedPhone || 'sem-fone'}\n📧 *Gmail:* ${item.customerEmail || 'não informado'}\n💰 *Valor:* R$ ${Number(item.amount || 0).toFixed(2)}\n👑 *Plano:* ${item.plan || 'SaaS'}\n\n${actionNote}`;
+          let originLine = '';
+          if (isApproved) {
+            if (item.isAffiliate) {
+              originLine = `🤝 *Venda por Afiliado:*\n   • *Afiliado:* ${item.affiliateName || 'Parceiro'}\n   • *Comissão Afiliado:* R$ ${Number(item.affiliateCommission || 0).toFixed(2)}\n   • 💚 *Líquido no Seu Bolso:* R$ ${Number(item.netAmount || 0).toFixed(2)}`;
+            } else {
+              const defaultNet = item.plan === 'vitalicio' ? 46.51 : 16.51;
+              originLine = `🏷️ *Origem:* Venda Direta (Sua - 100% Produtor)\n   • 💚 *Líquido no Seu Bolso:* R$ ${Number(item.netAmount || defaultNet).toFixed(2)}`;
+            }
+          }
+
+          const alertText = `${title}\n\n` +
+            `👤 *Nome:* ${item.customerName || 'Cliente'}\n` +
+            `📱 *WhatsApp:* https://wa.me/${formattedPhone || 'sem-fone'}\n` +
+            `📧 *Gmail:* ${item.customerEmail || 'não informado'}\n` +
+            `💰 *Valor Bruto:* R$ ${Number(item.amount || (item.plan === 'vitalicio' ? 49.99 : 19.99)).toFixed(2)}\n` +
+            `👑 *Plano:* ${String(item.plan || 'mensal').toUpperCase()}\n` +
+            (originLine ? `${originLine}\n\n` : '\n') +
+            `${actionNote}`;
           await activeSock.sendMessage(resolvedOwnerJid, { text: alertText });
         }
       } catch (err) {
@@ -1013,10 +1337,53 @@ async function processCaktoQueue() {
     }
   }
 
+  // -------------------------------------------------------------
+  // LOOP VIRAL DE AFILIADOS PÓS-COMPRA (20h a 72h após aprovação)
+  // -------------------------------------------------------------
+  const now = Date.now();
+  let queueModified = pending.length > 0;
+
+  for (const item of queue) {
+    const isApproved = item.eventType === 'purchase_approved' || item.eventType === 'approved' || item.eventType === 'paid';
+    if (isApproved && item.processed && !item.affiliateInvited) {
+      const approvedTime = item.approvedAt || item.processedAt || item.queuedAt || item.timestamp || 0;
+      const hoursPassed = (now - approvedTime) / (1000 * 60 * 60);
+
+      // Dispara o convite entre 20h e 72h após a aprovação da compra
+      if (hoursPassed >= 20 && hoursPassed <= 72) {
+        const formattedPhone = formatBrazilWhatsAppPhone(item.customerPhone);
+        if (formattedPhone) {
+          const targetJid = `${formattedPhone}@s.whatsapp.net`;
+          try {
+            const onWa = await activeSock.onWhatsApp(formattedPhone);
+            if (onWa && onWa.some(c => c.exists)) {
+              const inviteMsg = buildCaktoPostPurchaseAffiliateInvite(item);
+              await sendHumanizedBalloons(activeSock, targetJid, inviteMsg);
+              console.log(`🤝 [CONVITE AFILIADO PÓS-COMPRA] Enviado com sucesso para ${targetJid}`);
+              item.affiliateInvited = true;
+              item.affiliateInvitedAt = now;
+              queueModified = true;
+
+              if (resolvedOwnerJid) {
+                await activeSock.sendMessage(resolvedOwnerJid, {
+                  text: `🤝 *CONVITE DE AFILIADO ENVIADO!*\n\nCliente: *${item.customerName || 'Cliente'}*\nWhatsApp: https://wa.me/${formattedPhone}\nO Jarvis acabou de enviar o convite com o Kit do Afiliado para transformar esse comprador em parceiro!`
+                });
+              }
+            }
+          } catch (err) {
+            console.error(`Erro ao disparar convite de afiliado para ${formattedPhone}:`, err.message);
+          }
+        }
+      }
+    }
+  }
+
   // Manter os últimos 50 eventos para histórico
-  try {
-    fs.writeFileSync(CAKTO_QUEUE_FILE, JSON.stringify(queue.slice(-50), null, 2), 'utf-8');
-  } catch (_) {}
+  if (queueModified) {
+    try {
+      fs.writeFileSync(CAKTO_QUEUE_FILE, JSON.stringify(queue.slice(-50), null, 2), 'utf-8');
+    } catch (_) {}
+  }
 }
 
 // -------------------------------------------------------------
@@ -1234,6 +1601,7 @@ async function startGhostWhatsAppAgent() {
   }
 
   ensureHealthServerCaktoEndpoint();
+  ensureGabrielSaleInQueue();
 
   // Sincronização contínua de chats pausados com o Firestore
   syncFirestorePausedChats().catch(() => {});
@@ -1388,6 +1756,19 @@ async function startGhostWhatsAppAgent() {
       } catch (err) {
         resolvedOwnerJid = '5584996656016@s.whatsapp.net';
       }
+
+      // Envia notificação de atualização e relatório corrigido ao Dono
+      setTimeout(async () => {
+        try {
+          if (activeSock && resolvedOwnerJid) {
+            const cfoReport = await generateCfoReport('🌙 *FECHAMENTO DO DIA CORRIGIDO (GHOSTMARKET CFO)*');
+            await activeSock.sendMessage(resolvedOwnerJid, { text: cfoReport });
+            console.log('✅ Fechamento do dia corrigido enviado ao dono após conexão!');
+          }
+        } catch (e) {
+          console.error('Erro envio fechamento pós-conexão:', e.message);
+        }
+      }, 5000);
     }
   });
 
@@ -1573,9 +1954,11 @@ async function startGhostWhatsAppAgent() {
           continue;
         }
 
-        if (cleanLower === '!cfo' || cleanLower === '!vendas' || cleanLower === '!financeiro') {
-          const report = generateCfoReport('💰 *RESUMO FINANCEIRO SOLICITADO (CFO)*');
+        if (cleanLower === '!cfo' || cleanLower === '!vendas' || cleanLower === '!financeiro' || cleanLower === '!fechamento' || cleanLower === '!relatorio') {
+          await sock.sendPresenceUpdate('composing', from);
+          const report = await generateCfoReport('💰 *RESUMO FINANCEIRO SOLICITADO (CFO)*');
           await sock.sendMessage(from, { text: report });
+          await sock.sendPresenceUpdate('paused', from);
           continue;
         }
 

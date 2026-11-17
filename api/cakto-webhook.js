@@ -84,14 +84,71 @@ export default async function handler(req, res) {
     const customerName = String(rawName).trim();
 
     let rawAmount = Number(payload?.data?.amount || payload?.data?.total || payload?.data?.transaction?.amount || payload?.amount || 0);
-    // Na Cakto, valores podem vir em centavos (ex: 2990 = R$ 29.90 ou 4990 = R$ 49.90)
+    // Na Cakto, valores podem vir em centavos (ex: 1999 = R$ 19.99 ou 4999 = R$ 49.99)
     if (rawAmount >= 1000 && !payload?.data?.transaction?.amount) {
       rawAmount = rawAmount / 100;
     }
     const amount = rawAmount;
 
     const offerName = String(payload?.data?.offer?.name || payload?.data?.product?.name || payload?.product_name || payload?.data?.productName || '').toLowerCase();
-    const detectedPlan = (amount >= 39 || offerName.includes('vital') || offerName.includes('elite') || offerName.includes('49')) ? 'vitalicio' : 'mensal';
+    const detectedPlan = (amount >= 39 || offerName.includes('vital') || offerName.includes('elite') || offerName.includes('49') || offerName.includes('anual')) ? 'vitalicio' : 'mensal';
+
+    // -------------------------------------------------------------
+    // EXTRAÇÃO INTELIGENTE DE AFILIADO & DIVISÃO DE COMISSÕES (CAKTO)
+    // -------------------------------------------------------------
+    const commissions = Array.isArray(payload?.data?.commissions) 
+      ? payload.data.commissions 
+      : (Array.isArray(payload?.commissions) ? payload.commissions : []);
+
+    const affiliateComm = commissions.find(c => (c.type || c.role || '').toLowerCase() === 'affiliate');
+    const producerComm = commissions.find(c => (c.type || c.role || '').toLowerCase() === 'producer');
+
+    const rawAffiliate = payload?.data?.affiliate || payload?.affiliate || payload?.data?.partner || null;
+    let isAffiliate = Boolean(affiliateComm || rawAffiliate);
+    let affiliateName = '';
+    let affiliateEmail = '';
+    let affiliateCommission = 0;
+
+    if (affiliateComm) {
+      isAffiliate = true;
+      affiliateName = affiliateComm.name || affiliateComm.user || 'Afiliado';
+      affiliateEmail = affiliateComm.email || (typeof affiliateComm.user === 'string' && affiliateComm.user.includes('@') ? affiliateComm.user : '');
+      affiliateCommission = Number(affiliateComm.totalAmount || affiliateComm.amount || 0);
+    } else if (rawAffiliate) {
+      isAffiliate = true;
+      if (typeof rawAffiliate === 'string') {
+        affiliateName = rawAffiliate;
+        affiliateEmail = rawAffiliate.includes('@') ? rawAffiliate : '';
+      } else if (typeof rawAffiliate === 'object') {
+        affiliateName = rawAffiliate.name || rawAffiliate.email || rawAffiliate.id || 'Afiliado';
+        affiliateEmail = rawAffiliate.email || '';
+        affiliateCommission = Number(rawAffiliate.commission || rawAffiliate.amount || 0);
+      }
+    }
+
+    // Regras de Preço e Líquido GhostMarket:
+    // Mensal: R$ 19,99 bruto -> Líquido direto produtor: R$ 16,51 (taxa Cakto R$ 3,48)
+    // Vitalício: R$ 49,99 bruto -> Líquido direto produtor: R$ 46,51 (taxa Cakto R$ 3,48)
+    const defaultGross = detectedPlan === 'vitalicio' ? 49.99 : 19.99;
+    const defaultDirectNet = detectedPlan === 'vitalicio' ? 46.51 : 16.51;
+
+    const grossAmount = amount > 0 ? amount : defaultGross;
+
+    let netAmount = defaultDirectNet;
+    if (producerComm && Number(producerComm.totalAmount || 0) > 0) {
+      // Valor líquido oficial exato enviado pela Cakto para o produtor
+      netAmount = Number(producerComm.totalAmount);
+    } else if (isAffiliate && affiliateCommission > 0) {
+      // Subtrai a comissão do afiliado da fatia líquida
+      netAmount = Math.max(0, Number((defaultDirectNet - affiliateCommission).toFixed(2)));
+    } else if (isAffiliate) {
+      // Caso a Cakto envie porcentagem de afiliado sem valor fixo
+      const affPercent = affiliateComm?.percentage || payload?.data?.affiliate_percent || 0;
+      if (affPercent > 0) {
+        affiliateCommission = Number((defaultDirectNet * (affPercent / 100)).toFixed(2));
+        netAmount = Number((defaultDirectNet - affiliateCommission).toFixed(2));
+      }
+    }
 
     const pixCode = (
       payload?.data?.pix?.qrCode ||
@@ -117,6 +174,12 @@ export default async function handler(req, res) {
           email: customerEmail,
           status: 'approved',
           plan: detectedPlan,
+          grossAmount,
+          netAmount,
+          isAffiliate,
+          affiliateName,
+          affiliateEmail,
+          affiliateCommission,
           createdAt: serverTimestamp(),
           grantedAt: new Date().toISOString(),
           used: false,
@@ -134,11 +197,16 @@ export default async function handler(req, res) {
           userId: 'willrandrier@gmail.com',
           clientName: customerName,
           clientEmail: customerEmail,
-          amount,
+          amount: grossAmount,
+          netAmount,
           status: 'Aprovado',
+          plan: detectedPlan,
+          isAffiliate,
+          affiliateName,
+          affiliateCommission,
           date: new Date().toLocaleDateString('pt-BR'),
           timestamp: serverTimestamp(),
-          source: 'Assinatura SaaS'
+          source: isAffiliate ? `Afiliado: ${affiliateName}` : 'Venda Direta'
         });
       }
 
@@ -148,13 +216,32 @@ export default async function handler(req, res) {
         customerName,
         customerEmail,
         customerPhone,
-        amount,
+        amount: grossAmount,
+        netAmount,
         plan: detectedPlan,
+        isAffiliate,
+        affiliateName,
+        affiliateEmail,
+        affiliateCommission,
         pixCode
       });
 
       // Notifica o dono diretamente no WhatsApp via CallMeBot
-      await sendCallMeBotAlert(`🎉 *NOVA VENDA CONFIRMADA NO GHOSTMARKET!* 💰\n\n👤 *Cliente:* ${customerName}\n📧 *E-mail:* ${customerEmail}\n📱 *WhatsApp:* ${customerPhone || 'N/A'}\n💵 *Valor:* R$ ${amount}\n📦 *Plano:* ${detectedPlan.toUpperCase()}\n\n✅ Acesso liberado no sistema!`);
+      const originAlert = isAffiliate
+        ? `🤝 *Venda por Afiliado:*\n   • *Afiliado:* ${affiliateName} ${affiliateEmail ? `(${affiliateEmail})` : ''}\n   • *Comissão Afiliado:* R$ ${affiliateCommission.toFixed(2)}`
+        : `🏷️ *Origem:* Venda Direta (Sua - 100% Produtor)`;
+
+      await sendCallMeBotAlert(
+        `🎉 *NOVA VENDA CONFIRMADA NO GHOSTMARKET!* 💰\n\n` +
+        `👤 *Cliente:* ${customerName}\n` +
+        `📧 *E-mail:* ${customerEmail}\n` +
+        `📱 *WhatsApp:* ${customerPhone || 'N/A'}\n` +
+        `📦 *Plano:* ${detectedPlan.toUpperCase()}\n` +
+        `💵 *Valor Bruto:* R$ ${grossAmount.toFixed(2)}\n` +
+        `💚 *LÍQUIDO NO BOLSO (VOCÊ RECEBE):* R$ ${netAmount.toFixed(2)}\n\n` +
+        `${originAlert}\n\n` +
+        `✅ *Acesso liberado no sistema!*`
+      );
 
       return res.status(200).json({
         success: true,

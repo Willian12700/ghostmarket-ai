@@ -1,11 +1,19 @@
-import { Gift, ExternalLink, DollarSign, Users, AlertTriangle, CheckCircle2, ChevronLeft } from 'lucide-react'
+import { Gift, ExternalLink, DollarSign, Users, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileText, Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Link } from 'react-router-dom'
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
+import { useState } from 'react'
 
 export const PublicPartners = () => {
   const CAKTO_LINK_VITALICIO = "https://app.cakto.com.br/affiliate/invite/89edc200-230b-4857-9d86-1be68991f8e2"
   const CAKTO_LINK_MENSAL = "https://app.cakto.com.br/affiliate/invite/f35c621d-948d-401c-ac06-e452d47a96a8"
+  const [copiedScript, setCopiedScript] = useState<string | null>(null)
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedScript(id)
+    setTimeout(() => setCopiedScript(null), 2500)
+  }
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
@@ -95,9 +103,9 @@ export const PublicPartners = () => {
             <div className="mb-10 relative z-10">
               <p className="text-sm text-textSecondary mb-2 font-medium">Sua Comissão:</p>
               <div className="text-5xl md:text-6xl font-black text-white tracking-tight">
-                R$ 9,99
+                R$ 8,00
               </div>
-              <p className="text-sm text-primary font-medium mt-3 bg-primary/10 inline-block px-3 py-1 rounded-full">Por cada venda deste plano (50%)</p>
+              <p className="text-sm text-primary font-medium mt-3 bg-primary/10 inline-block px-3 py-1 rounded-full">Recorrente todo mês por cliente ativo (R$ 19,99)</p>
             </div>
 
             <a href={CAKTO_LINK_MENSAL} target="_blank" rel="noopener noreferrer" className="block relative z-10">
@@ -114,7 +122,7 @@ export const PublicPartners = () => {
             <div className="flex justify-between items-start mb-8 relative z-10">
               <div>
                 <p className="text-xs font-bold text-primaryLight uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> HIGH TICKET
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> MAIS VENDIDO (PAGAMENTO ÚNICO)
                 </p>
                 <h3 className="text-2xl font-bold text-white">GhostMarket Vitalício</h3>
               </div>
@@ -126,9 +134,9 @@ export const PublicPartners = () => {
             <div className="mb-10 relative z-10">
               <p className="text-sm text-textSecondary mb-2 font-medium">Sua Comissão:</p>
               <div className="text-5xl md:text-6xl font-black text-white tracking-tight">
-                R$ 17,49
+                R$ 23,00
               </div>
-              <p className="text-sm text-white font-bold mt-3 bg-primary/40 inline-block px-3 py-1 rounded-full border border-primary/50">Por cada venda deste plano (35%)</p>
+              <p className="text-sm text-white font-bold mt-3 bg-primary/40 inline-block px-3 py-1 rounded-full border border-primary/50">Direto no seu Pix da Cakto (50% do líquido)</p>
             </div>
 
             <a href={CAKTO_LINK_VITALICIO} target="_blank" rel="noopener noreferrer" className="block relative z-10">
@@ -136,6 +144,72 @@ export const PublicPartners = () => {
                 Me afiliar a este plano <ExternalLink className="w-5 h-5 ml-2" />
               </Button>
             </a>
+          </div>
+        </div>
+
+        {/* ÁREA DE RECURSOS & SCRIPTS DO AFILIADO */}
+        <div className="bg-[#0b0416] border border-primary/30 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-[0_0_40px_rgba(139,92,246,0.1)]">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-primary/20 pb-8">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-2">
+                <Sparkles className="w-3.5 h-3.5" /> MATERIAL COMPLETO
+              </div>
+              <h3 className="text-2xl md:text-3xl font-black text-white">Kit & Manual do Afiliado Oficial</h3>
+              <p className="text-sm text-textSecondary mt-1">Scripts de WhatsApp validados, ganchos pro TikTok e guia passo a passo pra você começar a vender hoje.</p>
+            </div>
+            <a href="/kit-afiliado.txt" download="kit-afiliado-ghostmarket.txt" target="_blank" rel="noopener noreferrer">
+              <Button className="bg-primary hover:bg-primaryLight text-white font-bold px-6 py-4 flex items-center gap-2 shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                <Download className="w-4 h-4" /> Baixar Kit em .TXT
+              </Button>
+            </a>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* SCRIPT WHATSAPP X1 */}
+            <div className="bg-[#11081e] border border-primary/20 rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" /> Script 1: Abordagem X1 (WhatsApp/Direct)
+                  </span>
+                  <button
+                    onClick={() => handleCopy(`Fala irmão, beleza? Vi que você comentou lá no vídeo querendo a ferramenta de IA que cria sites!\n\nVocê já trabalha com criação de sites ou tá querendo começar do zero pra fazer uma renda extra?\n\nShow de bola! O mais massa do GhostMarket AI é que você não precisa saber nada de código nem design. A IA gera a estrutura, os textos e as imagens em 60 segundos. E ele ainda tem um Radar que acha empresas no Google Maps sem site pra você fechar por R$ 300 a R$ 500 cada.\n\nDá uma olhada no site oficial da plataforma: [COLE_SEU_LINK_AQUI]`, 'script1')}
+                    className="text-xs text-textSecondary hover:text-white flex items-center gap-1 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/10 transition-all"
+                  >
+                    {copiedScript === 'script1' ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedScript === 'script1' ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                <div className="bg-black/40 rounded-xl p-4 text-xs font-mono text-gray-300 leading-relaxed space-y-2 border border-white/5">
+                  <p className="text-textSecondary">"Fala irmão, beleza? Vi que você comentou lá no vídeo querendo a ferramenta de IA que cria sites!"</p>
+                  <p className="text-primaryLight">"Você já trabalha com criação de sites ou tá querendo começar do zero pra fazer uma renda extra?"</p>
+                  <p className="text-gray-400">"O mais massa do GhostMarket AI é que você não precisa saber código: a IA gera tudo em 60s e acha empresas sem site no Maps pra você vender..."</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ROTEIRO TIKTOK VIRAL */}
+            <div className="bg-[#11081e] border border-primary/20 rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Roteiro TikTok: "Choque & Curiosidade"
+                  </span>
+                  <button
+                    onClick={() => handleCopy(`Se você soubesse disso antes, não estaria passando sufoco no fim do mês. Essa inteligência artificial cria sites profissionais completos em menos de 60 segundos. Olha isso: eu digitei o nome da pizzaria, apertei um botão e ela gerou o design, os textos, o cardápio e o botão do WhatsApp pronto pra vender. E o melhor: tem um Radar que acha empresas da sua cidade sem site pra você fechar por 300 reais cada. O link tá na minha bio pra quem quiser testar.`, 'script2')}
+                    className="text-xs text-textSecondary hover:text-white flex items-center gap-1 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/10 transition-all"
+                  >
+                    {copiedScript === 'script2' ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedScript === 'script2' ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                <div className="bg-black/40 rounded-xl p-4 text-xs font-mono text-gray-300 leading-relaxed space-y-2 border border-white/5">
+                  <p className="text-amber-400">GANCHO: "Se você soubesse disso antes, não estaria passando sufoco no fim do mês..."</p>
+                  <p className="text-gray-300">DEMO: Gravar tela digitando um comércio e o GhostMarket gerando o site em tempo real.</p>
+                  <p className="text-primaryLight">CHAMADA: "Tem um Radar que acha empresas sem site pra fechar por R$ 300 cada. Link liberado na bio!"</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

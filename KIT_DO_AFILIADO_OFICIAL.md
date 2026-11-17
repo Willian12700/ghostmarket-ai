@@ -1,0 +1,138 @@
+# 🚀 GUIA & KIT DEFINITIVO DO AFILIADO OFICIAL - GHOSTMARKET AI
+**Versão Oficial 2026 | Sistema de Vendas Rápidas na Cakto**
+
+Link direto para download ou leitura no celular: [https://ghostmarket-ai.vercel.app/kit-afiliado.txt](https://ghostmarket-ai.vercel.app/kit-afiliado.txt)
+
+---
+
+## 📌 1. RESUMO RÁPIDO DO PRODUTO (O QUE VOCÊ ESTÁ VENDENDO?)
+O **GhostMarket AI** (https://ghostmarket-ai.vercel.app) é uma ferramenta inteligente criada para quem quer faturar na internet:
+1. **Gerador de Sites em 60 Segundos com IA:** Cria páginas profissionais completas, responsivas e com textos persuasivos em 1 clique (para barbearias, pizzarias, clínicas, advogados, contabilidades, etc.).
+2. **Radar de Clientes:** Rastreador integrado que busca no Google Maps empresas da sua região que NÃO têm site cadastrado, entregando o WhatsApp direto do dono para fechar serviços de R$ 300 a R$ 800.
+
+**Por que vende tão fácil?**
+- É extremamente visual (ver um site ser criado em segundos impressiona qualquer pessoa).
+- O preço é acessível para qualquer pessoa começar hoje: R$ 19,99/mês ou R$ 49,99 Vitalício (pagamento único).
+- O público-alvo são jovens, freelancers, designers e pessoas que buscam renda extra.
+
+---
+
+## 💰 2. SUAS COMISSÕES & LINKS OFICIAIS DE AFILIAÇÃO
+As comissões são pagas e gerenciadas automaticamente pela **Cakto**, caindo direto na sua conta bancária via PIX.
+
+### 🔹 Plano 1: GHOSTMARKET VITALÍCIO (Mais Vendido 🔥)
+- Preço para o cliente: **R$ 49,99 (pagamento único)**
+- **Sua Comissão no PIX: R$ 23,00 por venda** (quase 50% de lucro líquido)
+- Link Oficial para se Afiliar:
+  👉 [https://app.cakto.com.br/affiliate/invite/89edc200-230b-4857-9d86-1be68991f8e2](https://app.cakto.com.br/affiliate/invite/89edc200-230b-4857-9d86-1be68991f8e2)
+
+### 🔹 Plano 2: GHOSTMARKET MENSAL (Recorrência)
+- Preço para o cliente: **R$ 19,99/mês**
+- **Sua Comissão no PIX: R$ 8,00 todo mês** por cliente ativo
+- Link Oficial para se Afiliar:
+  👉 [https://app.cakto.com.br/affiliate/invite/f35c621d-948d-401c-ac06-e452d47a96a8](https://app.cakto.com.br/affiliate/invite/f35c621d-948d-401c-ac06-e452d47a96a8)
+
+---
+
+## 🛠️ 3. PASSO A PASSO PARA COMEÇAR EM 3 MINUTOS
+
+1. **Crie sua conta na Cakto:** Se ainda não tem cadastro, acesse https://cakto.com.br e crie sua conta gratuita.
+2. **Clique nos 2 links de afiliação acima:** Clique em "Solicitar Afiliação" ou "Entrar na Afiliação". A aprovação é imediata.
+3. **Pegue seu Link de Divulgação (Hotlink):**
+   - No menu lateral da Cakto, clique em **Produtos > Meus Produtos / Afiliações**.
+   - Abra o GhostMarket AI e clique na aba **Links de Divulgação**.
+   - Copie o seu link de **Checkout Oficial**. É esse link que registra que a venda veio de você.
+4. **Dica de Ouro:** Encurte seu link no TinyURL ou no Bitly (ex: `bit.ly/ghostmarket-vitalicio`) ou configure seu domínio/bio no Instagram e TikTok.
+
+---
+
+## 🎬 4. OS 5 ROTEIROS DE VÍDEOS VIRAIS (TIKTOK / REELS / SHORTS)
+*Você não precisa mostrar seu rosto se não quiser. Basta gravar a tela do celular ou computador usando o GhostMarket AI.*
+
+---
+
+### 🎥 ROTEIRO 1: "A ferramenta que agências não querem que você conheça" (Foco: Choque e Curiosidade)
+- **Visual:** Tela do computador ou celular abrindo o GhostMarket AI. Digitando "Pizzaria Napoli" e clicando em "Gerar Site".
+- **Áudio / Voz (da IA ou sua):**
+  *"Se você soubesse disso antes, não estaria passando sufoco no fim do mês. Essa inteligência artificial cria sites profissionais completos em menos de 60 segundos. Olha isso: eu digitei o nome da pizzaria, apertei um botão e ela gerou o design, os textos, o cardápio e o botão do WhatsApp pronto pra vender. E o melhor: tem um Radar que acha empresas da sua cidade sem site pra você fechar por 300 reais cada. O link tá na minha bio pra quem quiser testar."*
+- **Legenda:**
+  "Como eu faço R$ 300 por dia criando sites sem saber programar 🤫 Link na bio para acessar a ferramenta! #rendaextra #marketingdigital #tecnologia #empreendedorismo #sites"
+
+---
+
+### 🎥 ROTEIRO 2: "Como fiz R$ 300 em 15 minutos sem sair do quarto" (Foco: Renda Extra e Facilidade)
+- **Visual:** Mostrando uma notificação de PIX ou mostrando o Radar de Clientes procurando empresas no Google Maps.
+- **Áudio / Voz:**
+  *"Duvido você adivinhar quanto tempo demorou pra eu fazer esse dinheiro hoje. Nem 15 minutos. Essa ferramenta acha no Google Maps empresas que não têm site e já te dá o WhatsApp do dono. Aí você só clica pra IA gerar o site em 1 minuto, manda o modelo pronto pro dono e cobra 300 conto pra entregar. O cara fecha na hora porque custaria 2 mil reais numa agência. Deixei o acesso liberado no link da bio enquanto ainda tá barato."*
+- **Legenda:**
+  "A melhor forma de renda extra em 2026 sem aparecer e sem programar nada. Link oficial na bio 🚀 #homeoffice #trabalheemcasa #inteligenciaartificial #marketing"
+
+---
+
+### 🎥 ROTEIRO 3: "Para de procurar emprego de salário mínimo" (Foco: Quebra de Padrão)
+- **Visual:** Tela dividida: de um lado alguém cansado no ônibus ou currículo, do outro a tela gerando o site em alta velocidade.
+- **Áudio / Voz:**
+  *"Ainda tem gente distribuindo currículo de papel em pleno 2026 enquanto tem adolescente fazendo 2 mil reais por semana só vendendo site com IA. Você não precisa saber HTML, design nem programação. A ferramenta faz tudo em 60 segundos. Se você fechar apenas 1 site por semana a 400 reais, já são 1.600 no seu bolso. Clica no link da minha bio antes que o acesso vitalício encerre."*
+- **Legenda:**
+  "A internet paga quem resolve problemas rápido. O acesso tá liberado no link da bio! #dicas #trabalhoremoto #dinheiroonline #ia"
+
+---
+
+### 🎥 ROTEIRO 4: "Testando a IA que cria sites em 60 segundos" (Foco: Prova Visual e Teste Real)
+- **Visual:** Cronômetro na tela acelerando de 0 a 60 segundos enquanto a página vai sendo renderizada.
+- **Áudio / Voz:**
+  *"Me desafiaram a criar um site profissional em menos de 1 minuto sem escrever uma linha de código. Solta o cronômetro. Coloquei o nicho: Clínica Odontológica. A IA tá escrevendo a copy, escolhendo as cores, montando a seção de depoimentos e o botão de agendamento no WhatsApp. 45 segundos... e tá pronto! Ficou perfeito e 100% responsivo pro celular. O link tá na bio pra você usar."*
+- **Legenda:**
+  "60 segundos e um site completo pronto pra vender. Acesse pelo link da bio! #webdesign #desenvolvimento #ia #chatgpt"
+
+---
+
+### 🎥 ROTEIRO 5: "O segredo do Radar de Clientes" (Foco: A Ferramenta de Prospecção)
+- **Visual:** Mostrando o Radar de Clientes varrendo um bairro ou cidade e listando 10 comércios com botão "Sem Site".
+- **Áudio / Voz:**
+  *"O maior problema de quem quer ganhar dinheiro na internet não é a ferramenta, é achar clientes. Mas olha o que o GhostMarket faz: ele tem um Radar que você coloca sua cidade e ele te mostra todas as barbearias, mecânicas e restaurantes que não têm site. Ele já te dá o contato direto. Você só oferece a solução pronta e recebe no PIX. O link com desconto tá na bio."*
+- **Legenda:**
+  "Nunca mais sofra pra achar clientes. Ferramenta no link da bio ⚡ #prospeccao #vendas #b2b #negocios"
+
+---
+
+## 💬 5. SCRIPTS MATADORES PARA FECHAR NO WHATSAPP / DIRECT (X1)
+*Quando alguém comentar "EU QUERO", "QUAL O LINK" ou te chamar no direct:*
+
+### 📩 Mensagem 1: Primeiro Contato Rápido (Sem Textão)
+> *"Fala irmão, beleza? Vi que você comentou lá no vídeo querendo a ferramenta de IA que cria sites!"*  
+> *(espere a pessoa responder ou 10 segundos)*  
+> *"Você já trabalha com criação de sites ou tá querendo começar do zero pra fazer uma renda extra?"*
+
+### 📩 Mensagem 2: Qualificação & Demonstração
+*(Assim que a pessoa responder)*
+> *"Show de bola! O mais massa do GhostMarket AI é que você não precisa saber nada de código nem design.*  
+>  
+> *A IA gera a estrutura, os textos e as imagens em 60 segundos. E ele ainda tem um Radar que acha empresas no Google Maps sem site pra você mandar mensagem e fechar por R$ 300 a R$ 500 cada.*  
+>  
+> *Vou te mandar o link oficial da plataforma pra você dar uma olhada na demonstração: [SEU LINK DE AFILIADO AQUI]*  
+>  
+> *Dá uma olhada no vídeo da página e me avisa o que achou!"*
+
+### 📩 Mensagem 3: Fechamento & Objeção de Preço
+*(Se a pessoa perguntar o valor ou ficar na dúvida)*
+> *"O plano Vitalício tá saindo por R$ 49,99 pagamento único (sem mensalidade nenhuma). Com apenas 1 site que você vender a R$ 300, você já paga a ferramenta e ainda sobram R$ 250 de lucro limpo.*  
+>  
+> *Além disso tem 7 dias de garantia incondicional na Cakto: se você entrar e não gostar, seu dinheiro é devolvido na hora.*  
+>  
+> *Aqui tá o link direto com a vaga promocional liberada: [SEU LINK DO VITALÍCIO]*  
+> *Se precisar de ajuda pra configurar me avisa aqui que te dou um suporte!"*
+
+---
+
+## ⚠️ 6. REGRAS IMPORTANTES PARA NÃO SER BANIDO
+1. **NÃO prometa dinheiro fácil ou garantias absurdas** ("fique milionário amanhã"). Prometa a verdade: uma ferramenta de IA que gera sites profissionais em 60 segundos e facilita vendas para comércios locais.
+2. **NÃO faça spam nos comentários** de outros perfis postando links diretos. Crie seus próprios vídeos ou use a abordagem de Direct/WhatsApp.
+3. **Use links encurtados ou página própria na bio** do TikTok para o TikTok não restringir sua conta.
+
+---
+
+## 📞 7. SUPORTE DIRETO AO AFILIADO
+Qualquer dúvida sobre afiliação, materiais adicionais ou saques na Cakto, fale com o suporte oficial do GhostMarket AI:
+- Site Oficial: https://ghostmarket-ai.vercel.app/parceiros
+- Kit do Afiliado em formato de texto para baixar: https://ghostmarket-ai.vercel.app/kit-afiliado.txt

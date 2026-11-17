@@ -29,6 +29,9 @@ export const LINK_TRIAL = 'https://ghostmarket-ai.vercel.app/trial';
 export const LINK_FUNIL_BIO = 'https://ghostmarket-ai.vercel.app/bio';
 export const LINK_QUIZ = 'https://ghostmarket-ai.vercel.app/quiz';
 export const LINK_AFILIADOS = 'https://ghostmarket-ai.vercel.app/parceiros';
+export const LINK_KIT_AFILIADO = 'https://ghostmarket-ai.vercel.app/kit-afiliado.txt';
+export const LINK_AFILIADO_VITALICIO = 'https://app.cakto.com.br/affiliate/invite/89edc200-230b-4857-9d86-1be68991f8e2';
+export const LINK_AFILIADO_MENSAL = 'https://app.cakto.com.br/affiliate/invite/f35c621d-948d-401c-ac06-e452d47a96a8';
 export const LINK_SITE_OFICIAL = 'https://ghostmarket-ai.vercel.app';
 
 // -------------------------------------------------------------
@@ -475,10 +478,10 @@ REGRA DE OURO DE CONTINUIDADE (PROIBIDO REINICIAR CONVERSA):
 - Vá direto à dúvida ou tema que o cliente enviou agora, mantendo o contexto da conversa.
 
 REGRA DO PROGRAMA DE AFILIADOS / PARCEIROS:
-- Se o cliente perguntar como se afiliar, indicar amigos ou ganhar comissão:
-  - Balão 1: "Irmão, com certeza! A gente tem programa oficial de parceiros da Ghost AI na Cakto."
+- Se o cliente perguntar como se afiliar, indicar amigos, divulgar, pegar o kit ou ganhar comissão:
+  - Balão 1: "Fala parceiro! Nosso programa oficial de parceiros da Ghost AI na Cakto tá aberto e pagando comissão no PIX."
   - [SPLIT]
-  - Balão 2: "Você ganha 50% de comissão em cada indicação do Vitalício (R$ 50 no seu bolso por cada 2 vendas)! Pra se afiliar na Cakto e pegar seu link exclusivo de comissão: [LINK_AFILIADOS]"
+  - Balão 2: "Você ganha R$ 23,00 de comissão no PIX por venda do Vitalício e R$ 8,00 todo mês no Mensal.\n\nLinks de afiliação imediata na Cakto:\n👉 *Vitalício (R$ 23/venda):* [LINK_AFILIADO_VITALICIO]\n👉 *Mensal (R$ 8/mês):* [LINK_AFILIADO_MENSAL]\n\n📘 Kit com scripts de WhatsApp e roteiros pro TikTok: [LINK_KIT_AFILIADO]\n\nDepois que você se afiliar me avisa aqui pra eu validar seu cadastro!"
 
 SOBRE TESTE GRÁTIS:
 - O teste gratuito de 5 minutos só é liberado se a pessoa pedir expressamente ("tem teste?", "posso testar?", "como faço pra testar?").
@@ -502,6 +505,9 @@ function cleanAndInjectLinks(rawReply) {
   reply = reply.replace(/\[LINK_AFILIADOS?\]/gi, LINK_AFILIADOS);
   reply = reply.replace(/\[LINK_PARCEIROS?\]/gi, LINK_AFILIADOS);
   reply = reply.replace(/\[AFILIADOS?\]/gi, LINK_AFILIADOS);
+  reply = reply.replace(/\[LINK_KIT_AFILIADO\]/gi, LINK_KIT_AFILIADO);
+  reply = reply.replace(/\[LINK_AFILIADO_VITALICIO\]/gi, LINK_AFILIADO_VITALICIO);
+  reply = reply.replace(/\[LINK_AFILIADO_MENSAL\]/gi, LINK_AFILIADO_MENSAL);
   reply = reply.replace(/\[LINK_SITE_OFICIAL\]/gi, LINK_SITE_OFICIAL);
   reply = reply.replace(/\[LINK_PAGAMENTO\]/gi, LINK_VITALICIO);
   
@@ -870,8 +876,8 @@ Responda como Willian (dono do GhostMarket), diretamente para o Cliente, seguind
       return resp;
     }
 
-    if (lower.includes('afiliado') || lower.includes('parceiro') || lower.includes('comissao') || lower.includes('comissão')) {
-      const resp = resolveSpintax(`Dá pra ser nosso parceiro e ganhar 50% de comissão por indicação! Dá uma olhada aqui:\n👉 ${LINK_AFILIADOS}`);
+    if (lower.includes('afiliado') || lower.includes('parceiro') || lower.includes('comissao') || lower.includes('comissão') || lower.includes('kit') || lower.includes('material') || lower.includes('divulgar')) {
+      const resp = resolveSpintax(`{Fala parceiro!|Show de bola!|Opa, tudo bem?} Nosso programa de afiliados na Cakto tá pagando comissão no PIX![SPLIT]Você ganha R$ 23,00 no Vitalício e R$ 8,00 todo mês no Mensal.\n\nLinks pra se afiliar agora na Cakto:\n👉 *Vitalício:* ${LINK_AFILIADO_VITALICIO}\n👉 *Mensal:* ${LINK_AFILIADO_MENSAL}\n\n📘 Kit com scripts de vendas e roteiros pro TikTok: ${LINK_KIT_AFILIADO}\n\nAssim que você se afiliar, me dá um toque aqui!`);
       history.push({ role: 'assistant', content: resp });
       return resp;
     }
@@ -960,6 +966,12 @@ export function buildCaktoApprovedWelcomeMessage({ customerName, customerEmail, 
   const planLabel = plan === 'vitalicio' ? 'Plano Vitalício' : 'Plano Mensal';
 
   return resolveSpintax(`{Parabéns|Show de bola|Sensacional}, ${firstName}![SPLIT]Seu pagamento do *${planLabel}* no GhostMarket AI foi confirmado com sucesso!\n\nComo acessar a plataforma agora:\n1. Já liberamos o acesso para o seu Gmail: *${customerEmail}*\n2. Acesse a plataforma oficial: https://ghostmarket-ai.vercel.app\n3. Crie a sua conta usando obrigatoriamente esse mesmo Gmail (${customerEmail})\n\nO sistema vai identificar seu pagamento na hora e liberar 100% das ferramentas sem créditos e sem travas.\n\nSe precisar de qualquer suporte, é só me chamar aqui a qualquer hora. Seja muito bem-vindo!`);
+}
+
+// Mensagem de Convite Automático para Afiliados pós-compra (Loop Viral 20h a 24h após aprovação)
+export function buildCaktoPostPurchaseAffiliateInvite({ customerName, plan }) {
+  const firstName = (customerName || 'irmão').trim().split(' ')[0];
+  return resolveSpintax(`{Fala|Opa|E aí} ${firstName}, {tudo bem meu irmão?|beleza?}[SPLIT]{Passando pra saber se você conseguiu testar o gerador de sites e o Radar de clientes hoje!|Passando pra ver como tá sendo sua experiência com o GhostMarket AI!}\n\nE aproveitando pra te dar um toque exclusivo: liberamos o programa oficial de parceiros da Cakto pra quem já é usuário da plataforma.\n\nComo funciona: você ganha até *R$ 23,00 de comissão no PIX* a cada indicação. Se você indicar pra 2 amigos, já bota R$ 46 no bolso e praticamente paga o que investiu.\n\nSe você tiver interesse em divulgar, me avisa aqui que te mando seus links de afiliação e o Kit com vídeos e roteiros prontos pro TikTok sem precisar aparecer!`);
 }
 
 export function buildQuizLeadOutreachMessage({ customerName, name, score, profile, bottleneck }) {

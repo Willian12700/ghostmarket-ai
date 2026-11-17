@@ -31,6 +31,27 @@ function formatBrazilPhone(rawPhone) {
   return digits;
 }
 
+function getBrazilPhonePairs(digits) {
+  const clean = String(digits).replace(/\D/g, '');
+  const pairs = [clean];
+  let ddd = '';
+  let rest = '';
+  if (clean.startsWith('55') && (clean.length === 12 || clean.length === 13)) {
+    ddd = clean.slice(2, 4);
+    rest = clean.slice(4);
+  } else if (!clean.startsWith('55') && (clean.length === 10 || clean.length === 11)) {
+    ddd = clean.slice(0, 2);
+    rest = clean.slice(2);
+  }
+  if (ddd && rest) {
+    const with9 = rest.length === 9 ? rest : ('9' + rest);
+    const without9 = rest.length === 9 ? rest.slice(1) : rest;
+    pairs.push(`55${ddd}${with9}`);
+    pairs.push(`55${ddd}${without9}`);
+  }
+  return Array.from(new Set(pairs));
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -64,7 +85,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Telefone inválido ou não informado' });
     }
 
-    const docRef = doc(db, 'paused_chats', cleanPhone);
+    const phonePairs = getBrazilPhonePairs(cleanPhone);
 
     // 2. Pausar Atendimento do Bot
     if (action === 'pause') {
@@ -75,7 +96,9 @@ export default async function handler(req, res) {
         reason,
         updatedAt: serverTimestamp()
       };
-      await setDoc(docRef, data, { merge: true });
+      
+      // Salvar todas as variações (12 e 13 dígitos) no Firestore
+      await Promise.all(phonePairs.map(p => setDoc(doc(db, 'paused_chats', p), { ...data, phone: p }, { merge: true })));
 
       // Notificar Moto G60 em tempo real via túnel
       try {
@@ -107,7 +130,7 @@ export default async function handler(req, res) {
 
     // 3. Reativar Atendimento do Bot
     if (action === 'unpause' || action === 'resume' || action === 'reativar') {
-      await deleteDoc(docRef);
+      await Promise.all(phonePairs.map(p => deleteDoc(doc(db, 'paused_chats', p))));
 
       // Notificar Moto G60 em tempo real via túnel
       try {

@@ -1,0 +1,13 @@
+[
+  {
+    "eventType": "purchase_approved",
+    "customerName": "Gabriel Santos de Oliveira",
+    "customerEmail": "torresgemeas50@gmail.com",
+    "customerPhone": "5511993433367",
+    "amount": 29.9,
+    "plan": "mensal",
+    "queuedAt": 1794853547583,
+    "processed": true,
+    "processedAt": 1794853547583
+  }
+]
